@@ -32,7 +32,7 @@ func _physics_process(delta: float) -> void:
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.has_method("take_hit"):
-		area.take_hit(damage)
+		area.take_hit(damage, true)
 		pierce -= 1
 		if pierce < 0:
 			queue_free()
