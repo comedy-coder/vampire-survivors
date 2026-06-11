@@ -1,0 +1,119 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/game.gd" id="1_game"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="2_player"]
+[ext_resource type="Texture2D" path="res://assets/characters/player.png" id="3_player_tex"]
+
+[sub_resource type="CircleShape2D" id="player_shape"]
+radius = 12.0
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_game")
+
+[node name="Player" type="CharacterBody2D" parent="."]
+script = ExtResource("2_player")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("player_shape")
+
+[node name="Sprite2D" type="Sprite2D" parent="Player"]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("3_player_tex")
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HpLabel" type="Label" parent="UI"]
+offset_left = 20.0
+offset_top = 12.0
+offset_right = 320.0
+offset_bottom = 44.0
+theme_override_font_sizes/font_size = 24
+text = "HP: 100 / 100"
+
+[node name="LevelLabel" type="Label" parent="UI"]
+offset_left = 20.0
+offset_top = 44.0
+offset_right = 360.0
+offset_bottom = 76.0
+theme_override_font_sizes/font_size = 24
+text = "Level 1"
+
+[node name="KillsLabel" type="Label" parent="UI"]
+offset_left = 20.0
+offset_top = 76.0
+offset_right = 320.0
+offset_bottom = 108.0
+theme_override_font_sizes/font_size = 24
+text = "Kills: 0"
+
+[node name="TimeLabel" type="Label" parent="UI"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -60.0
+offset_top = 12.0
+offset_right = 60.0
+offset_bottom = 56.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 34
+text = "00:00"
+horizontal_alignment = 1
+
+[node name="LevelUpPanel" type="PanelContainer" parent="UI"]
+process_mode = 3
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = -160.0
+offset_right = 240.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="UI/LevelUpPanel"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="UI/LevelUpPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "LEVEL UP! Chọn nâng cấp"
+horizontal_alignment = 1
+
+[node name="Btn1" type="Button" parent="UI/LevelUpPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Option 1"
+
+[node name="Btn2" type="Button" parent="UI/LevelUpPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Option 2"
+
+[node name="Btn3" type="Button" parent="UI/LevelUpPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Option 3"
+
+[node name="GameOverLabel" type="Label" parent="UI"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -90.0
+offset_right = 350.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 40
+text = "GAME OVER"
+horizontal_alignment = 1
