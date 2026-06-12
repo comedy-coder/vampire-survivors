@@ -1,0 +1,6 @@
+boss_desert.png, boss_bone.png — assembled from Kenney's "Monster Builder Pack"
+https://kenney.nl/assets/monster-builder-pack
+License: CC0 (public domain)
+
+Other character sprites from Kenney's "Topdown Shooter" pack (CC0)
+https://kenney.nl/assets/top-down-shooter

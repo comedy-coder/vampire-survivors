@@ -2,6 +2,14 @@ extends Node2D
 
 const ENEMY := preload("res://scripts/enemy.gd")
 const GEM := preload("res://scripts/gem.gd")
+const TORNADO := preload("res://scripts/tornado.gd")
+const QUICKSAND := preload("res://scripts/quicksand.gd")
+const PICKUP := preload("res://scripts/pickup.gd")
+const CRATE := preload("res://scripts/crate.gd")
+
+const ICON_PICK_HEAL := preload("res://assets/icons/up_hp.svg")
+const ICON_PICK_MAGNET := preload("res://assets/icons/art_magnet.svg")
+const ICON_PICK_BOMB := preload("res://assets/icons/w_grenade.svg")
 
 const TEX_ZOMBIE := preload("res://assets/characters/zombie.png")
 const TEX_HITMAN := preload("res://assets/characters/hitman.png")
@@ -13,6 +21,9 @@ const SND_DIE := preload("res://assets/audio/enemy_die.ogg")
 const CIRCLE := preload("res://assets/circle.svg")
 const TEX_EXPLOSION := preload("res://assets/vfx/explosion_sheet.png")
 const TEX_CHEST := preload("res://assets/decor/chest.png")
+const ICON_CHEST := preload("res://assets/icons/art_chest.svg")
+const TEX_BOSS_DESERT := preload("res://assets/characters/boss_desert.png")
+const TEX_BOSS_BONE := preload("res://assets/characters/boss_bone.png")
 
 const I18N := {
 	"levelup_title": ["LEVEL UP! Chọn nâng cấp", "LEVEL UP! Choose an upgrade"],
@@ -28,6 +39,8 @@ const I18N := {
 	"reselect": ["Chọn lại nhân vật", "Change character"],
 	"lang_label": ["Ngôn ngữ:", "Language:"],
 	"boss_announce": ["BOSS XUẤT HIỆN!", "BOSS INCOMING!"],
+	"boss_desert": ["HUNG THẦN SA MẠC!", "DESERT FIEND!"],
+	"boss_dead": ["CHÚA TỂ XƯƠNG!", "BONE LORD!"],
 	"ev_ring": ["BẦY QUÁI VÂY QUANH!", "SURROUNDED!"],
 	"ev_flood": ["QUÁI TRÀN TỚI!", "MONSTER FLOOD!"],
 	"ev_frenzy": ["PHÚT CUỒNG NỘ!", "FRENZY!"],
@@ -125,18 +138,21 @@ const STAGES := [
 	{
 		"name": ["Đồng cỏ", "Meadow"],
 		"tile": preload("res://assets/tiles/grass_01.png"),
+		"tile_mod": Color.WHITE,
 		"decor": DECOR,
 		"decor_mod": Color.WHITE,
 	},
 	{
 		"name": ["Sa mạc", "Desert"],
 		"tile": preload("res://assets/tiles/sand_01.png"),
+		"tile_mod": Color(0.82, 0.78, 0.7),
 		"decor": DECOR_DESERT,
 		"decor_mod": Color(1.0, 0.9, 0.7),
 	},
 	{
 		"name": ["Vùng đất chết", "Dead Zone"],
 		"tile": preload("res://assets/tiles/dark_01.png"),
+		"tile_mod": Color.WHITE,
 		"decor": DECOR_DARK,
 		"decor_mod": Color(0.65, 0.6, 0.75),
 	},
@@ -184,6 +200,7 @@ var decor_cells := {}
 var stage := 0
 var event_timer := 75.0
 var frenzy_timer := 0.0
+var crate_timer := 12.0
 var bosses: Array = []
 var arrows: Array = []
 var arrows_holder := Node2D.new()
@@ -392,6 +409,11 @@ func _process(delta: float) -> void:
 		event_timer = randf_range(100.0, 140.0)
 		_trigger_event()
 
+	crate_timer -= delta
+	if crate_timer <= 0.0:
+		crate_timer = randf_range(18.0, 26.0)
+		_spawn_crate()
+
 	if frenzy_timer > 0.0:
 		frenzy_timer -= delta
 		if frenzy_timer <= 0.0:
@@ -419,6 +441,7 @@ func _update_stage() -> void:
 	stage = s
 	var cfg: Dictionary = STAGES[s]
 	ground.texture = cfg["tile"]
+	ground.modulate = cfg["tile_mod"]
 	for cell in decor_cells.keys():
 		decor_cells[cell].queue_free()
 	decor_cells.clear()
@@ -479,6 +502,8 @@ func _make_enemy() -> Area2D:
 	e.player = player
 	e.died.connect(_on_enemy_died)
 	e.summon.connect(_on_boss_summon)
+	e.tornado.connect(_on_boss_tornado)
+	e.quicksand.connect(_on_boss_quicksand)
 	return e
 
 
@@ -508,6 +533,8 @@ func _spawn_enemy() -> void:
 	else:
 		e.hp = 3.0 + time * 0.06
 		e.speed = minf(60.0 + time * 0.6, 150.0)
+	if time > 45.0 and e.kind == ENEMY.Kind.MELEE and randf() < 0.06:
+		_make_elite(e)
 	_apply_stage(e)
 	add_child(e)
 	e.global_position = player.global_position + Vector2.from_angle(randf() * TAU) * 550.0
@@ -524,40 +551,82 @@ func _spawn_boss() -> void:
 	e.hp = 50.0 + time * 1.5
 	e.dps = 30.0
 	e.gems = 8
-	if boss_count % 2 == 1:
-		# Zombie chúa: nhấp nháy đỏ rồi lao thẳng vào người chơi, biết gọi đệ
-		e.tex = TEX_ZOMBIE
-		e.tint = Color(1.0, 0.5, 0.5)
-		e.speed = 70.0
-		e.skills = ["dash", "dash", "summon"]
-	else:
-		# Robot pháo đài: bắn vòng đạn toả tròn, biết gọi đệ
-		e.tex = TEX_ROBOT
-		e.tint = Color(0.8, 0.6, 1.0)
-		e.speed = 55.0
-		e.bullet_damage = 10.0
-		e.skills = ["burst", "burst", "summon"]
-		e.skill_interval = 5.0
+	var announce := T("boss_announce")
+	match stage:
+		1:
+			# Hung thần sa mạc: thả lốc cát đuổi theo, tạo vũng cát lún, biết lao tới
+			e.tex = TEX_BOSS_DESERT
+			e.upright = true
+			e.vis_scale = 0.5
+			e.speed = 80.0
+			e.skills = ["tornado", "quicksand", "dash"]
+			e.skill_interval = 5.0
+			announce = T("boss_desert")
+		2:
+			# Chúa tể xương: gọi đệ xương liên tục, bắn đạn xoắn ốc và vòng toả tròn
+			e.tex = TEX_BOSS_BONE
+			e.upright = true
+			e.vis_scale = 0.5
+			e.speed = 60.0
+			e.bullet_damage = 11.0
+			e.skills = ["summon", "spiral", "burst"]
+			e.skill_interval = 5.5
+			announce = T("boss_dead")
+		_:
+			if boss_count % 2 == 1:
+				# Zombie chúa: nhấp nháy đỏ rồi lao thẳng vào người chơi, biết gọi đệ
+				e.tex = TEX_ZOMBIE
+				e.tint = Color(1.0, 0.5, 0.5)
+				e.speed = 70.0
+				e.skills = ["dash", "dash", "summon"]
+			else:
+				# Robot pháo đài: bắn vòng đạn toả tròn, biết gọi đệ
+				e.tex = TEX_ROBOT
+				e.tint = Color(0.8, 0.6, 1.0)
+				e.speed = 55.0
+				e.bullet_damage = 10.0
+				e.skills = ["burst", "burst", "summon"]
+				e.skill_interval = 5.0
 	_apply_stage(e)
 	add_child(e)
 	e.global_position = player.global_position + Vector2.from_angle(randf() * TAU) * 600.0
 	bosses.append(e)
 	e.died.connect(func(pos: Vector2, _g: int) -> void: _spawn_chest(pos))
-	_announce(T("boss_announce"), Color(1.0, 0.2, 0.2))
+	_announce(announce, Color(1.0, 0.2, 0.2))
 
 
 func _on_boss_summon(pos: Vector2) -> void:
 	spawn_explosion(pos, 110.0, 0.4)
-	for i in 4:
+	# Vùng đất chết: đệ là bộ xương trắng, nhanh và đông hơn
+	var count := 6 if stage == 2 else 4
+	for i in count:
 		var e := _make_enemy()
-		e.tint = Color(0.7, 1.0, 0.7)
+		e.tint = Color(1.1, 1.1, 1.25) if stage == 2 else Color(0.7, 1.0, 0.7)
 		e.sprite_scale = 0.6
 		e.hp = (3.0 + time * 0.06) * 0.7
-		e.speed = minf(75.0 + time * 0.6, 165.0)
+		e.speed = minf(75.0 + time * 0.6, 165.0) * (1.15 if stage == 2 else 1.0)
 		e.gems = 1
 		_apply_stage(e)
 		add_child(e)
-		e.global_position = pos + Vector2.from_angle(TAU * i / 4.0 + randf() * 0.5) * 60.0
+		e.global_position = pos + Vector2.from_angle(TAU * i / count + randf() * 0.5) * 60.0
+
+
+func _on_boss_tornado(pos: Vector2) -> void:
+	var t := Node2D.new()
+	t.set_script(TORNADO)
+	t.player = player
+	add_child(t)
+	t.global_position = pos + Vector2.from_angle(randf() * TAU) * 50.0
+
+
+func _on_boss_quicksand(pos: Vector2) -> void:
+	# Tạo 3 vũng cát lún quanh vị trí người chơi, hiện dần để kịp né
+	for i in 3:
+		var q := Node2D.new()
+		q.set_script(QUICKSAND)
+		q.player = player
+		add_child(q)
+		q.global_position = pos + Vector2.from_angle(TAU * i / 3.0 + randf() * 1.5) * randf_range(0.0, 130.0)
 
 
 func _on_enemy_died(pos: Vector2, gem_count: int) -> void:
@@ -566,12 +635,125 @@ func _on_enemy_died(pos: Vector2, gem_count: int) -> void:
 	die_sfx.pitch_scale = randf_range(0.85, 1.15)
 	die_sfx.play()
 	for i in gem_count:
-		var g := Area2D.new()
-		g.set_script(GEM)
-		g.player = player
-		g.collected.connect(_on_gem_collected)
-		add_child(g)
-		g.global_position = pos + Vector2.from_angle(randf() * TAU) * (randf() * 20.0)
+		_spawn_gem(pos)
+	if randf() < 0.02:
+		_spawn_pickup(pos)
+
+
+func _spawn_gem(pos: Vector2, value := 1) -> void:
+	var g := Area2D.new()
+	g.set_script(GEM)
+	g.player = player
+	g.value = value
+	g.collected.connect(_on_gem_collected)
+	add_child(g)
+	g.global_position = pos + Vector2.from_angle(randf() * TAU) * (randf() * 20.0)
+
+
+func _make_elite(e: Area2D) -> void:
+	var mod: String = ["regen", "split", "explode"].pick_random()
+	e.elite_mod = mod
+	e.sprite_scale *= 1.3
+	e.hp *= 3.5
+	e.speed *= 0.9
+	e.gems += 1
+	e.died.connect(func(pos: Vector2, _g: int) -> void: _on_elite_died(pos, mod))
+
+
+func _on_elite_died(pos: Vector2, mod: String) -> void:
+	_spawn_gem(pos, 5)
+	match mod:
+		"split":
+			for i in 2:
+				var m := _make_enemy()
+				m.sprite_scale = 0.5
+				m.tint = Color(0.7, 0.9, 1.4)
+				m.hp = (3.0 + time * 0.06) * 0.5
+				m.speed = minf(95.0 + time * 0.6, 180.0)
+				_apply_stage(m)
+				add_child(m)
+				m.global_position = pos + Vector2.from_angle(randf() * TAU) * 30.0
+		"explode":
+			_elite_blast(pos)
+
+
+func _elite_blast(pos: Vector2) -> void:
+	# Vòng đỏ cảnh báo hiện dần rồi nổ — đứng trong vùng sẽ mất máu
+	var warn := Sprite2D.new()
+	warn.texture = CIRCLE
+	warn.modulate = Color(1.0, 0.25, 0.15, 0.0)
+	warn.scale = Vector2.ONE * (130.0 / 30.0)
+	warn.z_index = -2
+	add_child(warn)
+	warn.global_position = pos
+	var tw := warn.create_tween()
+	tw.tween_property(warn, "modulate:a", 0.4, 0.8)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(player) and player.global_position.distance_to(pos) < 130.0:
+			player.take_damage(25.0)
+		spawn_explosion(pos, 260.0, 0.5)
+		player.shake_amt = maxf(player.shake_amt, 6.0)
+		warn.queue_free())
+
+
+func _spawn_pickup(pos: Vector2, kind := "") -> void:
+	if kind == "":
+		kind = ["heal", "magnet", "bomb"].pick_random()
+	var p := Area2D.new()
+	p.set_script(PICKUP)
+	p.player = player
+	p.kind = kind
+	match kind:
+		"heal":
+			p.icon = ICON_PICK_HEAL
+			p.glow_col = Color(0.4, 1.0, 0.45)
+		"magnet":
+			p.icon = ICON_PICK_MAGNET
+			p.glow_col = Color(0.4, 0.8, 1.0)
+		"bomb":
+			p.icon = ICON_PICK_BOMB
+			p.glow_col = Color(1.0, 0.55, 0.25)
+	p.taken.connect(_apply_pickup)
+	add_child(p)
+	p.global_position = pos
+
+
+func _apply_pickup(kind: String) -> void:
+	match kind:
+		"heal":
+			player.heal(40.0)
+		"magnet":
+			for g in get_tree().get_nodes_in_group("gems"):
+				g.force_pull = true
+		"bomb":
+			for e in get_tree().get_nodes_in_group("enemies"):
+				e.take_hit(60.0, true,
+					(e.global_position - player.global_position).normalized() * 400.0,
+					Color(1.0, 0.6, 0.3))
+			spawn_explosion(player.global_position, 620.0, 0.6)
+			player.boom_sfx.pitch_scale = 0.8
+			player.boom_sfx.play()
+			player.shake_amt = 14.0
+
+
+func _spawn_crate() -> void:
+	if get_tree().get_nodes_in_group("crates").size() >= 4:
+		return
+	var c := Area2D.new()
+	c.set_script(CRATE)
+	c.player = player
+	c.broke.connect(_on_crate_broke)
+	add_child(c)
+	c.global_position = player.global_position + Vector2.from_angle(randf() * TAU) * randf_range(420.0, 620.0)
+
+
+func _on_crate_broke(pos: Vector2) -> void:
+	spawn_explosion(pos, 90.0, 0.4)
+	if randf() < 0.7:
+		_spawn_pickup(pos)
+	else:
+		for i in 3:
+			_spawn_gem(pos)
 
 
 func _spawn_death_fx(pos: Vector2) -> void:
@@ -593,8 +775,8 @@ func spawn_explosion(pos: Vector2, diameter: float, duration := 0.55) -> void:
 	tw.tween_callback(spr.queue_free)
 
 
-func _on_gem_collected() -> void:
-	xp += xp_gain
+func _on_gem_collected(value: int) -> void:
+	xp += value * xp_gain
 	if xp >= xp_needed and not choosing:
 		_show_level_up()
 
@@ -852,11 +1034,33 @@ func _build_chest_panel() -> void:
 	chest_panel = PanelContainer.new()
 	chest_panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	chest_panel.visible = false
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.09, 0.08, 0.13, 0.97)
+	sb.border_color = Color(1.0, 0.78, 0.25)
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(14)
+	sb.content_margin_left = 36.0
+	sb.content_margin_right = 36.0
+	sb.content_margin_top = 24.0
+	sb.content_margin_bottom = 24.0
+	sb.shadow_color = Color(0, 0, 0, 0.5)
+	sb.shadow_size = 12
+	chest_panel.add_theme_stylebox_override("panel", sb)
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 16)
+	var icon := TextureRect.new()
+	icon.texture = ICON_CHEST
+	icon.custom_minimum_size = Vector2(72, 72)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.modulate = Color(1.0, 0.85, 0.2)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox.add_child(icon)
 	chest_title = Label.new()
 	chest_title.add_theme_font_size_override("font_size", 32)
 	chest_title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	chest_title.add_theme_color_override("font_outline_color", Color(0.35, 0.2, 0.0))
+	chest_title.add_theme_constant_override("outline_size", 6)
 	chest_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(chest_title)
 	chest_text = Label.new()
@@ -865,6 +1069,22 @@ func _build_chest_panel() -> void:
 	vbox.add_child(chest_text)
 	chest_btn = Button.new()
 	chest_btn.add_theme_font_size_override("font_size", 24)
+	var bb := StyleBoxFlat.new()
+	bb.bg_color = Color(1.0, 0.78, 0.25)
+	bb.set_corner_radius_all(10)
+	bb.content_margin_left = 28.0
+	bb.content_margin_right = 28.0
+	bb.content_margin_top = 8.0
+	bb.content_margin_bottom = 8.0
+	var bh: StyleBoxFlat = bb.duplicate()
+	bh.bg_color = Color(1.0, 0.88, 0.45)
+	chest_btn.add_theme_stylebox_override("normal", bb)
+	chest_btn.add_theme_stylebox_override("hover", bh)
+	chest_btn.add_theme_stylebox_override("pressed", bb)
+	chest_btn.add_theme_color_override("font_color", Color(0.2, 0.12, 0.0))
+	chest_btn.add_theme_color_override("font_hover_color", Color(0.2, 0.12, 0.0))
+	chest_btn.add_theme_color_override("font_pressed_color", Color(0.2, 0.12, 0.0))
+	chest_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	chest_btn.pressed.connect(_close_chest)
 	vbox.add_child(chest_btn)
 	chest_panel.add_child(vbox)

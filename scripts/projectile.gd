@@ -87,6 +87,8 @@ func _on_area_entered(area: Area2D) -> void:
 		return
 	if aoe > 0.0:
 		var parent := get_parent()
+		if not area.is_in_group("enemies"):
+			area.take_hit(damage, true, dir * kb, color, crit)
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if global_position.distance_to(e.global_position) < aoe:
 				e.take_hit(damage, true, (e.global_position - global_position).normalized() * kb, color, crit)

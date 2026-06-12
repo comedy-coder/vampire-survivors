@@ -4,7 +4,11 @@ https://creativecommons.org/licenses/by/3.0/
 Authors:
 - Lorc (https://lorcblog.blogspot.com): minigun, supersonic-bullet, run,
   shining-heart, sword-spin, grenade, lightning-branches, poison-gas,
-  magnet, spiked-armor, gems
+  magnet, spiked-armor, gems, locked-chest
 - Delapouite (https://delapouite.com): heavy-bullets, split-arrows,
   heart-wings, crosshair
 - Zeromancer: heart-plus
+
+Elite badge icons (elite_regen, elite_split, elite_explode) from
+"Buff & Debuff Icon Pack - Free Vol.1" by Akami Assets, CC0 1.0
+https://akami666.itch.io/buff-debuff-icon-pack-free-vol1

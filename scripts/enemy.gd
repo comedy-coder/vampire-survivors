@@ -2,8 +2,16 @@ extends Area2D
 
 signal died(pos: Vector2, gems: int)
 signal summon(pos: Vector2)
+signal tornado(pos: Vector2)
+signal quicksand(pos: Vector2)
 
 const ENEMY_BULLET := preload("res://scripts/enemy_projectile.gd")
+const TEX_GLOW := preload("res://assets/vfx/glow.png")
+const ELITE_BADGES := {
+	"regen": preload("res://assets/icons/elite_regen.png"),
+	"split": preload("res://assets/icons/elite_split.png"),
+	"explode": preload("res://assets/icons/elite_explode.png"),
+}
 
 enum Kind { MELEE, RANGER, BOSS }
 enum State { CHASE, TELEGRAPH, DASH }
@@ -14,14 +22,20 @@ var speed := 60.0
 var dps := 15.0
 var tex: Texture2D = preload("res://assets/characters/zombie.png")
 var sprite_scale := 0.75
+var vis_scale := 0.0  # nếu > 0 thì hình vẽ dùng scale này, hitbox vẫn theo sprite_scale
+var upright := false  # boss kiểu quái blob: không xoay theo hướng đi, chỉ lật trái/phải
 var tint := Color.WHITE
 var gems := 1
+
+var elite_mod := ""  # "" / "regen" / "split" / "explode" — quái tinh nhuệ
+var hp_max := 0.0
+var badge: Sprite2D
 
 var kind := Kind.MELEE
 var shoot_range := 320.0
 var shoot_interval := 2.2
 var bullet_damage := 8.0
-var skills: Array = []  # "dash", "summon", "burst"
+var skills: Array = []  # "dash", "summon", "burst", "tornado", "quicksand", "spiral"
 var skill_interval := 6.0
 
 var state := State.CHASE
@@ -46,17 +60,45 @@ func _ready() -> void:
 	c.radius = 13.0 * (sprite_scale / 0.75)
 	cs.shape = c
 	add_child(cs)
+	if vis_scale <= 0.0:
+		vis_scale = sprite_scale
 	sprite = Sprite2D.new()
 	sprite.texture = tex
-	sprite.scale = Vector2(sprite_scale, sprite_scale)
+	sprite.scale = Vector2(vis_scale, vis_scale)
 	sprite.modulate = tint
 	add_child(sprite)
+	hp_max = hp
+	if elite_mod != "":
+		var aura := Sprite2D.new()
+		aura.texture = TEX_GLOW
+		aura.modulate = _aura_color()
+		aura.scale = Vector2.ONE * (95.0 * (sprite_scale / 0.75) / TEX_GLOW.get_size().x)
+		aura.z_index = -1
+		add_child(aura)
+		var tex_badge: Texture2D = ELITE_BADGES[elite_mod]
+		badge = Sprite2D.new()
+		badge.texture = tex_badge
+		badge.scale = Vector2.ONE * (22.0 / tex_badge.get_size().x)
+		badge.z_index = 12
+		add_child(badge)
+
+
+func _aura_color() -> Color:
+	match elite_mod:
+		"regen":
+			return Color(0.3, 1.0, 0.4, 0.5)
+		"split":
+			return Color(0.4, 0.8, 1.0, 0.5)
+		_:
+			return Color(1.0, 0.45, 0.2, 0.5)
 
 
 func _physics_process(delta: float) -> void:
 	if player == null or not is_instance_valid(player):
 		return
 	slow_timer = maxf(0.0, slow_timer - delta)
+	if elite_mod == "regen":
+		hp = minf(hp + hp_max * 0.03 * delta, hp_max)
 	if kb_vel != Vector2.ZERO:
 		global_position += kb_vel * delta
 		kb_vel = kb_vel.move_toward(Vector2.ZERO, 900.0 * delta)
@@ -77,6 +119,14 @@ func _physics_process(delta: float) -> void:
 			_dash(delta, to_player)
 	if state != State.DASH:
 		_separate(delta)
+	if upright:
+		rotation = 0.0
+		sprite.flip_h = to_player.x < 0.0
+	if badge != null:
+		# Giữ icon đứng thẳng và nổi trên đầu dù thân quái xoay theo hướng đi
+		badge.global_rotation = 0.0
+		badge.global_position = global_position \
+			+ Vector2(0.0, -30.0 * (sprite_scale / 0.75) - 6.0 + 2.0 * sin(walk_t * 1.5))
 
 
 func _separate(delta: float) -> void:
@@ -102,7 +152,7 @@ func _chase(delta: float, to_player: Vector2) -> void:
 
 	walk_t += delta * spd * 0.12
 	sprite.rotation = 0.14 * sin(walk_t)
-	sprite.scale = Vector2.ONE * sprite_scale * (1.0 + 0.05 * sin(walk_t * 2.0))
+	sprite.scale = Vector2.ONE * vis_scale * (1.0 + 0.05 * sin(walk_t * 2.0))
 
 	if kind == Kind.RANGER:
 		# Giữ khoảng cách: xa thì tiến lại, gần quá thì lùi ra
@@ -161,6 +211,12 @@ func _use_skill() -> void:
 			summon.emit(global_position)
 		"burst":
 			_fire_ring()
+		"tornado":
+			tornado.emit(global_position)
+		"quicksand":
+			quicksand.emit(player.global_position)
+		"spiral":
+			_fire_spiral()
 
 
 func _fire_ring() -> void:
@@ -168,6 +224,15 @@ func _fire_ring() -> void:
 	var offset := randf() * TAU
 	for i in count:
 		_spawn_bullet(Vector2.from_angle(offset + TAU * i / count), 200.0)
+
+
+func _fire_spiral() -> void:
+	# Bắn chuỗi đạn xoay tròn như xoắn ốc, người chơi phải chạy né liên tục
+	var base := randf() * TAU
+	var tw := create_tween()
+	for i in 20:
+		tw.tween_interval(0.08)
+		tw.tween_callback(_spawn_bullet.bind(Vector2.from_angle(base + i * 0.55), 185.0))
 
 
 func _spawn_bullet(d: Vector2, spd := 240.0) -> void:

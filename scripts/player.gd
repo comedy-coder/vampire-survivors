@@ -10,6 +10,8 @@ const TEX_SPARK := preload("res://assets/vfx/spark.png")
 const TEX_GLOW := preload("res://assets/vfx/glow.png")
 const TEX_MUZZLE := preload("res://assets/vfx/muzzle.png")
 const TEX_SWORD := preload("res://assets/vfx/sword.png")
+const TEX_STRIKE := preload("res://assets/vfx/lightning_strike.png")
+const TEX_STRIKE_VIOLET := preload("res://assets/vfx/lightning_strike_violet.png")
 const SND_BOOM := preload("res://assets/audio/explosion.ogg")
 const SND_ZAP := preload("res://assets/audio/zap.ogg")
 
@@ -61,6 +63,7 @@ var poison_parts := CPUParticles2D.new()
 var poison_pulse_t := 0.0
 var shake_amt := 0.0
 var hurt_fx_t := 0.0
+var slow_timer := 0.0
 var hurt_rect := ColorRect.new()
 var walk_t := 0.0
 var base_sprite_scale := Vector2.ONE
@@ -125,7 +128,9 @@ func _physics_process(delta: float) -> void:
 	if not alive:
 		return
 
-	velocity = Input.get_vector("move_left", "move_right", "move_up", "move_down") * speed
+	slow_timer = maxf(0.0, slow_timer - delta)
+	var spd := speed * (0.55 if slow_timer > 0.0 else 1.0)
+	velocity = Input.get_vector("move_left", "move_right", "move_up", "move_down") * spd
 	move_and_slide()
 
 	if velocity.length_squared() > 0.0:
@@ -373,7 +378,7 @@ func _fire_lightning() -> void:
 	while cur != null and hit.size() < max_hits:
 		hit.append(cur)
 		pts.append(cur.global_position)
-		cur.take_hit(dmg, true, Vector2.ZERO, Color(1.0, 1.0, 0.45))
+		cur.take_hit(dmg, true, Vector2.ZERO, Color(0.85, 0.7, 1.0))
 		var best: Node2D = null
 		var best_d := 170.0 * 170.0
 		for e in get_tree().get_nodes_in_group("enemies"):
@@ -389,16 +394,17 @@ func _fire_lightning() -> void:
 	var jagged := _jagged_points(pts)
 	var glow := Line2D.new()
 	glow.width = 11.0
-	glow.default_color = Color(0.4, 0.7, 1.0, 0.35)
+	glow.default_color = Color(0.65, 0.45, 1.0, 0.35)
 	glow.points = jagged
 	get_parent().add_child(glow)
 	var line := Line2D.new()
 	line.width = 3.0
-	line.default_color = Color(0.85, 0.95, 1.0)
+	line.default_color = Color(0.92, 0.82, 1.0)
 	line.points = jagged
 	get_parent().add_child(line)
-	for i in range(1, pts.size()):
-		_spawn_flash(pts[i])
+	if lightning_level >= 2:
+		for i in range(1, pts.size()):
+			_spawn_strike(pts[i])
 	var tw := line.create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(line, "modulate:a", 0.0, 0.22)
@@ -422,21 +428,20 @@ func _jagged_points(pts: Array) -> PackedVector2Array:
 	return out
 
 
-func _spawn_flash(pos: Vector2) -> void:
+func _spawn_strike(pos: Vector2) -> void:
+	# Sét pixel art đánh từ trên xuống đúng chỗ quái bị trúng
+	# Lv 2 dùng sét thường, lv 3+ dùng sét tím to hơn
 	var f := Sprite2D.new()
-	f.texture = TEX_SPARK
-	var base := 35.0 / TEX_SPARK.get_size().x
-	f.scale = Vector2.ONE * base
-	f.modulate = Color(0.7, 0.9, 1.0, 0.95)
-	f.rotation = randf() * TAU
+	f.texture = TEX_STRIKE_VIOLET if lightning_level >= 3 else TEX_STRIKE
+	f.hframes = 7
+	f.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	f.z_index = 15
 	get_parent().add_child(f)
-	f.global_position = pos
+	# Đẩy hình lên để chân tia sét chạm vào quái
+	f.global_position = pos + Vector2(0, -40.0)
 	var tw := f.create_tween()
-	tw.set_parallel(true)
-	tw.tween_property(f, "scale", Vector2.ONE * base * 2.6, 0.18)
-	tw.tween_property(f, "modulate:a", 0.0, 0.18)
-	tw.chain().tween_callback(f.queue_free)
+	tw.tween_property(f, "frame", 6, 0.32)
+	tw.tween_callback(f.queue_free)
 
 
 func _poison_radius() -> float:
