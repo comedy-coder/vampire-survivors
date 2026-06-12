@@ -12,6 +12,21 @@ const TEX_SWORD := preload("res://assets/vfx/sword.png")
 const SND_BOOM := preload("res://assets/audio/explosion.ogg")
 const SND_ZAP := preload("res://assets/audio/zap.ogg")
 
+const WEAPONS := {
+	"pistol": {"color": Color(1.0, 0.95, 0.6)},
+	"smg": {"color": Color(0.5, 1.0, 1.0), "size": 0.13, "speed": 560.0, "spread": 0.12,
+		"trail": Color(0.5, 1.0, 1.0, 0.45)},
+	"shotgun": {"color": Color(1.0, 0.7, 0.25), "size": 0.13, "speed": 540.0, "life": 0.5,
+		"extra_shots": 4, "scatter": true, "dmg_mul": 0.55, "kb": 220.0},
+	"cannon": {"color": Color(0.85, 0.55, 1.0), "size": 0.3, "speed": 320.0, "aoe": 75.0,
+		"kb": 260.0, "trail": Color(0.85, 0.55, 1.0, 0.35)},
+	"laser": {"color": Color(0.4, 1.0, 0.5), "size": 0.15, "speed": 700.0, "stretch": 3.0,
+		"pierce": 1, "trail": Color(0.4, 1.0, 0.5, 0.4)},
+	"sniper": {"color": Color(1.0, 0.35, 0.3), "size": 0.17, "speed": 780.0, "kb": 320.0,
+		"stretch": 2.0, "trail": Color(1.0, 0.35, 0.3, 0.45)},
+}
+
+var weapon := "pistol"
 var speed := 220.0
 var max_hp := 100.0
 var hp := max_hp
@@ -19,6 +34,11 @@ var fire_rate := 1.5
 var projectile_count := 1
 var projectile_damage := 2.0
 var pierce := 0
+var magnet_range := 80.0
+var regen := 0.0
+var thorns := 0.0
+var crit_chance := 0.0
+var revive := false
 var fire_timer := 0.0
 var alive := true
 var orbital_count := 0
@@ -30,6 +50,12 @@ var lightning_timer := 0.0
 var poison_level := 0
 var poison_ring := Sprite2D.new()
 var shake_amt := 0.0
+var walk_t := 0.0
+var base_sprite_scale := Vector2.ONE
+var orbital_evolved := false
+var grenade_evolved := false
+var lightning_evolved := false
+var poison_evolved := false
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var cam: Camera2D = $Camera2D
@@ -40,6 +66,7 @@ var shake_amt := 0.0
 
 
 func _ready() -> void:
+	base_sprite_scale = sprite.scale
 	add_child(orbit)
 	shoot_sfx.stream = SND_SHOOT
 	shoot_sfx.volume_db = -10.0
@@ -62,6 +89,12 @@ func _physics_process(delta: float) -> void:
 	velocity = Input.get_vector("move_left", "move_right", "move_up", "move_down") * speed
 	move_and_slide()
 
+	if velocity.length_squared() > 0.0:
+		walk_t += delta * 11.0
+		sprite.scale = base_sprite_scale * Vector2(1.0 + 0.07 * sin(walk_t), 1.0 - 0.07 * sin(walk_t))
+	else:
+		sprite.scale = sprite.scale.lerp(base_sprite_scale, 12.0 * delta)
+
 	var aim := _nearest_enemy()
 	if aim != null:
 		sprite.rotation = (aim.global_position - global_position).angle()
@@ -73,7 +106,7 @@ func _physics_process(delta: float) -> void:
 		fire_timer = 1.0 / fire_rate
 		_fire()
 
-	orbit.rotation += 2.8 * delta
+	orbit.rotation += (4.6 if orbital_evolved else 2.8) * delta
 	for blade in orbit.get_children():
 		if blade.is_queued_for_deletion():
 			continue
@@ -90,14 +123,25 @@ func _physics_process(delta: float) -> void:
 	if lightning_level > 0:
 		lightning_timer -= delta
 		if lightning_timer <= 0.0:
-			lightning_timer = 2.5
+			lightning_timer = 1.5 if lightning_evolved else 2.5
 			_fire_lightning()
 
 	if poison_level > 0:
 		var pr := _poison_radius()
+		var pdmg := 3.0 * poison_level * (2.0 if poison_evolved else 1.0) * delta
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if global_position.distance_to(e.global_position) < pr:
-				e.take_hit(3.0 * poison_level * delta)
+				e.take_hit(pdmg)
+				if poison_evolved:
+					e.slow_timer = 0.2
+
+	if regen > 0.0:
+		heal(regen * delta)
+
+	if thorns > 0.0:
+		for e in get_tree().get_nodes_in_group("enemies"):
+			if global_position.distance_to(e.global_position) < 42.0:
+				e.take_hit(thorns * delta)
 
 	if shake_amt > 0.0:
 		cam.offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * shake_amt
@@ -113,23 +157,37 @@ func _fire() -> void:
 	var base_dir := (target.global_position - global_position).normalized()
 	shoot_sfx.pitch_scale = randf_range(0.9, 1.1)
 	shoot_sfx.play()
+	var cfg: Dictionary = WEAPONS[weapon]
+	var wcolor: Color = cfg["color"]
 	var m := Sprite2D.new()
 	m.texture = TEX_MUZZLE
 	m.rotation = base_dir.angle() + PI / 2.0
 	m.scale = Vector2.ONE * (38.0 / TEX_MUZZLE.get_size().x)
-	m.modulate = Color(1.0, 0.9, 0.5, 0.9)
+	m.modulate = Color(wcolor.r, wcolor.g, wcolor.b, 0.9)
 	m.z_index = 5
 	get_parent().add_child(m)
 	m.global_position = global_position + base_dir * 30.0
 	var mtw := m.create_tween()
 	mtw.tween_property(m, "modulate:a", 0.0, 0.09)
 	mtw.tween_callback(m.queue_free)
-	for i in projectile_count:
+	var shots: int = projectile_count + int(cfg.get("extra_shots", 0))
+	for i in shots:
+		var d := base_dir.rotated((i - (shots - 1) / 2.0) * float(cfg.get("spread", 0.18)))
+		if cfg.get("scatter", false):
+			d = base_dir.rotated(randf_range(-0.28, 0.28))
 		var p := Area2D.new()
 		p.set_script(PROJECTILE)
-		p.dir = base_dir.rotated((i - (projectile_count - 1) / 2.0) * 0.18)
-		p.damage = projectile_damage
-		p.pierce = pierce
+		p.dir = d
+		p.damage = projectile_damage * float(cfg.get("dmg_mul", 1.0)) * (2.0 if randf() < crit_chance else 1.0)
+		p.pierce = pierce + int(cfg.get("pierce", 0))
+		p.speed = float(cfg.get("speed", 420.0)) * randf_range(0.95, 1.05)
+		p.color = wcolor
+		p.size = float(cfg.get("size", 0.18))
+		p.kb = float(cfg.get("kb", 150.0))
+		p.aoe = float(cfg.get("aoe", 0.0))
+		p.stretch = float(cfg.get("stretch", 1.0))
+		p.trail_color = cfg.get("trail", Color(0, 0, 0, 0))
+		p.life = float(cfg.get("life", 2.0))
 		get_parent().add_child(p)
 		p.global_position = global_position
 
@@ -180,19 +238,36 @@ func _explode_grenade(spr: Sprite2D, pos: Vector2) -> void:
 	var dmg := 8.0 + 4.0 * (grenade_level - 1)
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if pos.distance_to(e.global_position) < radius:
-			e.take_hit(dmg, true)
+			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 200.0)
 	boom_sfx.pitch_scale = randf_range(0.9, 1.1)
 	boom_sfx.play()
 	shake_amt = maxf(shake_amt, 7.0)
 	get_parent().spawn_explosion(pos, radius * 2.0)
 	spr.queue_free()
+	if grenade_evolved:
+		for k in 3:
+			var off := pos + Vector2.from_angle(randf() * TAU) * randf_range(40.0, 80.0)
+			var tw := create_tween()
+			tw.tween_interval(0.15 + 0.12 * k)
+			tw.tween_callback(_mini_blast.bind(off, dmg * 0.5))
+
+
+func _mini_blast(pos: Vector2, dmg: float) -> void:
+	var radius := 60.0
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if pos.distance_to(e.global_position) < radius:
+			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 140.0)
+	boom_sfx.pitch_scale = randf_range(1.1, 1.3)
+	boom_sfx.play()
+	shake_amt = maxf(shake_amt, 4.0)
+	get_parent().spawn_explosion(pos, radius * 2.0, 0.4)
 
 
 func _fire_lightning() -> void:
 	var cur := _nearest_enemy()
 	if cur == null or global_position.distance_to(cur.global_position) > 450.0:
 		return
-	var max_hits := 2 + lightning_level
+	var max_hits := 2 + lightning_level + (3 if lightning_evolved else 0)
 	var dmg := 4.0 + 2.0 * lightning_level
 	var hit: Array = []
 	var pts: Array = [global_position]
@@ -266,13 +341,15 @@ func _spawn_flash(pos: Vector2) -> void:
 
 
 func _poison_radius() -> float:
-	return 100.0 + 15.0 * poison_level
+	return (100.0 + 15.0 * poison_level) * (1.5 if poison_evolved else 1.0)
 
 
 func update_poison_ring() -> void:
 	poison_ring.visible = poison_level > 0
 	var diameter := _poison_radius() * 2.0
 	poison_ring.scale = Vector2.ONE * (diameter / TEX_GLOW.get_size().x)
+	if poison_evolved:
+		poison_ring.modulate = Color(0.2, 1.0, 0.25, 0.55)
 
 
 func take_damage(amount: float) -> void:
@@ -280,6 +357,16 @@ func take_damage(amount: float) -> void:
 		return
 	hp -= amount
 	if hp <= 0.0:
+		if revive:
+			revive = false
+			hp = max_hp * 0.5
+			for e in get_tree().get_nodes_in_group("enemies"):
+				var away: Vector2 = e.global_position - global_position
+				if away.length() < 320.0:
+					e.take_hit(15.0, true, away.normalized() * 500.0)
+			get_parent().spawn_explosion(global_position, 400.0, 0.5)
+			shake_amt = 12.0
+			return
 		hp = 0.0
 		alive = false
 		hide()
@@ -292,22 +379,35 @@ func heal(amount: float) -> void:
 
 func add_orbital() -> void:
 	orbital_count += 1
+	_rebuild_orbitals()
+
+
+func evolve_orbitals() -> void:
+	orbital_evolved = true
+	orbital_dps *= 2.2
+	_rebuild_orbitals()
+
+
+func _rebuild_orbitals() -> void:
 	for c in orbit.get_children():
 		c.queue_free()
+	var blade_size := 52.0 if orbital_evolved else 36.0
+	var blade_radius := 72.0 if orbital_evolved else 58.0
+	var blade_color := Color(1.0, 0.85, 0.35) if orbital_evolved else Color(0.85, 0.9, 1.0)
 	for i in orbital_count:
 		var ang := TAU * i / orbital_count
 		var b := Area2D.new()
 		var cs := CollisionShape2D.new()
 		var c := CircleShape2D.new()
-		c.radius = 14.0
+		c.radius = 18.0 if orbital_evolved else 14.0
 		cs.shape = c
 		b.add_child(cs)
 		var s := Sprite2D.new()
 		s.texture = TEX_SWORD
-		s.modulate = Color(0.85, 0.9, 1.0)
-		s.scale = Vector2.ONE * (36.0 / TEX_SWORD.get_size().x)
+		s.modulate = blade_color
+		s.scale = Vector2.ONE * (blade_size / TEX_SWORD.get_size().x)
 		# Icon kiếm gốc chĩa lên góc 45°, xoay thêm để mũi kiếm hướng ra ngoài
 		s.rotation = ang + PI / 4.0
 		b.add_child(s)
-		b.position = Vector2.from_angle(ang) * 58.0
+		b.position = Vector2.from_angle(ang) * blade_radius
 		orbit.add_child(b)

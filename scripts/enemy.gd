@@ -30,6 +30,10 @@ var skill_timer := 3.0
 var state_timer := 0.0
 var dash_dir := Vector2.ZERO
 var sprite: Sprite2D
+var kb_vel := Vector2.ZERO
+var flash_timer := 0.0
+var slow_timer := 0.0
+var walk_t := randf() * TAU
 
 
 func _ready() -> void:
@@ -49,6 +53,15 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if player == null or not is_instance_valid(player):
 		return
+	slow_timer = maxf(0.0, slow_timer - delta)
+	if kb_vel != Vector2.ZERO:
+		global_position += kb_vel * delta
+		kb_vel = kb_vel.move_toward(Vector2.ZERO, 900.0 * delta)
+	if flash_timer > 0.0:
+		flash_timer -= delta
+		sprite.modulate = tint.lerp(Color(2.0, 2.0, 2.0), flash_timer / 0.07)
+		if flash_timer <= 0.0:
+			sprite.modulate = tint
 	var to_player := player.global_position - global_position
 	match state:
 		State.CHASE:
@@ -57,24 +70,45 @@ func _physics_process(delta: float) -> void:
 			_telegraph(delta)
 		State.DASH:
 			_dash(delta, to_player)
+	if state != State.DASH:
+		_separate(delta)
+
+
+func _separate(delta: float) -> void:
+	var radius := 27.0 * (sprite_scale / 0.75)
+	for a in get_overlapping_areas():
+		if not a.is_in_group("enemies"):
+			continue
+		var away := global_position - a.global_position
+		var d := away.length()
+		if d < 0.5:
+			away = Vector2.from_angle(randf() * TAU)
+			d = 0.5
+		if d < radius:
+			global_position += away / d * (radius - d) * 7.0 * delta
 
 
 func _chase(delta: float, to_player: Vector2) -> void:
 	rotation = to_player.angle()
 	var dist := to_player.length()
+	var spd := speed * (0.6 if slow_timer > 0.0 else 1.0)
+
+	walk_t += delta * spd * 0.12
+	sprite.rotation = 0.14 * sin(walk_t)
+	sprite.scale = Vector2.ONE * sprite_scale * (1.0 + 0.05 * sin(walk_t * 2.0))
 
 	if kind == Kind.RANGER:
 		# Giữ khoảng cách: xa thì tiến lại, gần quá thì lùi ra
 		if dist > shoot_range:
-			global_position += to_player.normalized() * speed * delta
+			global_position += to_player.normalized() * spd * delta
 		elif dist < shoot_range * 0.5:
-			global_position -= to_player.normalized() * speed * 0.6 * delta
+			global_position -= to_player.normalized() * spd * 0.6 * delta
 		shoot_timer -= delta
 		if shoot_timer <= 0.0 and dist <= shoot_range + 40.0:
 			shoot_timer = shoot_interval
 			_spawn_bullet(to_player.normalized())
 	else:
-		global_position += to_player.normalized() * speed * delta
+		global_position += to_player.normalized() * spd * delta
 
 	if dist < 24.0 * (sprite_scale / 0.75):
 		player.take_damage(dps * delta)
@@ -136,10 +170,14 @@ func _spawn_bullet(d: Vector2, spd := 240.0) -> void:
 	b.global_position = global_position + d * 20.0
 
 
-func take_hit(damage: float, show_dmg := false) -> void:
+func take_hit(damage: float, show_dmg := false, kb := Vector2.ZERO) -> void:
 	if hp <= 0.0:
 		return
 	hp -= damage
+	if show_dmg:
+		flash_timer = 0.07
+	if kb != Vector2.ZERO:
+		kb_vel = kb * (0.25 if kind == Kind.BOSS else 1.0)
 	if show_dmg:
 		_spawn_dmg_text(damage)
 	if hp <= 0.0:
