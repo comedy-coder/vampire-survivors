@@ -14,6 +14,8 @@ var aoe := 0.0
 var stretch := 1.0
 var trail_color := Color(0, 0, 0, 0)
 var trail_t := 0.0
+var slow := 0.0
+var crit := false
 
 
 func _ready() -> void:
@@ -59,6 +61,27 @@ func _spawn_trail() -> void:
 	tw.chain().tween_callback(t.queue_free)
 
 
+func _spawn_shards() -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	for i in 6:
+		var sh := Sprite2D.new()
+		sh.texture = CIRCLE
+		sh.modulate = Color(0.75, 0.92, 1.0, 0.9)
+		sh.scale = Vector2(0.07, 0.035)
+		var ang := randf() * TAU
+		sh.rotation = ang
+		parent.add_child(sh)
+		sh.global_position = global_position
+		var dest := global_position + Vector2.from_angle(ang) * randf_range(18.0, 42.0)
+		var tw := sh.create_tween()
+		tw.set_parallel(true)
+		tw.tween_property(sh, "global_position", dest, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(sh, "modulate:a", 0.0, 0.28)
+		tw.chain().tween_callback(sh.queue_free)
+
+
 func _on_area_entered(area: Area2D) -> void:
 	if not area.has_method("take_hit"):
 		return
@@ -66,12 +89,19 @@ func _on_area_entered(area: Area2D) -> void:
 		var parent := get_parent()
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if global_position.distance_to(e.global_position) < aoe:
-				e.take_hit(damage, true, (e.global_position - global_position).normalized() * kb)
+				e.take_hit(damage, true, (e.global_position - global_position).normalized() * kb, color, crit)
+				if slow > 0.0:
+					e.slow_timer = slow
+		if slow > 0.0:
+			_spawn_shards()
 		if parent != null and parent.has_method("spawn_explosion"):
 			parent.spawn_explosion(global_position, aoe * 2.0, 0.4)
 		queue_free()
 		return
-	area.take_hit(damage, true, dir * kb)
+	area.take_hit(damage, true, dir * kb, color, crit)
+	if slow > 0.0 and "slow_timer" in area:
+		area.slow_timer = slow
+		_spawn_shards()
 	pierce -= 1
 	if pierce < 0:
 		queue_free()

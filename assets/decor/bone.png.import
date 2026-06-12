@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://o825eokl3o4j"
-path="res://.godot/imported/bush_orange.png-cb5131d16c83575028bf6fa4514e475d.ctex"
+uid="uid://c2r4sefxxnrat"
+path="res://.godot/imported/bone.png-4504d3aaaf12bb3ffce7e511154bc38c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/decor/bush_orange.png"
-dest_files=["res://.godot/imported/bush_orange.png-cb5131d16c83575028bf6fa4514e475d.ctex"]
+source_file="res://assets/decor/bone.png"
+dest_files=["res://.godot/imported/bone.png-4504d3aaaf12bb3ffce7e511154bc38c.ctex"]
 
 [params]
 

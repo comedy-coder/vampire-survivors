@@ -7,46 +7,81 @@ const TEX_ZOMBIE := preload("res://assets/characters/zombie.png")
 const TEX_HITMAN := preload("res://assets/characters/hitman.png")
 const TEX_ROBOT := preload("res://assets/characters/robot.png")
 const TEX_GRASS := preload("res://assets/tiles/grass_01.png")
-const MUSIC := preload("res://assets/audio/music.mp3")
+const MUSIC_MENU := preload("res://assets/audio/music_menu.wav")
+const MUSIC_GAME := preload("res://assets/audio/music_game.wav")
 const SND_DIE := preload("res://assets/audio/enemy_die.ogg")
 const CIRCLE := preload("res://assets/circle.svg")
 const TEX_EXPLOSION := preload("res://assets/vfx/explosion_sheet.png")
 const TEX_CHEST := preload("res://assets/decor/chest.png")
 
+const I18N := {
+	"levelup_title": ["LEVEL UP! Chọn nâng cấp", "LEVEL UP! Choose an upgrade"],
+	"char_title": ["CHỌN NHÂN VẬT", "CHOOSE YOUR CHARACTER"],
+	"sound_title": ["ÂM THANH", "SOUND"],
+	"music": ["Nhạc nền", "Music"],
+	"sfx": ["Tiếng súng", "Sound FX"],
+	"close": ["Đóng", "Close"],
+	"chest_title": ["RƯƠNG BÁU VẬT!", "TREASURE CHEST!"],
+	"chest_take": ["Nhận!", "Take!"],
+	"pause_title": ["TẠM DỪNG", "PAUSED"],
+	"resume": ["Tiếp tục", "Resume"],
+	"reselect": ["Chọn lại nhân vật", "Change character"],
+	"lang_label": ["Ngôn ngữ:", "Language:"],
+	"boss_announce": ["BOSS XUẤT HIỆN!", "BOSS INCOMING!"],
+	"ev_ring": ["BẦY QUÁI VÂY QUANH!", "SURROUNDED!"],
+	"ev_flood": ["QUÁI TRÀN TỚI!", "MONSTER FLOOD!"],
+	"ev_frenzy": ["PHÚT CUỒNG NỘ!", "FRENZY!"],
+	"hp_fmt": ["HP: %d / %d", "HP: %d / %d"],
+	"level_fmt": ["Level %d  (XP %d/%d)", "Level %d  (XP %d/%d)"],
+	"kills_fmt": ["Kills: %d", "Kills: %d"],
+	"char_stats": ["HP %d • Tốc %d • DMG %.1f", "HP %d • SPD %d • DMG %.1f"],
+	"gameover_fmt": ["GAME OVER\nSống sót: %02d:%02d — %d kills\nNhấn R để chơi lại",
+		"GAME OVER\nSurvived: %02d:%02d — %d kills\nPress R to restart"],
+	"weapon_lv": ["%s (Cấp %d → %d)", "%s (Lv %d → %d)"],
+	"artifact_fmt": ["CỔ VẬT: %s\n%s", "ARTIFACT: %s\n%s"],
+	"stage_fmt": ["VÙNG MỚI: %s", "NEW AREA: %s"],
+}
+
 const CHARACTERS := [
 	{
 		"tex": preload("res://assets/characters/player_blue.png"),
-		"name": "Dân thường", "desc": "Súng lục — cân bằng mọi mặt",
+		"name": ["Dân thường", "Commoner"],
+		"desc": ["Súng lục — cân bằng mọi mặt", "Pistol — balanced all around"],
 		"hp": 100.0, "speed": 220.0, "fire": 1.5, "dmg": 2.0, "count": 1, "pierce": 0,
 		"weapon": "pistol",
 	},
 	{
 		"tex": preload("res://assets/characters/player_woman.png"),
-		"name": "Nữ chiến binh", "desc": "Tiểu liên — bắn cực nhanh, máu giấy",
+		"name": ["Nữ chiến binh", "Warrior Woman"],
+		"desc": ["Tiểu liên — bắn cực nhanh, máu giấy", "SMG — blazing fire rate, fragile"],
 		"hp": 75.0, "speed": 285.0, "fire": 3.0, "dmg": 1.0, "count": 1, "pierce": 0,
 		"weapon": "smg",
 	},
 	{
 		"tex": preload("res://assets/characters/player_soldier.png"),
-		"name": "Lính đặc nhiệm", "desc": "Shotgun — tỏa 5 viên cận chiến",
+		"name": ["Lính đặc nhiệm", "Commando"],
+		"desc": ["Shotgun — tỏa 5 viên cận chiến", "Shotgun — 5-pellet close-range spread"],
 		"hp": 100.0, "speed": 200.0, "fire": 1.1, "dmg": 1.6, "count": 1, "pierce": 0,
 		"weapon": "shotgun",
 	},
 	{
 		"tex": preload("res://assets/characters/player_old.png"),
-		"name": "Ông già gân", "desc": "Pháo — đạn nổ diện rộng, chậm chạp",
+		"name": ["Ông già gân", "Tough Grandpa"],
+		"desc": ["Pháo — đạn nổ diện rộng, chậm chạp", "Cannon — explosive AoE shells, slow"],
 		"hp": 160.0, "speed": 170.0, "fire": 0.8, "dmg": 5.0, "count": 1, "pierce": 0,
 		"weapon": "cannon",
 	},
 	{
 		"tex": preload("res://assets/characters/player_survivor.png"),
-		"name": "Người sống sót", "desc": "Laser — đạn xuyên thấu nhiều mục tiêu",
+		"name": ["Người sống sót", "Survivor"],
+		"desc": ["Laser — đạn xuyên thấu nhiều mục tiêu", "Laser — piercing beam shots"],
 		"hp": 90.0, "speed": 230.0, "fire": 1.4, "dmg": 2.0, "count": 1, "pierce": 2,
 		"weapon": "laser",
 	},
 	{
 		"tex": preload("res://assets/characters/player_brown.png"),
-		"name": "Thợ săn", "desc": "Bắn tỉa — sát thương cực lớn, đạn cực nhanh",
+		"name": ["Thợ săn", "Hunter"],
+		"desc": ["Bắn tỉa — sát thương cực lớn, đạn cực nhanh", "Sniper — huge damage, ultra-fast bullets"],
 		"hp": 85.0, "speed": 225.0, "fire": 0.9, "dmg": 4.0, "count": 1, "pierce": 0,
 		"weapon": "sniper",
 	},
@@ -55,42 +90,83 @@ const CHARACTERS := [
 const BOSS_INTERVAL := 45.0
 
 const DECOR := [
-	preload("res://assets/decor/grass_tuft.png"),
-	preload("res://assets/decor/grass_tuft.png"),
-	preload("res://assets/decor/grass_tuft.png"),
-	preload("res://assets/decor/plant.png"),
-	preload("res://assets/decor/plant.png"),
-	preload("res://assets/decor/bush_green.png"),
-	preload("res://assets/decor/bush_small.png"),
-	preload("res://assets/decor/bush_orange.png"),
-	preload("res://assets/decor/rock_1.png"),
-	preload("res://assets/decor/rock_2.png"),
+	{"tex": preload("res://assets/decor/grass_tuft.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/grass_tuft.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/grass_tuft.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/plant.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/plant.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/bush_green.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/bush_small.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/rock_1.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/rock_2.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/tree.png"), "s": [1.5, 2.1]},
+]
+const DECOR_DESERT := [
+	{"tex": preload("res://assets/decor/rock_1.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/rock_2.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/grass_tuft.png"), "s": [0.5, 0.8]},
+	{"tex": preload("res://assets/decor/bone.png"), "s": [0.8, 1.3]},
+	{"tex": preload("res://assets/decor/bone.png"), "s": [0.8, 1.3]},
+	{"tex": preload("res://assets/decor/bone.png"), "s": [0.8, 1.3]},
+]
+const DECOR_DARK := [
+	{"tex": preload("res://assets/decor/rock_1.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/rock_2.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/rock_2.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/bush_small.png"), "s": [0.6, 1.0]},
+	{"tex": preload("res://assets/decor/bone.png"), "s": [0.8, 1.3]},
+	{"tex": preload("res://assets/decor/bone.png"), "s": [0.8, 1.3]},
+	{"tex": preload("res://assets/decor/tree.png"), "s": [1.4, 1.9]},
 ]
 const DECOR_CELL := 220.0
+
+const STAGE_LEN := 120.0
+const STAGES := [
+	{
+		"name": ["Đồng cỏ", "Meadow"],
+		"tile": preload("res://assets/tiles/grass_01.png"),
+		"decor": DECOR,
+		"decor_mod": Color.WHITE,
+	},
+	{
+		"name": ["Sa mạc", "Desert"],
+		"tile": preload("res://assets/tiles/sand_01.png"),
+		"decor": DECOR_DESERT,
+		"decor_mod": Color(1.0, 0.9, 0.7),
+	},
+	{
+		"name": ["Vùng đất chết", "Dead Zone"],
+		"tile": preload("res://assets/tiles/dark_01.png"),
+		"decor": DECOR_DARK,
+		"decor_mod": Color(0.65, 0.6, 0.75),
+	},
+]
 
 const WEAPON_MAX := 4
 
 const STAT_UPGRADES := [
-	{"label": "+0.6 Sát thương đạn", "fn": "_up_damage", "icon": preload("res://assets/icons/up_damage.svg")},
-	{"label": "+0.5 Tốc độ bắn", "fn": "_up_fire_rate", "icon": preload("res://assets/icons/up_fire_rate.svg")},
-	{"label": "+1 Đạn mỗi phát", "fn": "_up_projectile", "icon": preload("res://assets/icons/up_projectile.svg")},
-	{"label": "Đạn xuyên +1 mục tiêu", "fn": "_up_pierce", "icon": preload("res://assets/icons/up_pierce.svg")},
-	{"label": "+25 Tốc độ chạy", "fn": "_up_speed", "icon": preload("res://assets/icons/up_speed.svg")},
-	{"label": "+25 Máu tối đa (hồi đầy)", "fn": "_up_max_hp", "icon": preload("res://assets/icons/up_hp.svg")},
+	{"label": ["+0.6 Sát thương đạn", "+0.6 Bullet damage"], "fn": "_up_damage", "icon": preload("res://assets/icons/up_damage.svg")},
+	{"label": ["+0.5 Tốc độ bắn", "+0.5 Fire rate"], "fn": "_up_fire_rate", "icon": preload("res://assets/icons/up_fire_rate.svg")},
+	{"label": ["+1 Đạn mỗi phát", "+1 Projectile per shot"], "fn": "_up_projectile", "icon": preload("res://assets/icons/up_projectile.svg")},
+	{"label": ["Đạn xuyên +1 mục tiêu", "Bullets pierce +1 enemy"], "fn": "_up_pierce", "icon": preload("res://assets/icons/up_pierce.svg")},
+	{"label": ["+25 Tốc độ chạy", "+25 Move speed"], "fn": "_up_speed", "icon": preload("res://assets/icons/up_speed.svg")},
+	{"label": ["+25 Máu tối đa (hồi đầy)", "+25 Max HP (full heal)"], "fn": "_up_max_hp", "icon": preload("res://assets/icons/up_hp.svg")},
 ]
 
 const ICON_ORBITAL := preload("res://assets/icons/w_orbital.svg")
 const ICON_GRENADE := preload("res://assets/icons/w_grenade.svg")
 const ICON_LIGHTNING := preload("res://assets/icons/w_lightning.svg")
 const ICON_POISON := preload("res://assets/icons/w_poison.svg")
+const ICON_BOOMERANG := preload("res://assets/icons/w_boomerang.svg")
+const ICON_FROST := preload("res://assets/icons/w_frost.svg")
 
 const ARTIFACTS := [
-	{"name": "Nam châm cổ", "desc": "Hút gem từ xa gấp 3 lần", "fn": "_art_magnet", "icon": preload("res://assets/icons/art_magnet.svg")},
-	{"name": "Tim phượng hoàng", "desc": "Hồi sinh 1 lần với nửa máu, nổ đẩy lùi quái", "fn": "_art_phoenix", "icon": preload("res://assets/icons/art_phoenix.svg")},
-	{"name": "Giáp gai", "desc": "Quái chạm vào người sẽ bị thương", "fn": "_art_thorns", "icon": preload("res://assets/icons/art_thorns.svg")},
-	{"name": "Bùa tái sinh", "desc": "Hồi 2 máu mỗi giây", "fn": "_art_regen", "icon": preload("res://assets/icons/art_regen.svg")},
-	{"name": "Kính ngắm cổ", "desc": "20% đạn chí mạng, sát thương x2", "fn": "_art_crit", "icon": preload("res://assets/icons/art_crit.svg")},
-	{"name": "Ngọc kinh nghiệm", "desc": "Mỗi gem cho gấp đôi XP", "fn": "_art_xp", "icon": preload("res://assets/icons/art_xp.svg")},
+	{"name": ["Nam châm cổ", "Ancient Magnet"], "desc": ["Hút gem từ xa gấp 3 lần", "Triple gem pickup range"], "fn": "_art_magnet", "icon": preload("res://assets/icons/art_magnet.svg")},
+	{"name": ["Tim phượng hoàng", "Phoenix Heart"], "desc": ["Hồi sinh 1 lần với nửa máu, nổ đẩy lùi quái", "Revive once at half HP with a knockback blast"], "fn": "_art_phoenix", "icon": preload("res://assets/icons/art_phoenix.svg")},
+	{"name": ["Giáp gai", "Thorn Armor"], "desc": ["Quái chạm vào người sẽ bị thương", "Enemies touching you take damage"], "fn": "_art_thorns", "icon": preload("res://assets/icons/art_thorns.svg")},
+	{"name": ["Bùa tái sinh", "Regen Charm"], "desc": ["Hồi 2 máu mỗi giây", "Heal 2 HP per second"], "fn": "_art_regen", "icon": preload("res://assets/icons/art_regen.svg")},
+	{"name": ["Kính ngắm cổ", "Ancient Scope"], "desc": ["20% đạn chí mạng, sát thương x2", "20% crit chance for x2 damage"], "fn": "_art_crit", "icon": preload("res://assets/icons/art_crit.svg")},
+	{"name": ["Ngọc kinh nghiệm", "XP Gem"], "desc": ["Mỗi gem cho gấp đôi XP", "Gems give double XP"], "fn": "_art_xp", "icon": preload("res://assets/icons/art_xp.svg")},
 ]
 
 var time := 0.0
@@ -105,6 +181,7 @@ var game_over := false
 var choosing := false
 var pending: Array = []
 var decor_cells := {}
+var stage := 0
 var event_timer := 75.0
 var frenzy_timer := 0.0
 var bosses: Array = []
@@ -115,6 +192,14 @@ var chest_text: Label
 var pause_panel: PanelContainer
 var owned_artifacts: Array = []
 var xp_gain := 1
+var lang := 0  # 0 = Tiếng Việt, 1 = English
+var chest_title: Label
+var chest_btn: Button
+var pause_title: Label
+var pause_resume: Button
+var pause_reset: Button
+var lang_label: Label
+var lang_btns: Array = []
 
 var ground := Sprite2D.new()
 var music := AudioStreamPlayer.new()
@@ -138,8 +223,10 @@ var die_sfx := AudioStreamPlayer.new()
 
 func _ready() -> void:
 	randomize()
-	music.stream = MUSIC
-	music.stream.loop = true
+	for st: AudioStreamWAV in [MUSIC_MENU, MUSIC_GAME]:
+		st.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		st.loop_end = st.data.size() / 4
+	music.stream = MUSIC_MENU
 	music.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(music)
 	music.play()
@@ -171,11 +258,76 @@ func _ready() -> void:
 	for i in 3:
 		level_panel.get_node("VBox/HBox/Btn%d" % (i + 1)).pressed.connect(_choose.bind(i))
 	for i in 6:
+		char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1)).pressed.connect(_pick_char.bind(i))
+	_load_lang()
+	_build_lang_row()
+	_apply_lang()
+	get_tree().paused = true
+
+
+func T(key: String) -> String:
+	return I18N[key][lang]
+
+
+func _load_lang() -> void:
+	var cf := ConfigFile.new()
+	if cf.load("user://settings.cfg") == OK:
+		lang = int(cf.get_value("ui", "lang", 0))
+
+
+func _save_lang() -> void:
+	var cf := ConfigFile.new()
+	cf.set_value("ui", "lang", lang)
+	cf.save("user://settings.cfg")
+
+
+func _build_lang_row() -> void:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12)
+	lang_label = Label.new()
+	lang_label.add_theme_font_size_override("font_size", 20)
+	lang_label.add_theme_color_override("font_color", Color(0.15, 0.17, 0.25))
+	row.add_child(lang_label)
+	for i in 2:
+		var b := Button.new()
+		b.text = ["Tiếng Việt", "English"][i]
+		b.add_theme_font_size_override("font_size", 20)
+		b.toggle_mode = true
+		b.pressed.connect(_set_lang.bind(i))
+		row.add_child(b)
+		lang_btns.append(b)
+	var vbox := char_panel.get_node("VBox")
+	vbox.add_child(row)
+	vbox.move_child(row, 1)
+
+
+func _set_lang(l: int) -> void:
+	lang = l
+	_save_lang()
+	_apply_lang()
+
+
+func _apply_lang() -> void:
+	level_panel.get_node("VBox/Title").text = T("levelup_title")
+	char_panel.get_node("VBox/Title").text = T("char_title")
+	settings_panel.get_node("VBox/Title").text = T("sound_title")
+	settings_panel.get_node("VBox/MusicRow/Label").text = T("music")
+	settings_panel.get_node("VBox/SfxRow/Label").text = T("sfx")
+	settings_panel.get_node("VBox/CloseBtn").text = T("close")
+	chest_title.text = T("chest_title")
+	chest_btn.text = T("chest_take")
+	pause_title.text = T("pause_title")
+	pause_resume.text = T("resume")
+	pause_reset.text = T("reselect")
+	lang_label.text = T("lang_label")
+	for i in lang_btns.size():
+		lang_btns[i].button_pressed = (i == lang)
+	for i in 6:
 		var btn: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
 		var c: Dictionary = CHARACTERS[i]
-		btn.text = "%s\n%s\nHP %d • Tốc %d • DMG %.1f" % [c["name"], c["desc"], int(c["hp"]), int(c["speed"]), c["dmg"]]
-		btn.pressed.connect(_pick_char.bind(i))
-	get_tree().paused = true
+		btn.text = "%s\n%s\n%s" % [c["name"][lang], c["desc"][lang],
+			T("char_stats") % [int(c["hp"]), int(c["speed"]), c["dmg"]]]
 
 
 func _toggle_settings() -> void:
@@ -183,7 +335,9 @@ func _toggle_settings() -> void:
 
 
 func _set_music_vol(v: float) -> void:
-	music.volume_db = linear_to_db(v) if v > 0.0 else -80.0
+	# Nhạc menu phát nhỏ hơn nhạc trong trận
+	var extra := -8.0 if music.stream == MUSIC_MENU else 0.0
+	music.volume_db = (linear_to_db(v) + extra) if v > 0.0 else -80.0
 
 
 func _set_sfx_vol(v: float) -> void:
@@ -207,7 +361,9 @@ func _pick_char(i: int) -> void:
 	player.weapon = c["weapon"]
 	char_panel.visible = false
 	get_tree().paused = false
-	music.stop()
+	music.stream = MUSIC_GAME
+	_set_music_vol(music_slider.value)
+	music.play()
 
 
 func _process(delta: float) -> void:
@@ -220,6 +376,7 @@ func _process(delta: float) -> void:
 	_update_decor()
 
 	time += delta
+	_update_stage()
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
 		spawn_timer = maxf(0.25, 1.2 - time * 0.012)
@@ -247,12 +404,39 @@ func _process(delta: float) -> void:
 
 	hp_bar.max_value = player.max_hp
 	hp_bar.value = player.hp
-	hp_label.text = "HP: %d / %d" % [int(player.hp), int(player.max_hp)]
+	hp_label.text = T("hp_fmt") % [int(player.hp), int(player.max_hp)]
 	time_label.text = "%02d:%02d" % [int(time) / 60, int(time) % 60]
 	xp_bar.max_value = xp_needed
 	xp_bar.value = xp
-	level_label.text = "Level %d  (XP %d/%d)" % [level, xp, xp_needed]
-	kills_label.text = "Kills: %d" % kills
+	level_label.text = T("level_fmt") % [level, xp, xp_needed]
+	kills_label.text = T("kills_fmt") % kills
+
+
+func _update_stage() -> void:
+	var s := mini(int(time / STAGE_LEN), STAGES.size() - 1)
+	if s == stage:
+		return
+	stage = s
+	var cfg: Dictionary = STAGES[s]
+	ground.texture = cfg["tile"]
+	for cell in decor_cells.keys():
+		decor_cells[cell].queue_free()
+	decor_cells.clear()
+	_update_decor()
+	_announce(T("stage_fmt") % cfg["name"][lang], Color(0.55, 1.0, 0.75))
+
+
+func _apply_stage(e: Area2D) -> void:
+	match stage:
+		1:
+			e.hp *= 1.3
+			e.speed *= 1.1
+			e.tint = e.tint * Color(1.0, 0.82, 0.55)
+		2:
+			e.hp *= 1.7
+			e.speed *= 1.2
+			e.tint = e.tint * Color(0.72, 0.62, 1.0)
+			e.gems += 1
 
 
 func _update_decor() -> void:
@@ -273,13 +457,18 @@ func _spawn_decor_cell(cell: Vector2i) -> Node2D:
 	rng.seed = hash(cell)
 	var holder := Node2D.new()
 	holder.z_index = -8
+	holder.modulate = STAGES[stage]["decor_mod"]
 	add_child(holder)
+	var decor: Array = STAGES[stage]["decor"]
 	for i in rng.randi_range(1, 3):
+		var d: Dictionary = decor[rng.randi_range(0, decor.size() - 1)]
 		var s := Sprite2D.new()
-		s.texture = DECOR[rng.randi_range(0, DECOR.size() - 1)]
+		s.texture = d["tex"]
 		s.position = Vector2(cell) * DECOR_CELL + Vector2(rng.randf_range(20.0, DECOR_CELL - 20.0), rng.randf_range(20.0, DECOR_CELL - 20.0))
 		s.rotation = rng.randf_range(-0.4, 0.4)
-		s.scale = Vector2.ONE * rng.randf_range(0.6, 1.0)
+		s.scale = Vector2.ONE * rng.randf_range(d["s"][0], d["s"][1])
+		if d.get("flat", false):
+			s.z_index = -1
 		holder.add_child(s)
 	return holder
 
@@ -319,6 +508,7 @@ func _spawn_enemy() -> void:
 	else:
 		e.hp = 3.0 + time * 0.06
 		e.speed = minf(60.0 + time * 0.6, 150.0)
+	_apply_stage(e)
 	add_child(e)
 	e.global_position = player.global_position + Vector2.from_angle(randf() * TAU) * 550.0
 	if frenzy_timer > 0.0:
@@ -348,11 +538,12 @@ func _spawn_boss() -> void:
 		e.bullet_damage = 10.0
 		e.skills = ["burst", "burst", "summon"]
 		e.skill_interval = 5.0
+	_apply_stage(e)
 	add_child(e)
 	e.global_position = player.global_position + Vector2.from_angle(randf() * TAU) * 600.0
 	bosses.append(e)
 	e.died.connect(func(pos: Vector2, _g: int) -> void: _spawn_chest(pos))
-	_announce("BOSS XUẤT HIỆN!", Color(1.0, 0.2, 0.2))
+	_announce(T("boss_announce"), Color(1.0, 0.2, 0.2))
 
 
 func _on_boss_summon(pos: Vector2) -> void:
@@ -364,6 +555,7 @@ func _on_boss_summon(pos: Vector2) -> void:
 		e.hp = (3.0 + time * 0.06) * 0.7
 		e.speed = minf(75.0 + time * 0.6, 165.0)
 		e.gems = 1
+		_apply_stage(e)
 		add_child(e)
 		e.global_position = pos + Vector2.from_angle(TAU * i / 4.0 + randf() * 0.5) * 60.0
 
@@ -444,19 +636,37 @@ func _choose(i: int) -> void:
 
 
 func _build_pool() -> Array:
-	var pool := STAT_UPGRADES.duplicate()
+	var pool := []
+	for s in STAT_UPGRADES:
+		pool.append({"label": s["label"][lang], "fn": s["fn"], "icon": s["icon"]})
 	_add_weapon(pool, player.orbital_count, player.orbital_evolved,
-		"Kiếm xoay", "_up_orbital", "TIẾN HÓA ⚔ Kiếm thánh: to hơn, xoay nhanh, sát thương x2.2", "_evo_orbital", ICON_ORBITAL)
+		["Kiếm xoay", "Spinning swords"], "_up_orbital",
+		["TIẾN HÓA ⚔ Kiếm thánh: to hơn, xoay nhanh, sát thương x2.2",
+			"EVOLVE ⚔ Holy blades: bigger, faster, x2.2 damage"], "_evo_orbital", ICON_ORBITAL)
 	_add_weapon(pool, player.grenade_level, player.grenade_evolved,
-		"Lựu đạn nổ lan", "_up_grenade", "TIẾN HÓA 💣 Bom chùm: nổ thêm 3 đợt phụ", "_evo_grenade", ICON_GRENADE)
+		["Lựu đạn nổ lan", "Grenade"], "_up_grenade",
+		["TIẾN HÓA 💣 Bom chùm: nổ thêm 3 đợt phụ",
+			"EVOLVE 💣 Cluster bomb: 3 extra blasts"], "_evo_grenade", ICON_GRENADE)
 	_add_weapon(pool, player.lightning_level, player.lightning_evolved,
-		"Sét đánh chuỗi", "_up_lightning", "TIẾN HÓA ⚡ Bão sét: +3 mục tiêu, đánh nhanh gần gấp đôi", "_evo_lightning", ICON_LIGHTNING)
+		["Sét đánh chuỗi", "Chain lightning"], "_up_lightning",
+		["TIẾN HÓA ⚡ Bão sét: +3 mục tiêu, đánh nhanh gần gấp đôi",
+			"EVOLVE ⚡ Lightning storm: +3 targets, near-double speed"], "_evo_lightning", ICON_LIGHTNING)
 	_add_weapon(pool, player.poison_level, player.poison_evolved,
-		"Vùng độc quanh người", "_up_poison", "TIẾN HÓA ☠ Trường độc: rộng x1.5, sát thương x2, làm chậm quái", "_evo_poison", ICON_POISON)
+		["Vùng độc quanh người", "Poison aura"], "_up_poison",
+		["TIẾN HÓA ☠ Trường độc: rộng x1.5, sát thương x2, làm chậm quái",
+			"EVOLVE ☠ Toxic field: x1.5 area, x2 damage, slows enemies"], "_evo_poison", ICON_POISON)
+	_add_weapon(pool, player.boomerang_level, player.boomerang_evolved,
+		["Boomerang xuyên quái", "Boomerang"], "_up_boomerang",
+		["TIẾN HÓA Cuồng phong: 2 boomerang to hơn, sát thương x1.6",
+			"EVOLVE Whirlwind: 2 bigger boomerangs, x1.6 damage"], "_evo_boomerang", ICON_BOOMERANG)
+	_add_weapon(pool, player.frost_level, player.frost_evolved,
+		["Tia băng làm chậm", "Frost bolt"], "_up_frost",
+		["TIẾN HÓA Bão tuyết: nổ băng diện rộng, sát thương x1.5",
+			"EVOLVE Blizzard: freezing blast, x1.5 damage"], "_evo_frost", ICON_FROST)
 	var avail := ARTIFACTS.filter(func(a: Dictionary) -> bool: return a["fn"] not in owned_artifacts)
 	if not avail.is_empty():
 		var art: Dictionary = avail.pick_random()
-		pool.append({"label": "CỔ VẬT: %s\n%s" % [art["name"], art["desc"]], "fn": art["fn"], "icon": art["icon"]})
+		pool.append({"label": T("artifact_fmt") % [art["name"][lang], art["desc"][lang]], "fn": art["fn"], "icon": art["icon"]})
 	return pool
 
 
@@ -490,11 +700,11 @@ func _art_xp() -> void:
 	xp_gain = 2
 
 
-func _add_weapon(pool: Array, lvl: int, evolved: bool, name: String, up_fn: String, evo_label: String, evo_fn: String, icon: Texture2D) -> void:
+func _add_weapon(pool: Array, lvl: int, evolved: bool, name: Array, up_fn: String, evo_label: Array, evo_fn: String, icon: Texture2D) -> void:
 	if lvl < WEAPON_MAX:
-		pool.append({"label": "%s (Cấp %d → %d)" % [name, lvl, lvl + 1], "fn": up_fn, "icon": icon})
+		pool.append({"label": T("weapon_lv") % [name[lang], lvl, lvl + 1], "fn": up_fn, "icon": icon})
 	elif not evolved:
-		pool.append({"label": evo_label, "fn": evo_fn, "icon": icon})
+		pool.append({"label": evo_label[lang], "fn": evo_fn, "icon": icon})
 
 
 func _evo_orbital() -> void:
@@ -556,6 +766,22 @@ func _up_poison() -> void:
 	player.update_poison_ring()
 
 
+func _up_boomerang() -> void:
+	player.boomerang_level += 1
+
+
+func _evo_boomerang() -> void:
+	player.boomerang_evolved = true
+
+
+func _up_frost() -> void:
+	player.frost_level += 1
+
+
+func _evo_frost() -> void:
+	player.frost_evolved = true
+
+
 func _trigger_event() -> void:
 	match randi() % 3:
 		0:
@@ -567,31 +793,33 @@ func _trigger_event() -> void:
 
 
 func _event_ring() -> void:
-	_announce("BẦY QUÁI VÂY QUANH!")
+	_announce(T("ev_ring"))
 	var count := 22
 	for i in count:
 		var e := _make_enemy()
 		e.hp = 3.0 + time * 0.06
 		e.speed = minf(70.0 + time * 0.6, 160.0)
+		_apply_stage(e)
 		add_child(e)
 		e.global_position = player.global_position + Vector2.from_angle(TAU * i / count) * 650.0
 
 
 func _event_flood() -> void:
-	_announce("QUÁI TRÀN TỚI!")
+	_announce(T("ev_flood"))
 	var base_angle := randf() * TAU
 	for i in 16:
 		var e := _make_enemy()
 		e.tex = TEX_HITMAN
 		e.hp = (3.0 + time * 0.06) * 0.6
 		e.speed = minf(130.0 + time * 0.5, 210.0)
+		_apply_stage(e)
 		add_child(e)
 		var angle := base_angle + randf_range(-0.45, 0.45)
 		e.global_position = player.global_position + Vector2.from_angle(angle) * randf_range(580.0, 760.0)
 
 
 func _event_frenzy() -> void:
-	_announce("PHÚT CUỒNG NỘ!", Color(1.0, 0.4, 0.2))
+	_announce(T("ev_frenzy"), Color(1.0, 0.4, 0.2))
 	frenzy_timer = 20.0
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if not e.has_meta("fz"):
@@ -626,21 +854,19 @@ func _build_chest_panel() -> void:
 	chest_panel.visible = false
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 16)
-	var title := Label.new()
-	title.text = "RƯƠNG BÁU VẬT!"
-	title.add_theme_font_size_override("font_size", 32)
-	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
+	chest_title = Label.new()
+	chest_title.add_theme_font_size_override("font_size", 32)
+	chest_title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	chest_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(chest_title)
 	chest_text = Label.new()
 	chest_text.add_theme_font_size_override("font_size", 22)
 	chest_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(chest_text)
-	var btn := Button.new()
-	btn.text = "Nhận!"
-	btn.add_theme_font_size_override("font_size", 24)
-	btn.pressed.connect(_close_chest)
-	vbox.add_child(btn)
+	chest_btn = Button.new()
+	chest_btn.add_theme_font_size_override("font_size", 24)
+	chest_btn.pressed.connect(_close_chest)
+	vbox.add_child(chest_btn)
 	chest_panel.add_child(vbox)
 	$UI.add_child(chest_panel)
 	chest_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -696,22 +922,24 @@ func _build_pause_panel() -> void:
 	pause_panel.custom_minimum_size = Vector2(300, 0)
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 14)
-	var title := Label.new()
-	title.text = "TẠM DỪNG"
-	title.add_theme_font_size_override("font_size", 32)
-	title.add_theme_color_override("font_color", Color(0.15, 0.17, 0.25))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
-	var resume := Button.new()
-	resume.text = "Tiếp tục"
-	resume.add_theme_font_size_override("font_size", 22)
-	resume.pressed.connect(_toggle_pause)
-	vbox.add_child(resume)
-	var reset := Button.new()
-	reset.text = "Chọn lại nhân vật"
-	reset.add_theme_font_size_override("font_size", 22)
-	reset.pressed.connect(_restart_game)
-	vbox.add_child(reset)
+	pause_title = Label.new()
+	pause_title.add_theme_font_size_override("font_size", 32)
+	pause_title.add_theme_color_override("font_color", Color(0.15, 0.17, 0.25))
+	pause_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(pause_title)
+	pause_resume = Button.new()
+	pause_resume.add_theme_font_size_override("font_size", 22)
+	pause_resume.pressed.connect(_toggle_pause)
+	vbox.add_child(pause_resume)
+	pause_reset = Button.new()
+	pause_reset.add_theme_font_size_override("font_size", 22)
+	pause_reset.pressed.connect(_restart_game)
+	vbox.add_child(pause_reset)
+	var pl := Button.new()
+	pl.text = "Tiếng Việt / English"
+	pl.add_theme_font_size_override("font_size", 22)
+	pl.pressed.connect(func() -> void: _set_lang(1 - lang))
+	vbox.add_child(pl)
 	pause_panel.add_child(vbox)
 	$UI.add_child(pause_panel)
 	pause_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -763,5 +991,5 @@ func _update_arrows() -> void:
 
 func _on_player_died() -> void:
 	game_over = true
-	over_label.text = "GAME OVER\nSống sót: %02d:%02d — %d kills\nNhấn R để chơi lại" % [int(time) / 60, int(time) % 60, kills]
+	over_label.text = T("gameover_fmt") % [int(time) / 60, int(time) % 60, kills]
 	over_label.visible = true

@@ -34,10 +34,13 @@ var kb_vel := Vector2.ZERO
 var flash_timer := 0.0
 var slow_timer := 0.0
 var walk_t := randf() * TAU
+var strafe := 0.0
 
 
 func _ready() -> void:
 	add_to_group("enemies")
+	strafe = (1.0 if randf() < 0.5 else -1.0) * randf_range(0.5, 1.0)
+	shoot_range *= randf_range(0.8, 1.25)
 	var cs := CollisionShape2D.new()
 	var c := CircleShape2D.new()
 	c.radius = 13.0 * (sprite_scale / 0.75)
@@ -60,8 +63,10 @@ func _physics_process(delta: float) -> void:
 	if flash_timer > 0.0:
 		flash_timer -= delta
 		sprite.modulate = tint.lerp(Color(2.0, 2.0, 2.0), flash_timer / 0.07)
-		if flash_timer <= 0.0:
-			sprite.modulate = tint
+	elif slow_timer > 0.0:
+		sprite.modulate = tint * Color(0.55, 0.8, 1.45)
+	else:
+		sprite.modulate = tint
 	var to_player := player.global_position - global_position
 	match state:
 		State.CHASE:
@@ -76,6 +81,8 @@ func _physics_process(delta: float) -> void:
 
 func _separate(delta: float) -> void:
 	var radius := 27.0 * (sprite_scale / 0.75)
+	if kind == Kind.RANGER:
+		radius = 55.0
 	for a in get_overlapping_areas():
 		if not a.is_in_group("enemies"):
 			continue
@@ -99,10 +106,14 @@ func _chase(delta: float, to_player: Vector2) -> void:
 
 	if kind == Kind.RANGER:
 		# Giữ khoảng cách: xa thì tiến lại, gần quá thì lùi ra
+		var fwd := to_player.normalized()
 		if dist > shoot_range:
-			global_position += to_player.normalized() * spd * delta
+			global_position += fwd * spd * delta
 		elif dist < shoot_range * 0.5:
-			global_position -= to_player.normalized() * spd * 0.6 * delta
+			global_position -= fwd * spd * 0.6 * delta
+		else:
+			# Đi vòng quanh người chơi để không dồn cục một chỗ
+			global_position += fwd.orthogonal() * spd * 0.55 * strafe * delta
 		shoot_timer -= delta
 		if shoot_timer <= 0.0 and dist <= shoot_range + 40.0:
 			shoot_timer = shoot_interval
@@ -170,7 +181,7 @@ func _spawn_bullet(d: Vector2, spd := 240.0) -> void:
 	b.global_position = global_position + d * 20.0
 
 
-func take_hit(damage: float, show_dmg := false, kb := Vector2.ZERO) -> void:
+func take_hit(damage: float, show_dmg := false, kb := Vector2.ZERO, col := Color(1.0, 0.9, 0.3), crit := false) -> void:
 	if hp <= 0.0:
 		return
 	hp -= damage
@@ -179,24 +190,28 @@ func take_hit(damage: float, show_dmg := false, kb := Vector2.ZERO) -> void:
 	if kb != Vector2.ZERO:
 		kb_vel = kb * (0.25 if kind == Kind.BOSS else 1.0)
 	if show_dmg:
-		_spawn_dmg_text(damage)
+		_spawn_dmg_text(damage, col, crit)
 	if hp <= 0.0:
 		died.emit(global_position, gems)
 		queue_free()
 
 
-func _spawn_dmg_text(damage: float) -> void:
+func _spawn_dmg_text(damage: float, col: Color, crit: bool) -> void:
 	var l := Label.new()
-	l.text = str(maxi(1, int(roundf(damage))))
+	l.text = str(maxi(1, int(roundf(damage)))) + ("!" if crit else "")
 	l.z_index = 20
-	l.add_theme_font_size_override("font_size", 16)
-	l.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
+	l.add_theme_font_size_override("font_size", 26 if crit else 16)
+	l.add_theme_color_override("font_color", Color(1.0, 0.35, 0.2) if crit else col)
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
-	l.add_theme_constant_override("outline_size", 4)
+	l.add_theme_constant_override("outline_size", 6 if crit else 4)
 	get_parent().add_child(l)
 	l.global_position = global_position + Vector2(randf_range(-14.0, 6.0), -34.0)
+	var rise := -55.0 if crit else -35.0
 	var tw := l.create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(l, "global_position", l.global_position + Vector2(0, -35.0), 0.55)
+	if crit:
+		l.scale = Vector2.ONE * 1.6
+		tw.tween_property(l, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK)
+	tw.tween_property(l, "global_position", l.global_position + Vector2(0, rise), 0.55)
 	tw.tween_property(l, "modulate:a", 0.0, 0.55).set_delay(0.15)
 	tw.chain().tween_callback(l.queue_free)

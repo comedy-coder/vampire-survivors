@@ -3,6 +3,7 @@ extends CharacterBody2D
 signal died
 
 const PROJECTILE := preload("res://scripts/projectile.gd")
+const BOOMERANG := preload("res://scripts/boomerang.gd")
 const CIRCLE := preload("res://assets/circle.svg")
 const SND_SHOOT := preload("res://assets/audio/shoot.ogg")
 const TEX_SPARK := preload("res://assets/vfx/spark.png")
@@ -48,8 +49,19 @@ var grenade_timer := 0.0
 var lightning_level := 0
 var lightning_timer := 0.0
 var poison_level := 0
+var boomerang_level := 0
+var boomerang_timer := 0.0
+var boomerang_evolved := false
+var frost_level := 0
+var frost_timer := 0.0
+var frost_evolved := false
 var poison_ring := Sprite2D.new()
+var poison_swirl := Node2D.new()
+var poison_parts := CPUParticles2D.new()
+var poison_pulse_t := 0.0
 var shake_amt := 0.0
+var hurt_fx_t := 0.0
+var hurt_rect := ColorRect.new()
 var walk_t := 0.0
 var base_sprite_scale := Vector2.ONE
 var orbital_evolved := false
@@ -80,6 +92,33 @@ func _ready() -> void:
 	poison_ring.z_index = -5
 	poison_ring.visible = false
 	add_child(poison_ring)
+	poison_swirl.z_index = -5
+	poison_swirl.visible = false
+	add_child(poison_swirl)
+	poison_parts.texture = CIRCLE
+	poison_parts.amount = 26
+	poison_parts.lifetime = 1.8
+	poison_parts.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	poison_parts.gravity = Vector2(0.0, -28.0)
+	poison_parts.initial_velocity_min = 4.0
+	poison_parts.initial_velocity_max = 14.0
+	poison_parts.scale_amount_min = 0.04
+	poison_parts.scale_amount_max = 0.1
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0.45, 1.0, 0.45, 0.0))
+	grad.set_color(1, Color(0.45, 1.0, 0.45, 0.0))
+	grad.add_point(0.25, Color(0.45, 1.0, 0.45, 0.55))
+	poison_parts.color_ramp = grad
+	poison_parts.z_index = -4
+	poison_parts.emitting = false
+	add_child(poison_parts)
+	var hurt_layer := CanvasLayer.new()
+	hurt_layer.layer = 40
+	add_child(hurt_layer)
+	hurt_rect.color = Color(0.9, 0.05, 0.05, 0.0)
+	hurt_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	hurt_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hurt_layer.add_child(hurt_rect)
 
 
 func _physics_process(delta: float) -> void:
@@ -126,7 +165,24 @@ func _physics_process(delta: float) -> void:
 			lightning_timer = 1.5 if lightning_evolved else 2.5
 			_fire_lightning()
 
+	if boomerang_level > 0:
+		boomerang_timer -= delta
+		if boomerang_timer <= 0.0:
+			boomerang_timer = 2.4 if boomerang_evolved else 3.0
+			_fire_boomerang()
+
+	if frost_level > 0:
+		frost_timer -= delta
+		if frost_timer <= 0.0:
+			frost_timer = 1.4 if frost_evolved else 1.9
+			_fire_frost()
+
 	if poison_level > 0:
+		poison_swirl.rotation += (1.3 if poison_evolved else 0.7) * delta
+		poison_pulse_t += delta * 2.4
+		var base_a := 0.55 if poison_evolved else 0.4
+		poison_ring.modulate.a = base_a + 0.12 * sin(poison_pulse_t)
+		poison_ring.scale = Vector2.ONE * (_poison_radius() * 2.0 / TEX_GLOW.get_size().x) * (1.0 + 0.03 * sin(poison_pulse_t * 0.7))
 		var pr := _poison_radius()
 		var pdmg := 3.0 * poison_level * (2.0 if poison_evolved else 1.0) * delta
 		for e in get_tree().get_nodes_in_group("enemies"):
@@ -148,6 +204,8 @@ func _physics_process(delta: float) -> void:
 		shake_amt = maxf(0.0, shake_amt - 35.0 * delta)
 		if shake_amt == 0.0:
 			cam.offset = Vector2.ZERO
+
+	hurt_fx_t = maxf(0.0, hurt_fx_t - delta)
 
 
 func _fire() -> void:
@@ -178,7 +236,9 @@ func _fire() -> void:
 		var p := Area2D.new()
 		p.set_script(PROJECTILE)
 		p.dir = d
-		p.damage = projectile_damage * float(cfg.get("dmg_mul", 1.0)) * (2.0 if randf() < crit_chance else 1.0)
+		var is_crit := randf() < crit_chance
+		p.crit = is_crit
+		p.damage = projectile_damage * float(cfg.get("dmg_mul", 1.0)) * (2.0 if is_crit else 1.0)
 		p.pierce = pierce + int(cfg.get("pierce", 0))
 		p.speed = float(cfg.get("speed", 420.0)) * randf_range(0.95, 1.05)
 		p.color = wcolor
@@ -213,6 +273,45 @@ func _random_enemy_in(radius: float) -> Node2D:
 	return list.pick_random()
 
 
+func _fire_boomerang() -> void:
+	var target := _nearest_enemy()
+	if target == null:
+		return
+	var base_dir := (target.global_position - global_position).normalized()
+	var count := 2 if boomerang_evolved else 1
+	for i in count:
+		var b := Area2D.new()
+		b.set_script(BOOMERANG)
+		b.player = self
+		b.dir = base_dir if i == 0 else -base_dir
+		b.damage = (6.0 + 4.0 * boomerang_level) * (1.6 if boomerang_evolved else 1.0)
+		b.max_range = 260.0 + 25.0 * boomerang_level
+		b.scale_mul = 1.5 if boomerang_evolved else 1.0
+		get_parent().add_child(b)
+		b.global_position = global_position
+
+
+func _fire_frost() -> void:
+	var target := _random_enemy_in(520.0)
+	if target == null:
+		return
+	var p := Area2D.new()
+	p.set_script(PROJECTILE)
+	p.dir = (target.global_position - global_position).normalized()
+	p.damage = (4.0 + 3.0 * frost_level) * (1.5 if frost_evolved else 1.0)
+	p.speed = 520.0
+	p.color = Color(0.55, 0.85, 1.0)
+	p.size = 0.16
+	p.kb = 80.0
+	p.stretch = 2.0
+	p.slow = 1.6
+	p.trail_color = Color(0.55, 0.85, 1.0, 0.4)
+	if frost_evolved:
+		p.aoe = 90.0
+	get_parent().add_child(p)
+	p.global_position = global_position
+
+
 func _fire_grenade() -> void:
 	var target := _random_enemy_in(450.0)
 	if target == null:
@@ -238,7 +337,7 @@ func _explode_grenade(spr: Sprite2D, pos: Vector2) -> void:
 	var dmg := 8.0 + 4.0 * (grenade_level - 1)
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if pos.distance_to(e.global_position) < radius:
-			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 200.0)
+			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 200.0, Color(1.0, 0.55, 0.25))
 	boom_sfx.pitch_scale = randf_range(0.9, 1.1)
 	boom_sfx.play()
 	shake_amt = maxf(shake_amt, 7.0)
@@ -256,7 +355,7 @@ func _mini_blast(pos: Vector2, dmg: float) -> void:
 	var radius := 60.0
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if pos.distance_to(e.global_position) < radius:
-			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 140.0)
+			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 140.0, Color(1.0, 0.55, 0.25))
 	boom_sfx.pitch_scale = randf_range(1.1, 1.3)
 	boom_sfx.play()
 	shake_amt = maxf(shake_amt, 4.0)
@@ -274,7 +373,7 @@ func _fire_lightning() -> void:
 	while cur != null and hit.size() < max_hits:
 		hit.append(cur)
 		pts.append(cur.global_position)
-		cur.take_hit(dmg, true)
+		cur.take_hit(dmg, true, Vector2.ZERO, Color(1.0, 1.0, 0.45))
 		var best: Node2D = null
 		var best_d := 170.0 * 170.0
 		for e in get_tree().get_nodes_in_group("enemies"):
@@ -345,17 +444,37 @@ func _poison_radius() -> float:
 
 
 func update_poison_ring() -> void:
-	poison_ring.visible = poison_level > 0
-	var diameter := _poison_radius() * 2.0
-	poison_ring.scale = Vector2.ONE * (diameter / TEX_GLOW.get_size().x)
+	var active := poison_level > 0
+	poison_ring.visible = active
+	poison_swirl.visible = active
+	poison_parts.emitting = active
+	var r := _poison_radius()
+	poison_ring.scale = Vector2.ONE * (r * 2.0 / TEX_GLOW.get_size().x)
 	if poison_evolved:
 		poison_ring.modulate = Color(0.2, 1.0, 0.25, 0.55)
+	poison_parts.emission_sphere_radius = r * 0.85
+	for old in poison_swirl.get_children():
+		old.queue_free()
+	var col := Color(0.3, 1.0, 0.35, 0.8) if poison_evolved else Color(0.45, 1.0, 0.45, 0.55)
+	for i in 3:
+		var arc := Line2D.new()
+		arc.width = 4.0 if poison_evolved else 3.0
+		arc.default_color = col
+		var pts := PackedVector2Array()
+		var start := i * TAU / 3.0
+		for j in 17:
+			pts.append(Vector2.from_angle(start + (TAU / 3.0) * 0.7 * j / 16.0) * r)
+		arc.points = pts
+		poison_swirl.add_child(arc)
 
 
 func take_damage(amount: float) -> void:
 	if not alive:
 		return
 	hp -= amount
+	if hurt_fx_t <= 0.0:
+		hurt_fx_t = 0.35
+		_hurt_fx()
 	if hp <= 0.0:
 		if revive:
 			revive = false
@@ -371,6 +490,16 @@ func take_damage(amount: float) -> void:
 		alive = false
 		hide()
 		died.emit()
+
+
+func _hurt_fx() -> void:
+	shake_amt = maxf(shake_amt, 5.0)
+	sprite.modulate = Color(1.0, 0.3, 0.3)
+	var tw := sprite.create_tween()
+	tw.tween_property(sprite, "modulate", Color.WHITE, 0.25)
+	hurt_rect.color.a = 0.22
+	var tw2 := hurt_rect.create_tween()
+	tw2.tween_property(hurt_rect, "color:a", 0.0, 0.3)
 
 
 func heal(amount: float) -> void:
