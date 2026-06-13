@@ -19,7 +19,6 @@ const MUSIC_MENU   := preload("res://assets/audio/music_menu.wav")
 const MUSIC_GAME   := preload("res://assets/audio/music_game.wav")
 const MUSIC_DESERT := preload("res://assets/audio/music_desert.mp3")
 const MUSIC_DEAD   := preload("res://assets/audio/music_dead.mp3")
-const MUSIC_OCEAN  := MUSIC_DEAD  # placeholder — thay khi có nhạc biển
 const SND_DIE := preload("res://assets/audio/enemy_die.ogg")
 const CIRCLE := preload("res://assets/circle.svg")
 const TEX_EXPLOSION := preload("res://assets/vfx/explosion_sheet.png")
@@ -27,13 +26,6 @@ const TEX_CHEST := preload("res://assets/decor/chest.png")
 const ICON_CHEST := preload("res://assets/icons/art_chest.svg")
 const TEX_BOSS_DESERT := preload("res://assets/characters/boss_desert.png")
 const TEX_BOSS_BONE   := preload("res://assets/characters/boss_bone.png")
-const TEX_BOSS_OCEAN  := preload("res://assets/characters/boss_ocean.png")
-const TEX_OCEAN_JELLYFISH := preload("res://assets/characters/ocean_jellyfish.png")
-const TEX_OCEAN_TURTLE    := preload("res://assets/characters/ocean_turtle.png")
-const TEX_OCEAN_SHARK     := preload("res://assets/characters/ocean_shark.png")
-const TEX_OCEAN_PUFFER    := preload("res://assets/characters/ocean_pufferfish.png")
-const TEX_OCEAN_EEL       := preload("res://assets/characters/ocean_eel.png")
-const TEX_OCEAN_OCTOPUS   := preload("res://assets/characters/ocean_octopus.png")
 
 const I18N := {
 	"levelup_title": ["LEVEL UP! Chọn nâng cấp", "LEVEL UP! Choose an upgrade"],
@@ -51,7 +43,6 @@ const I18N := {
 	"boss_announce": ["BOSS XUẤT HIỆN!", "BOSS INCOMING!"],
 	"boss_desert": ["HUNG THẦN SA MẠC!", "DESERT FIEND!"],
 	"boss_dead":  ["CHÚA TỂ XƯƠNG!", "BONE LORD!"],
-	"boss_ocean": ["KRAKEN ĐẠI DƯƠNG!", "THE KRAKEN!"],
 	"ev_ring": ["BẦY QUÁI VÂY QUANH!", "SURROUNDED!"],
 	"ev_flood": ["QUÁI TRÀN TỚI!", "MONSTER FLOOD!"],
 	"ev_frenzy": ["PHÚT CUỒNG NỘ!", "FRENZY!"],
@@ -189,39 +180,6 @@ const DECOR_DARK := [
 const DECOR_CELL := 220.0
 
 var stage_len := 90.0
-const DECOR_OCEAN := [
-	# San hô
-	{"tex": preload("res://assets/decor/ocean_coral_bv1.png"),   "s": [0.5, 0.9]},
-	{"tex": preload("res://assets/decor/ocean_coral_bv2.png"),   "s": [0.5, 0.9]},
-	{"tex": preload("res://assets/decor/ocean_coral_blue1.png"), "s": [0.5, 0.9]},
-	{"tex": preload("res://assets/decor/ocean_coral_blue2.png"), "s": [0.4, 0.8]},
-	{"tex": preload("res://assets/decor/ocean_coral_blue3.png"), "s": [0.4, 0.8]},
-	{"tex": preload("res://assets/decor/ocean_coral_bb1.png"),   "s": [0.5, 0.9]},
-	{"tex": preload("res://assets/decor/ocean_coral_gr1.png"),   "s": [0.5, 0.9]},
-	{"tex": preload("res://assets/decor/ocean_coral_gr2.png"),   "s": [0.5, 0.9]},
-	{"tex": preload("res://assets/decor/ocean_coral_vp1.png"),   "s": [0.5, 0.9]},
-	{"tex": preload("res://assets/decor/ocean_coral_vp2.png"),   "s": [0.5, 0.9]},
-	# Vỏ sò & sao biển
-	{"tex": preload("res://assets/decor/ocean_shell1.png"),    "s": [0.5, 0.9]},
-	{"tex": preload("res://assets/decor/ocean_shell2.png"),    "s": [0.5, 0.9]},
-	{"tex": preload("res://assets/decor/ocean_starfish1.png"), "s": [0.5, 0.9]},
-	{"tex": preload("res://assets/decor/ocean_starfish2.png"), "s": [0.5, 0.9]},
-	{"tex": preload("res://assets/decor/ocean_urchin1.png"),   "s": [0.4, 0.8]},
-	{"tex": preload("res://assets/decor/ocean_urchin2.png"),   "s": [0.4, 0.8]},
-	# Đá ngầm
-	{"tex": preload("res://assets/decor/ocean_riff1.png"), "s": [0.5, 0.9], "no_rot": true},
-	{"tex": preload("res://assets/decor/ocean_riff2.png"), "s": [0.5, 0.9], "no_rot": true},
-	# Hiếm — xác tàu & xương
-	{"tex": preload("res://assets/decor/ocean_anchor.png"),      "s": [0.5, 0.8], "no_rot": true, "chance": 0.35},
-	{"tex": preload("res://assets/decor/ocean_ship1.png"),       "s": [0.5, 0.9], "no_rot": true, "chance": 0.20},
-	{"tex": preload("res://assets/decor/ocean_ship2.png"),       "s": [0.5, 0.9], "no_rot": true, "chance": 0.20},
-	{"tex": preload("res://assets/decor/ocean_dragon_bones.png"),"s": [0.5, 0.9], "no_rot": true, "chance": 0.20},
-	{"tex": preload("res://assets/decor/ocean_fish_bones.png"),  "s": [0.5, 0.9], "no_rot": true, "chance": 0.25},
-	{"tex": preload("res://assets/decor/ocean_crab.png"),        "s": [0.5, 0.8], "chance": 0.30},
-	{"tex": preload("res://assets/decor/ocean_turtle_shell.png"),"s": [0.5, 0.8], "chance": 0.30},
-	{"tex": preload("res://assets/decor/ocean_statue1.png"),     "s": [0.6, 1.0], "no_rot": true, "chance": 0.15},
-	{"tex": preload("res://assets/decor/ocean_statue2.png"),     "s": [0.6, 1.0], "no_rot": true, "chance": 0.15},
-]
 
 const STAGES := [
 	{
@@ -244,13 +202,6 @@ const STAGES := [
 		"tile_mod": Color.WHITE,
 		"decor": DECOR_DARK,
 		"decor_mod": Color(0.65, 0.6, 0.75),
-	},
-	{
-		"name": ["Đáy đại dương", "Ocean Abyss"],
-		"tile": preload("res://assets/tiles/ocean_ground.png"),
-		"tile_mod": Color.WHITE,
-		"decor": DECOR_OCEAN,
-		"decor_mod": Color(0.7, 0.85, 1.0),
 	},
 ]
 
@@ -537,7 +488,7 @@ func _update_stage() -> void:
 	if time < stage_len:
 		s = 0
 	else:
-		s = 1 + (int((time - stage_len) / stage_len) % 3)
+		s = 1 + (int((time - stage_len) / stage_len) % 2)
 	if s == stage:
 		return
 	stage = s
@@ -555,7 +506,6 @@ func _update_stage() -> void:
 	match s:
 		1: _change_music(MUSIC_DESERT)
 		2: _change_music(MUSIC_DEAD)
-		3: _change_music(MUSIC_OCEAN)
 
 
 func _change_music(new_stream: AudioStream) -> void:
@@ -581,20 +531,6 @@ func _apply_stage(e: Area2D) -> void:
 			e.speed *= 1.1
 			e.tint = e.tint * Color(0.72, 0.62, 1.0)
 			e.gems += 1
-		3:
-			e.hp *= 1.55
-			e.speed *= 1.15
-			e.tint = e.tint * Color(0.55, 0.8, 1.0)
-			e.gems += 1
-
-
-func _apply_ocean_skin(e: Area2D) -> void:
-	var ocean_texs := [
-		TEX_OCEAN_JELLYFISH, TEX_OCEAN_TURTLE, TEX_OCEAN_SHARK,
-		TEX_OCEAN_PUFFER, TEX_OCEAN_EEL, TEX_OCEAN_OCTOPUS
-	]
-	e.tex = ocean_texs[randi() % ocean_texs.size()]
-	e.upright = true
 
 
 func _update_decor() -> void:
@@ -670,8 +606,6 @@ func _spawn_enemy() -> void:
 	else:
 		e.hp = 2.5 + time * 0.05
 		e.speed = minf(60.0 + time * 0.6, 150.0)
-	if stage == 3:
-		_apply_ocean_skin(e)
 	if time > 45.0 and e.kind == ENEMY.Kind.MELEE and randf() < 0.06:
 		_make_elite(e)
 	_apply_stage(e)
@@ -711,17 +645,6 @@ func _spawn_boss() -> void:
 			e.skills = ["summon", "spiral", "burst"]
 			e.skill_interval = 5.5
 			announce = T("boss_dead")
-		3:
-			# Kraken: bắn vòng đạn + xoắn ốc, triệu hồi bạch tuộc nhỏ
-			e.tex = TEX_BOSS_OCEAN
-			e.upright = true
-			e.vis_scale = 1.5
-			e.speed = 50.0
-			e.bullet_damage = 13.0
-			e.skills = ["burst", "spiral", "summon"]
-			e.skill_interval = 5.0
-			e.tint = Color(1.0, 0.6, 0.5)
-			announce = T("boss_ocean")
 		_:
 			if boss_count % 2 == 1:
 				# Zombie chúa: nhấp nháy đỏ rồi lao thẳng vào người chơi, biết gọi đệ
