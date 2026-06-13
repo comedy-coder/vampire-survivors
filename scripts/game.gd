@@ -15,15 +15,25 @@ const TEX_ZOMBIE := preload("res://assets/characters/zombie.png")
 const TEX_HITMAN := preload("res://assets/characters/hitman.png")
 const TEX_ROBOT := preload("res://assets/characters/robot.png")
 const TEX_GRASS := preload("res://assets/tiles/grass_01.png")
-const MUSIC_MENU := preload("res://assets/audio/music_menu.wav")
-const MUSIC_GAME := preload("res://assets/audio/music_game.wav")
+const MUSIC_MENU   := preload("res://assets/audio/music_menu.wav")
+const MUSIC_GAME   := preload("res://assets/audio/music_game.wav")
+const MUSIC_DESERT := preload("res://assets/audio/music_desert.mp3")
+const MUSIC_DEAD   := preload("res://assets/audio/music_dead.mp3")
+const MUSIC_OCEAN  := MUSIC_DEAD  # placeholder — thay khi có nhạc biển
 const SND_DIE := preload("res://assets/audio/enemy_die.ogg")
 const CIRCLE := preload("res://assets/circle.svg")
 const TEX_EXPLOSION := preload("res://assets/vfx/explosion_sheet.png")
 const TEX_CHEST := preload("res://assets/decor/chest.png")
 const ICON_CHEST := preload("res://assets/icons/art_chest.svg")
 const TEX_BOSS_DESERT := preload("res://assets/characters/boss_desert.png")
-const TEX_BOSS_BONE := preload("res://assets/characters/boss_bone.png")
+const TEX_BOSS_BONE   := preload("res://assets/characters/boss_bone.png")
+const TEX_BOSS_OCEAN  := preload("res://assets/characters/boss_ocean.png")
+const TEX_OCEAN_JELLYFISH := preload("res://assets/characters/ocean_jellyfish.png")
+const TEX_OCEAN_TURTLE    := preload("res://assets/characters/ocean_turtle.png")
+const TEX_OCEAN_SHARK     := preload("res://assets/characters/ocean_shark.png")
+const TEX_OCEAN_PUFFER    := preload("res://assets/characters/ocean_pufferfish.png")
+const TEX_OCEAN_EEL       := preload("res://assets/characters/ocean_eel.png")
+const TEX_OCEAN_OCTOPUS   := preload("res://assets/characters/ocean_octopus.png")
 
 const I18N := {
 	"levelup_title": ["LEVEL UP! Chọn nâng cấp", "LEVEL UP! Choose an upgrade"],
@@ -40,7 +50,8 @@ const I18N := {
 	"lang_label": ["Ngôn ngữ:", "Language:"],
 	"boss_announce": ["BOSS XUẤT HIỆN!", "BOSS INCOMING!"],
 	"boss_desert": ["HUNG THẦN SA MẠC!", "DESERT FIEND!"],
-	"boss_dead": ["CHÚA TỂ XƯƠNG!", "BONE LORD!"],
+	"boss_dead":  ["CHÚA TỂ XƯƠNG!", "BONE LORD!"],
+	"boss_ocean": ["KRAKEN ĐẠI DƯƠNG!", "THE KRAKEN!"],
 	"ev_ring": ["BẦY QUÁI VÂY QUANH!", "SURROUNDED!"],
 	"ev_flood": ["QUÁI TRÀN TỚI!", "MONSTER FLOOD!"],
 	"ev_frenzy": ["PHÚT CUỒNG NỘ!", "FRENZY!"],
@@ -60,42 +71,42 @@ const CHARACTERS := [
 		"tex": preload("res://assets/characters/player_blue.png"),
 		"name": ["Dân thường", "Commoner"],
 		"desc": ["Súng lục — cân bằng mọi mặt", "Pistol — balanced all around"],
-		"hp": 100.0, "speed": 220.0, "fire": 1.5, "dmg": 2.0, "count": 1, "pierce": 0,
+		"hp": 100.0, "speed": 220.0, "fire": 1.5, "dmg": 2.8, "count": 1, "pierce": 0,
 		"weapon": "pistol",
 	},
 	{
 		"tex": preload("res://assets/characters/player_woman.png"),
 		"name": ["Nữ chiến binh", "Warrior Woman"],
 		"desc": ["Tiểu liên — bắn cực nhanh, máu giấy", "SMG — blazing fire rate, fragile"],
-		"hp": 75.0, "speed": 285.0, "fire": 3.0, "dmg": 1.0, "count": 1, "pierce": 0,
+		"hp": 75.0, "speed": 285.0, "fire": 3.0, "dmg": 1.4, "count": 1, "pierce": 0,
 		"weapon": "smg",
 	},
 	{
 		"tex": preload("res://assets/characters/player_soldier.png"),
 		"name": ["Lính đặc nhiệm", "Commando"],
 		"desc": ["Shotgun — tỏa 5 viên cận chiến", "Shotgun — 5-pellet close-range spread"],
-		"hp": 100.0, "speed": 200.0, "fire": 1.1, "dmg": 1.6, "count": 1, "pierce": 0,
+		"hp": 100.0, "speed": 200.0, "fire": 1.1, "dmg": 2.2, "count": 1, "pierce": 0,
 		"weapon": "shotgun",
 	},
 	{
 		"tex": preload("res://assets/characters/player_old.png"),
 		"name": ["Ông già gân", "Tough Grandpa"],
 		"desc": ["Pháo — đạn nổ diện rộng, chậm chạp", "Cannon — explosive AoE shells, slow"],
-		"hp": 160.0, "speed": 170.0, "fire": 0.8, "dmg": 5.0, "count": 1, "pierce": 0,
+		"hp": 160.0, "speed": 170.0, "fire": 0.8, "dmg": 6.5, "count": 1, "pierce": 0,
 		"weapon": "cannon",
 	},
 	{
 		"tex": preload("res://assets/characters/player_survivor.png"),
 		"name": ["Người sống sót", "Survivor"],
 		"desc": ["Laser — đạn xuyên thấu nhiều mục tiêu", "Laser — piercing beam shots"],
-		"hp": 90.0, "speed": 230.0, "fire": 1.4, "dmg": 2.0, "count": 1, "pierce": 2,
+		"hp": 90.0, "speed": 230.0, "fire": 1.4, "dmg": 2.8, "count": 1, "pierce": 2,
 		"weapon": "laser",
 	},
 	{
 		"tex": preload("res://assets/characters/player_brown.png"),
 		"name": ["Thợ săn", "Hunter"],
 		"desc": ["Bắn tỉa — sát thương cực lớn, đạn cực nhanh", "Sniper — huge damage, ultra-fast bullets"],
-		"hp": 85.0, "speed": 225.0, "fire": 0.9, "dmg": 4.0, "count": 1, "pierce": 0,
+		"hp": 85.0, "speed": 225.0, "fire": 0.9, "dmg": 5.5, "count": 1, "pierce": 0,
 		"weapon": "sniper",
 	},
 ]
@@ -115,25 +126,103 @@ const DECOR := [
 	{"tex": preload("res://assets/decor/tree.png"), "s": [1.5, 2.1]},
 ]
 const DECOR_DESERT := [
-	{"tex": preload("res://assets/decor/rock_1.png"), "s": [0.6, 1.0]},
-	{"tex": preload("res://assets/decor/rock_2.png"), "s": [0.6, 1.0]},
-	{"tex": preload("res://assets/decor/grass_tuft.png"), "s": [0.5, 0.8]},
-	{"tex": preload("res://assets/decor/bone.png"), "s": [0.8, 1.3]},
-	{"tex": preload("res://assets/decor/bone.png"), "s": [0.8, 1.3]},
-	{"tex": preload("res://assets/decor/bone.png"), "s": [0.8, 1.3]},
+	# Đá
+	{"tex": preload("res://assets/decor/desert_stone1.png"),   "s": [0.22, 0.42]},
+	{"tex": preload("res://assets/decor/desert_stone2.png"),   "s": [0.18, 0.32]},
+	{"tex": preload("res://assets/decor/desert_rock_sand.png"),"s": [0.08, 0.16]},
+	# Xương rồng
+	{"tex": preload("res://assets/decor/desert_cactus1.png"),  "s": [0.10, 0.22], "no_rot": true},
+	{"tex": preload("res://assets/decor/desert_cactus2.png"),  "s": [0.11, 0.24], "no_rot": true},
+	{"tex": preload("res://assets/decor/desert_cactus3.png"),  "s": [0.25, 0.50], "no_rot": true},
+	{"tex": preload("res://assets/decor/desert_cactus4.png"),  "s": [0.25, 0.50], "no_rot": true},
+	{"tex": preload("res://assets/decor/desert_melon.png"),    "s": [0.30, 0.55], "no_rot": true},
+	# Cây — hiếm
+	{"tex": preload("res://assets/decor/desert_palm1.png"),    "s": [0.10, 0.28], "no_rot": true, "chance": 0.30},
+	{"tex": preload("res://assets/decor/desert_palm2.png"),    "s": [0.09, 0.26], "no_rot": true, "chance": 0.30},
+	{"tex": preload("res://assets/decor/desert_tree_bush.png"),"s": [0.15, 0.35], "no_rot": true, "chance": 0.35},
+	{"tex": preload("res://assets/decor/desert_baobab.png"),   "s": [0.10, 0.22], "no_rot": true, "chance": 0.25},
+	{"tex": preload("res://assets/decor/desert_deadtree.png"), "s": [0.12, 0.26], "no_rot": true, "chance": 0.25},
+	# Đặc biệt — hiếm
+	{"tex": preload("res://assets/decor/desert_lake.png"),     "s": [0.18, 0.32], "no_rot": true, "flat": true, "chance": 0.04},
+	{"tex": preload("res://assets/decor/desert_pyramid.png"),  "s": [0.20, 0.32], "no_rot": true, "chance": 0.008},
 ]
 const DECOR_DARK := [
-	{"tex": preload("res://assets/decor/rock_1.png"), "s": [0.6, 1.0]},
-	{"tex": preload("res://assets/decor/rock_2.png"), "s": [0.6, 1.0]},
-	{"tex": preload("res://assets/decor/rock_2.png"), "s": [0.6, 1.0]},
-	{"tex": preload("res://assets/decor/bush_small.png"), "s": [0.6, 1.0]},
-	{"tex": preload("res://assets/decor/bone.png"), "s": [0.8, 1.3]},
-	{"tex": preload("res://assets/decor/bone.png"), "s": [0.8, 1.3]},
-	{"tex": preload("res://assets/decor/tree.png"), "s": [1.4, 1.9]},
+	# Đá
+	{"tex": preload("res://assets/decor/undead_rock1.png"), "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/undead_rock2.png"), "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/undead_rock3.png"), "s": [0.5, 1.0]},
+	# Xương
+	{"tex": preload("res://assets/decor/undead_bones.png"),  "s": [0.8, 1.5]},
+	{"tex": preload("res://assets/decor/undead_bones2.png"), "s": [0.8, 1.5]},
+	{"tex": preload("res://assets/decor/undead_bones3.png"), "s": [0.8, 1.5]},
+	# Cây xanh
+	{"tex": preload("res://assets/decor/undead_plant_green1.png"), "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/undead_plant_green2.png"), "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/undead_plant_green3.png"), "s": [0.5, 0.9]},
+	# Cây khô
+	{"tex": preload("res://assets/decor/undead_dry_plant.png"),  "s": [0.45, 0.75], "no_rot": true},
+	{"tex": preload("res://assets/decor/undead_dry_plant2.png"), "s": [0.5,  0.9],  "no_rot": true},
+	# Cánh tay chết
+	{"tex": preload("res://assets/decor/undead_dead_arm1.png"), "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/undead_dead_arm2.png"), "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/undead_dead_arm3.png"), "s": [0.5, 0.9]},
+	# Mộ
+	{"tex": preload("res://assets/decor/undead_grave1.png"), "s": [1.0, 1.8], "no_rot": true},
+	{"tex": preload("res://assets/decor/undead_grave2.png"), "s": [1.0, 1.8], "no_rot": true},
+	# Cây chết
+	{"tex": preload("res://assets/decor/undead_dead_tree.png"), "s": [0.6, 1.0], "no_rot": true},
+	{"tex": preload("res://assets/decor/undead_tree.png"),      "s": [0.55, 0.9], "no_rot": true},
+	# Cây đổ
+	{"tex": preload("res://assets/decor/undead_broken_tree.png"), "s": [0.4, 0.7], "flat": true},
+	# Gai
+	{"tex": preload("res://assets/decor/undead_thorn.png"), "s": [0.5, 0.85], "no_rot": true},
+	# Hiếm — mặt sọ
+	{"tex": preload("res://assets/decor/undead_skull_face1.png"), "s": [0.6, 1.0], "no_rot": true, "chance": 0.30},
+	{"tex": preload("res://assets/decor/undead_skull_face2.png"), "s": [0.6, 1.0], "no_rot": true, "chance": 0.30},
+	{"tex": preload("res://assets/decor/undead_skull_face3.png"), "s": [0.6, 1.0], "no_rot": true, "chance": 0.30},
+	# Hiếm — đổ nát & đống sọ
+	{"tex": preload("res://assets/decor/undead_ruin.png"),    "s": [0.6, 1.0], "no_rot": true, "chance": 0.25},
+	{"tex": preload("res://assets/decor/undead_skulls.png"),  "s": [0.5, 0.8], "no_rot": true, "chance": 0.15},
+	{"tex": preload("res://assets/decor/undead_skulls2.png"), "s": [0.5, 0.8], "no_rot": true, "chance": 0.15},
+	{"tex": preload("res://assets/decor/undead_skulls3.png"), "s": [0.5, 0.8], "no_rot": true, "chance": 0.15},
 ]
 const DECOR_CELL := 220.0
 
-const STAGE_LEN := 120.0
+var stage_len := 90.0
+const DECOR_OCEAN := [
+	# San hô
+	{"tex": preload("res://assets/decor/ocean_coral_bv1.png"),   "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/ocean_coral_bv2.png"),   "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/ocean_coral_blue1.png"), "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/ocean_coral_blue2.png"), "s": [0.4, 0.8]},
+	{"tex": preload("res://assets/decor/ocean_coral_blue3.png"), "s": [0.4, 0.8]},
+	{"tex": preload("res://assets/decor/ocean_coral_bb1.png"),   "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/ocean_coral_gr1.png"),   "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/ocean_coral_gr2.png"),   "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/ocean_coral_vp1.png"),   "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/ocean_coral_vp2.png"),   "s": [0.5, 0.9]},
+	# Vỏ sò & sao biển
+	{"tex": preload("res://assets/decor/ocean_shell1.png"),    "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/ocean_shell2.png"),    "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/ocean_starfish1.png"), "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/ocean_starfish2.png"), "s": [0.5, 0.9]},
+	{"tex": preload("res://assets/decor/ocean_urchin1.png"),   "s": [0.4, 0.8]},
+	{"tex": preload("res://assets/decor/ocean_urchin2.png"),   "s": [0.4, 0.8]},
+	# Đá ngầm
+	{"tex": preload("res://assets/decor/ocean_riff1.png"), "s": [0.5, 0.9], "no_rot": true},
+	{"tex": preload("res://assets/decor/ocean_riff2.png"), "s": [0.5, 0.9], "no_rot": true},
+	# Hiếm — xác tàu & xương
+	{"tex": preload("res://assets/decor/ocean_anchor.png"),      "s": [0.5, 0.8], "no_rot": true, "chance": 0.35},
+	{"tex": preload("res://assets/decor/ocean_ship1.png"),       "s": [0.5, 0.9], "no_rot": true, "chance": 0.20},
+	{"tex": preload("res://assets/decor/ocean_ship2.png"),       "s": [0.5, 0.9], "no_rot": true, "chance": 0.20},
+	{"tex": preload("res://assets/decor/ocean_dragon_bones.png"),"s": [0.5, 0.9], "no_rot": true, "chance": 0.20},
+	{"tex": preload("res://assets/decor/ocean_fish_bones.png"),  "s": [0.5, 0.9], "no_rot": true, "chance": 0.25},
+	{"tex": preload("res://assets/decor/ocean_crab.png"),        "s": [0.5, 0.8], "chance": 0.30},
+	{"tex": preload("res://assets/decor/ocean_turtle_shell.png"),"s": [0.5, 0.8], "chance": 0.30},
+	{"tex": preload("res://assets/decor/ocean_statue1.png"),     "s": [0.6, 1.0], "no_rot": true, "chance": 0.15},
+	{"tex": preload("res://assets/decor/ocean_statue2.png"),     "s": [0.6, 1.0], "no_rot": true, "chance": 0.15},
+]
+
 const STAGES := [
 	{
 		"name": ["Đồng cỏ", "Meadow"],
@@ -144,17 +233,24 @@ const STAGES := [
 	},
 	{
 		"name": ["Sa mạc", "Desert"],
-		"tile": preload("res://assets/tiles/sand_01.png"),
-		"tile_mod": Color(0.82, 0.78, 0.7),
+		"tile": preload("res://assets/tiles/desert_craftpix.png"),
+		"tile_mod": Color.WHITE,
 		"decor": DECOR_DESERT,
-		"decor_mod": Color(1.0, 0.9, 0.7),
+		"decor_mod": Color.WHITE,
 	},
 	{
 		"name": ["Vùng đất chết", "Dead Zone"],
-		"tile": preload("res://assets/tiles/dark_01.png"),
+		"tile": preload("res://assets/tiles/undead_ground.png"),
 		"tile_mod": Color.WHITE,
 		"decor": DECOR_DARK,
 		"decor_mod": Color(0.65, 0.6, 0.75),
+	},
+	{
+		"name": ["Đáy đại dương", "Ocean Abyss"],
+		"tile": preload("res://assets/tiles/ocean_ground.png"),
+		"tile_mod": Color.WHITE,
+		"decor": DECOR_OCEAN,
+		"decor_mod": Color(0.7, 0.85, 1.0),
 	},
 ]
 
@@ -198,6 +294,7 @@ var choosing := false
 var pending: Array = []
 var decor_cells := {}
 var stage := 0
+var stages_announced: Array = []
 var event_timer := 75.0
 var frenzy_timer := 0.0
 var crate_timer := 12.0
@@ -279,6 +376,7 @@ func _ready() -> void:
 	_load_lang()
 	_build_lang_row()
 	_apply_lang()
+	_build_debug_panel()
 	get_tree().paused = true
 
 
@@ -435,7 +533,11 @@ func _process(delta: float) -> void:
 
 
 func _update_stage() -> void:
-	var s := mini(int(time / STAGE_LEN), STAGES.size() - 1)
+	var s: int
+	if time < stage_len:
+		s = 0
+	else:
+		s = 1 + (int((time - stage_len) / stage_len) % 3)
 	if s == stage:
 		return
 	stage = s
@@ -446,20 +548,53 @@ func _update_stage() -> void:
 		decor_cells[cell].queue_free()
 	decor_cells.clear()
 	_update_decor()
-	_announce(T("stage_fmt") % cfg["name"][lang], Color(0.55, 1.0, 0.75))
+	if stage not in stages_announced:
+		stages_announced.append(stage)
+		_announce(T("stage_fmt") % cfg["name"][lang], Color(0.55, 1.0, 0.75))
+	boss_timer = 12.0
+	match s:
+		1: _change_music(MUSIC_DESERT)
+		2: _change_music(MUSIC_DEAD)
+		3: _change_music(MUSIC_OCEAN)
+
+
+func _change_music(new_stream: AudioStream) -> void:
+	if music.stream == new_stream:
+		return
+	var tw := create_tween()
+	tw.tween_property(music, "volume_db", -80.0, 0.9)
+	tw.tween_callback(func() -> void:
+		music.stream = new_stream
+		_set_music_vol(music_slider.value)
+		music.play()
+	)
 
 
 func _apply_stage(e: Area2D) -> void:
 	match stage:
 		1:
-			e.hp *= 1.3
-			e.speed *= 1.1
+			e.hp *= 1.15
+			e.speed *= 1.05
 			e.tint = e.tint * Color(1.0, 0.82, 0.55)
 		2:
-			e.hp *= 1.7
-			e.speed *= 1.2
+			e.hp *= 1.4
+			e.speed *= 1.1
 			e.tint = e.tint * Color(0.72, 0.62, 1.0)
 			e.gems += 1
+		3:
+			e.hp *= 1.55
+			e.speed *= 1.15
+			e.tint = e.tint * Color(0.55, 0.8, 1.0)
+			e.gems += 1
+
+
+func _apply_ocean_skin(e: Area2D) -> void:
+	var ocean_texs := [
+		TEX_OCEAN_JELLYFISH, TEX_OCEAN_TURTLE, TEX_OCEAN_SHARK,
+		TEX_OCEAN_PUFFER, TEX_OCEAN_EEL, TEX_OCEAN_OCTOPUS
+	]
+	e.tex = ocean_texs[randi() % ocean_texs.size()]
+	e.upright = true
 
 
 func _update_decor() -> void:
@@ -485,10 +620,12 @@ func _spawn_decor_cell(cell: Vector2i) -> Node2D:
 	var decor: Array = STAGES[stage]["decor"]
 	for i in rng.randi_range(1, 3):
 		var d: Dictionary = decor[rng.randi_range(0, decor.size() - 1)]
+		if rng.randf() > d.get("chance", 1.0):
+			continue
 		var s := Sprite2D.new()
 		s.texture = d["tex"]
 		s.position = Vector2(cell) * DECOR_CELL + Vector2(rng.randf_range(20.0, DECOR_CELL - 20.0), rng.randf_range(20.0, DECOR_CELL - 20.0))
-		s.rotation = rng.randf_range(-0.4, 0.4)
+		s.rotation = 0.0 if d.get("no_rot", false) else rng.randf_range(-0.4, 0.4)
 		s.scale = Vector2.ONE * rng.randf_range(d["s"][0], d["s"][1])
 		if d.get("flat", false):
 			s.z_index = -1
@@ -512,7 +649,7 @@ func _spawn_enemy() -> void:
 	var r := randf()
 	if time > 60.0 and r < 0.15:
 		e.tex = TEX_ROBOT
-		e.hp = (3.0 + time * 0.06) * 3.0
+		e.hp = (2.5 + time * 0.05) * 3.0
 		e.speed = 45.0
 		e.dps = 25.0
 		e.gems = 3
@@ -521,18 +658,20 @@ func _spawn_enemy() -> void:
 		e.tex = TEX_HITMAN
 		e.tint = Color(0.5, 1.0, 0.6)
 		e.kind = ENEMY.Kind.RANGER
-		e.hp = (3.0 + time * 0.06) * 0.9
+		e.hp = (2.5 + time * 0.05) * 0.9
 		e.speed = 85.0
 		e.bullet_damage = 8.0
 		e.gems = 2
 	elif time > 30.0 and r < 0.45:
 		e.tex = TEX_HITMAN
-		e.hp = (3.0 + time * 0.06) * 0.6
+		e.hp = (2.5 + time * 0.05) * 0.6
 		e.speed = minf(110.0 + time * 0.5, 200.0)
 		e.gems = 1
 	else:
-		e.hp = 3.0 + time * 0.06
+		e.hp = 2.5 + time * 0.05
 		e.speed = minf(60.0 + time * 0.6, 150.0)
+	if stage == 3:
+		_apply_ocean_skin(e)
 	if time > 45.0 and e.kind == ENEMY.Kind.MELEE and randf() < 0.06:
 		_make_elite(e)
 	_apply_stage(e)
@@ -548,7 +687,7 @@ func _spawn_boss() -> void:
 	var e := _make_enemy()
 	e.kind = ENEMY.Kind.BOSS
 	e.sprite_scale = 1.5
-	e.hp = 50.0 + time * 1.5
+	e.hp = 40.0 + time * 1.2
 	e.dps = 30.0
 	e.gems = 8
 	var announce := T("boss_announce")
@@ -572,6 +711,17 @@ func _spawn_boss() -> void:
 			e.skills = ["summon", "spiral", "burst"]
 			e.skill_interval = 5.5
 			announce = T("boss_dead")
+		3:
+			# Kraken: bắn vòng đạn + xoắn ốc, triệu hồi bạch tuộc nhỏ
+			e.tex = TEX_BOSS_OCEAN
+			e.upright = true
+			e.vis_scale = 1.5
+			e.speed = 50.0
+			e.bullet_damage = 13.0
+			e.skills = ["burst", "spiral", "summon"]
+			e.skill_interval = 5.0
+			e.tint = Color(1.0, 0.6, 0.5)
+			announce = T("boss_ocean")
 		_:
 			if boss_count % 2 == 1:
 				# Zombie chúa: nhấp nháy đỏ rồi lao thẳng vào người chơi, biết gọi đệ
@@ -603,7 +753,7 @@ func _on_boss_summon(pos: Vector2) -> void:
 		var e := _make_enemy()
 		e.tint = Color(1.1, 1.1, 1.25) if stage == 2 else Color(0.7, 1.0, 0.7)
 		e.sprite_scale = 0.6
-		e.hp = (3.0 + time * 0.06) * 0.7
+		e.hp = (2.5 + time * 0.05) * 0.7
 		e.speed = minf(75.0 + time * 0.6, 165.0) * (1.15 if stage == 2 else 1.0)
 		e.gems = 1
 		_apply_stage(e)
@@ -668,7 +818,7 @@ func _on_elite_died(pos: Vector2, mod: String) -> void:
 				var m := _make_enemy()
 				m.sprite_scale = 0.5
 				m.tint = Color(0.7, 0.9, 1.4)
-				m.hp = (3.0 + time * 0.06) * 0.5
+				m.hp = (2.5 + time * 0.05) * 0.5
 				m.speed = minf(95.0 + time * 0.6, 180.0)
 				_apply_stage(m)
 				add_child(m)
@@ -907,7 +1057,7 @@ func _evo_poison() -> void:
 
 
 func _up_damage() -> void:
-	player.projectile_damage += 0.6
+	player.projectile_damage += 0.8
 
 
 func _up_fire_rate() -> void:
@@ -979,7 +1129,7 @@ func _event_ring() -> void:
 	var count := 22
 	for i in count:
 		var e := _make_enemy()
-		e.hp = 3.0 + time * 0.06
+		e.hp = 2.5 + time * 0.05
 		e.speed = minf(70.0 + time * 0.6, 160.0)
 		_apply_stage(e)
 		add_child(e)
@@ -992,7 +1142,7 @@ func _event_flood() -> void:
 	for i in 16:
 		var e := _make_enemy()
 		e.tex = TEX_HITMAN
-		e.hp = (3.0 + time * 0.06) * 0.6
+		e.hp = (2.5 + time * 0.05) * 0.6
 		e.speed = minf(130.0 + time * 0.5, 210.0)
 		_apply_stage(e)
 		add_child(e)
@@ -1018,7 +1168,9 @@ func _announce(text: String, color := Color(1.0, 0.9, 0.3)) -> void:
 	l.add_theme_constant_override("outline_size", 10)
 	$UI.add_child(l)
 	var vp := get_viewport_rect().size
-	l.position = Vector2(vp.x * 0.5 - l.size.x * 0.5, vp.y * 0.22)
+	var existing := $UI.get_children().filter(func(n: Node) -> bool: return n is Label and n != l)
+	var offset_y := existing.size() * 60.0
+	l.position = Vector2(vp.x * 0.5 - l.size.x * 0.5, vp.y * 0.22 + offset_y)
 	await get_tree().process_frame
 	l.position.x = vp.x * 0.5 - l.size.x * 0.5
 	l.pivot_offset = l.size * 0.5
@@ -1213,3 +1365,48 @@ func _on_player_died() -> void:
 	game_over = true
 	over_label.text = T("gameover_fmt") % [int(time) / 60, int(time) % 60, kills]
 	over_label.visible = true
+
+
+var _debug_label: Label
+
+func _build_debug_panel() -> void:
+	var panel := PanelContainer.new()
+	panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 4)
+
+	var btn_minus := Button.new()
+	btn_minus.text = "-"
+	btn_minus.add_theme_font_size_override("font_size", 18)
+	btn_minus.custom_minimum_size = Vector2(32, 0)
+	btn_minus.pressed.connect(func() -> void:
+		stage_len = maxf(10.0, stage_len - 10.0)
+		_update_debug_label())
+
+	_debug_label = Label.new()
+	_debug_label.add_theme_font_size_override("font_size", 18)
+	_debug_label.custom_minimum_size = Vector2(100, 0)
+	_debug_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_debug_label.text = "Stage: %.0fs" % stage_len
+
+	var btn_plus := Button.new()
+	btn_plus.text = "+"
+	btn_plus.add_theme_font_size_override("font_size", 18)
+	btn_plus.custom_minimum_size = Vector2(32, 0)
+	btn_plus.pressed.connect(func() -> void:
+		stage_len += 10.0
+		_update_debug_label())
+
+	hbox.add_child(btn_minus)
+	hbox.add_child(_debug_label)
+	hbox.add_child(btn_plus)
+	panel.add_child(hbox)
+	$UI.add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	panel.position.y -= 8
+	panel.position.x += 8
+
+
+func _update_debug_label() -> void:
+	if _debug_label:
+		_debug_label.text = "Stage: %.0fs" % stage_len

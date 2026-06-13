@@ -7,6 +7,9 @@ const BOOMERANG := preload("res://scripts/boomerang.gd")
 const CIRCLE := preload("res://assets/circle.svg")
 const SND_SHOOT := preload("res://assets/audio/shoot.ogg")
 const TEX_SPARK := preload("res://assets/vfx/spark.png")
+const TEX_ICE_LANCE := preload("res://assets/vfx/ice_lance.png")
+const TEX_POISON_AURA  := preload("res://assets/vfx/poison_aura.png")
+const TEX_POISON_CLOUD := preload("res://assets/vfx/poison_cloud.png")
 const TEX_GLOW := preload("res://assets/vfx/glow.png")
 const TEX_MUZZLE := preload("res://assets/vfx/muzzle.png")
 const TEX_SWORD := preload("res://assets/vfx/sword.png")
@@ -61,6 +64,7 @@ var poison_ring := Sprite2D.new()
 var poison_swirl := Node2D.new()
 var poison_parts := CPUParticles2D.new()
 var poison_pulse_t := 0.0
+var poison_cloud_t := 0.0
 var shake_amt := 0.0
 var hurt_fx_t := 0.0
 var slow_timer := 0.0
@@ -87,8 +91,10 @@ func _ready() -> void:
 	shoot_sfx.volume_db = -10.0
 	add_child(shoot_sfx)
 	boom_sfx.stream = SND_BOOM
+	boom_sfx.volume_db = -8.0
 	add_child(boom_sfx)
 	zap_sfx.stream = SND_ZAP
+	zap_sfx.volume_db = -8.0
 	add_child(zap_sfx)
 	poison_ring.texture = TEX_GLOW
 	poison_ring.modulate = Color(0.3, 1.0, 0.3, 0.4)
@@ -185,14 +191,19 @@ func _physics_process(delta: float) -> void:
 	if poison_level > 0:
 		poison_swirl.rotation += (1.3 if poison_evolved else 0.7) * delta
 		poison_pulse_t += delta * 2.4
+		var pr := _poison_radius()
 		var base_a := 0.55 if poison_evolved else 0.4
 		poison_ring.modulate.a = base_a + 0.12 * sin(poison_pulse_t)
-		poison_ring.scale = Vector2.ONE * (_poison_radius() * 2.0 / TEX_GLOW.get_size().x) * (1.0 + 0.03 * sin(poison_pulse_t * 0.7))
-		var pr := _poison_radius()
-		var pdmg := 3.0 * poison_level * (2.0 if poison_evolved else 1.0) * delta
+		poison_ring.scale = Vector2.ONE * (pr * 2.0 / TEX_GLOW.get_size().x) * (1.0 + 0.03 * sin(poison_pulse_t * 0.7))
+		poison_cloud_t -= delta
+		if poison_cloud_t <= 0.0:
+			poison_cloud_t = 0.7 if poison_evolved else 1.1
+			_spawn_poison_cloud(pr)
+		var pdmg := 4.0 * poison_level * (2.0 if poison_evolved else 1.0) * delta
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if global_position.distance_to(e.global_position) < pr:
 				e.take_hit(pdmg)
+				e.poison_timer = 1.2
 				if poison_evolved:
 					e.slow_timer = 0.2
 
@@ -289,7 +300,7 @@ func _fire_boomerang() -> void:
 		b.set_script(BOOMERANG)
 		b.player = self
 		b.dir = base_dir if i == 0 else -base_dir
-		b.damage = (6.0 + 4.0 * boomerang_level) * (1.6 if boomerang_evolved else 1.0)
+		b.damage = (8.0 + 5.0 * boomerang_level) * (1.6 if boomerang_evolved else 1.0)
 		b.max_range = 260.0 + 25.0 * boomerang_level
 		b.scale_mul = 1.5 if boomerang_evolved else 1.0
 		get_parent().add_child(b)
@@ -303,16 +314,27 @@ func _fire_frost() -> void:
 	var p := Area2D.new()
 	p.set_script(PROJECTILE)
 	p.dir = (target.global_position - global_position).normalized()
-	p.damage = (4.0 + 3.0 * frost_level) * (1.5 if frost_evolved else 1.0)
+	p.damage = (5.5 + 4.0 * frost_level) * (1.5 if frost_evolved else 1.0)
 	p.speed = 520.0
 	p.color = Color(0.55, 0.85, 1.0)
 	p.size = 0.16
 	p.kb = 80.0
-	p.stretch = 2.0
-	p.slow = 1.6
+	p.stretch = 1.0
+	p.tex = TEX_ICE_LANCE
 	p.trail_color = Color(0.55, 0.85, 1.0, 0.4)
+	if frost_level >= 2:
+		# Cấp 2: đóng băng mục tiêu + gây damage theo thời gian
+		p.freeze_dur = 1.5 + 0.5 * (frost_level - 2)
+		p.frost_dot_dmg = 3.0 * frost_level
+	else:
+		# Cấp 1: chỉ làm chậm
+		p.slow = 1.6
+	if frost_level >= 3:
+		# Cấp 3: đóng băng + AoE xung quanh mục tiêu
+		p.aoe = 80.0 + 10.0 * (frost_level - 3)
 	if frost_evolved:
-		p.aoe = 90.0
+		p.aoe = maxf(p.aoe, 110.0)
+		p.freeze_dur = maxf(p.freeze_dur, 2.5)
 	get_parent().add_child(p)
 	p.global_position = global_position
 
@@ -339,7 +361,7 @@ func _fire_grenade() -> void:
 
 func _explode_grenade(spr: Sprite2D, pos: Vector2) -> void:
 	var radius := 90.0 + 10.0 * grenade_level
-	var dmg := 8.0 + 4.0 * (grenade_level - 1)
+	var dmg := 11.0 + 5.0 * (grenade_level - 1)
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if pos.distance_to(e.global_position) < radius:
 			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 200.0, Color(1.0, 0.55, 0.25))
@@ -372,7 +394,7 @@ func _fire_lightning() -> void:
 	if cur == null or global_position.distance_to(cur.global_position) > 450.0:
 		return
 	var max_hits := 2 + lightning_level + (3 if lightning_evolved else 0)
-	var dmg := 4.0 + 2.0 * lightning_level
+	var dmg := 6.0 + 3.0 * lightning_level
 	var hit: Array = []
 	var pts: Array = [global_position]
 	while cur != null and hit.size() < max_hits:
@@ -446,6 +468,36 @@ func _spawn_strike(pos: Vector2) -> void:
 
 func _poison_radius() -> float:
 	return (100.0 + 15.0 * poison_level) * (1.5 if poison_evolved else 1.0)
+
+
+func _make_anim_sprite(tex: Texture2D, fw: int, fh: int, frame_count: int, fps: float) -> AnimatedSprite2D:
+	var frames := SpriteFrames.new()
+	frames.add_animation("default")
+	frames.set_animation_loop("default", true)
+	frames.set_animation_speed("default", fps)
+	var cols := tex.get_width() / fw
+	for i in frame_count:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tex
+		atlas.region = Rect2((i % cols) * fw, (i / cols) * fh, fw, fh)
+		frames.add_frame("default", atlas)
+	var s := AnimatedSprite2D.new()
+	s.sprite_frames = frames
+	return s
+
+
+func _spawn_poison_cloud(radius: float) -> void:
+	var angle := randf() * TAU
+	var dist := randf_range(0.0, radius * 0.8)
+	var cloud := _make_anim_sprite(TEX_POISON_CLOUD, 144, 144, 20, 14.0)
+	cloud.modulate = Color(0.4, 1.0, 0.4, 0.55) if poison_evolved else Color(0.5, 1.0, 0.5, 0.38)
+	cloud.scale = Vector2.ONE * randf_range(0.28, 0.45)
+	cloud.z_index = -3
+	cloud.position = Vector2.from_angle(angle) * dist
+	cloud.sprite_frames.set_animation_loop("default", false)
+	add_child(cloud)
+	cloud.play("default")
+	cloud.animation_finished.connect(cloud.queue_free)
 
 
 func update_poison_ring() -> void:

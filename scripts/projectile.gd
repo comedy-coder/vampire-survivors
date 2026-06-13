@@ -16,6 +16,9 @@ var trail_color := Color(0, 0, 0, 0)
 var trail_t := 0.0
 var slow := 0.0
 var crit := false
+var tex: Texture2D = null
+var freeze_dur := 0.0
+var frost_dot_dmg := 0.0  # custom sprite (overrides CIRCLE if set)
 
 
 func _ready() -> void:
@@ -25,11 +28,16 @@ func _ready() -> void:
 	cs.shape = c
 	add_child(cs)
 	var s := Sprite2D.new()
-	s.texture = CIRCLE
-	s.modulate = color
-	s.scale = Vector2(size * stretch, size)
-	if stretch != 1.0:
+	if tex != null:
+		s.texture = tex
+		s.scale = Vector2.ONE * (size / 0.16) * 2.2
 		s.rotation = dir.angle()
+	else:
+		s.texture = CIRCLE
+		s.modulate = color
+		s.scale = Vector2(size * stretch, size)
+		if stretch != 1.0:
+			s.rotation = dir.angle()
 	add_child(s)
 	area_entered.connect(_on_area_entered)
 
@@ -94,7 +102,12 @@ func _on_area_entered(area: Area2D) -> void:
 				e.take_hit(damage, true, (e.global_position - global_position).normalized() * kb, color, crit)
 				if slow > 0.0:
 					e.slow_timer = slow
-		if slow > 0.0:
+				if freeze_dur > 0.0 and "freeze_timer" in e:
+					e.freeze_timer = freeze_dur
+					if frost_dot_dmg > 0.0:
+						e.frost_dot = frost_dot_dmg
+						e.frost_dot_timer = freeze_dur
+		if slow > 0.0 or freeze_dur > 0.0:
 			_spawn_shards()
 		if parent != null and parent.has_method("spawn_explosion"):
 			parent.spawn_explosion(global_position, aoe * 2.0, 0.4)
@@ -103,6 +116,12 @@ func _on_area_entered(area: Area2D) -> void:
 	area.take_hit(damage, true, dir * kb, color, crit)
 	if slow > 0.0 and "slow_timer" in area:
 		area.slow_timer = slow
+		_spawn_shards()
+	if freeze_dur > 0.0 and "freeze_timer" in area:
+		area.freeze_timer = freeze_dur
+		if frost_dot_dmg > 0.0:
+			area.frost_dot = frost_dot_dmg
+			area.frost_dot_timer = freeze_dur
 		_spawn_shards()
 	pierce -= 1
 	if pierce < 0:

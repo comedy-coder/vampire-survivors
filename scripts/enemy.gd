@@ -5,8 +5,11 @@ signal summon(pos: Vector2)
 signal tornado(pos: Vector2)
 signal quicksand(pos: Vector2)
 
-const ENEMY_BULLET := preload("res://scripts/enemy_projectile.gd")
-const TEX_GLOW := preload("res://assets/vfx/glow.png")
+const ENEMY_BULLET    := preload("res://scripts/enemy_projectile.gd")
+const TEX_GLOW        := preload("res://assets/vfx/glow.png")
+const TEX_FREEZE_START  := preload("res://assets/vfx/freeze_start.png")
+const TEX_FREEZE_ACTIVE := preload("res://assets/vfx/freeze_active.png")
+const TEX_FREEZE_END    := preload("res://assets/vfx/freeze_end.png")
 const ELITE_BADGES := {
 	"regen": preload("res://assets/icons/elite_regen.png"),
 	"split": preload("res://assets/icons/elite_split.png"),
@@ -47,8 +50,16 @@ var sprite: Sprite2D
 var kb_vel := Vector2.ZERO
 var flash_timer := 0.0
 var slow_timer := 0.0
+var poison_timer := 0.0
+var freeze_timer := 0.0
+var frost_dot := 0.0
+var frost_dot_timer := 0.0
 var walk_t := randf() * TAU
 var strafe := 0.0
+var poison_parts: CPUParticles2D
+var freeze_overlay: Sprite2D
+var freeze_gfx: AnimatedSprite2D
+var freeze_was_active := false
 
 
 func _ready() -> void:
@@ -68,6 +79,37 @@ func _ready() -> void:
 	sprite.modulate = tint
 	add_child(sprite)
 	hp_max = hp
+	freeze_overlay = Sprite2D.new()
+	freeze_overlay.texture = TEX_GLOW
+	freeze_overlay.modulate = Color(0.7, 0.92, 1.0, 0.0)
+	freeze_overlay.scale = Vector2.ONE * (80.0 * (sprite_scale / 0.75) / TEX_GLOW.get_size().x)
+	freeze_overlay.z_index = 3
+	add_child(freeze_overlay)
+	freeze_gfx = _make_freeze_sprite()
+	freeze_gfx.z_index = -2
+	freeze_gfx.scale = Vector2.ONE * (sprite_scale / 0.75) * 1.8
+	freeze_gfx.visible = false
+	add_child(freeze_gfx)
+	freeze_gfx.animation_finished.connect(_on_freeze_anim_finished)
+	poison_parts = CPUParticles2D.new()
+	poison_parts.texture = preload("res://assets/circle.svg")
+	poison_parts.amount = 10
+	poison_parts.lifetime = 0.9
+	poison_parts.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	poison_parts.emission_sphere_radius = 10.0 * (sprite_scale / 0.75)
+	poison_parts.gravity = Vector2(0.0, -30.0)
+	poison_parts.initial_velocity_min = 5.0
+	poison_parts.initial_velocity_max = 18.0
+	poison_parts.scale_amount_min = 0.03
+	poison_parts.scale_amount_max = 0.07
+	var pg := Gradient.new()
+	pg.set_color(0, Color(0.3, 1.0, 0.35, 0.0))
+	pg.set_color(1, Color(0.3, 1.0, 0.35, 0.0))
+	pg.add_point(0.2, Color(0.4, 1.0, 0.4, 0.7))
+	poison_parts.color_ramp = pg
+	poison_parts.z_index = 2
+	poison_parts.emitting = false
+	add_child(poison_parts)
 	if elite_mod != "":
 		var aura := Sprite2D.new()
 		aura.texture = TEX_GLOW
@@ -97,6 +139,25 @@ func _physics_process(delta: float) -> void:
 	if player == null or not is_instance_valid(player):
 		return
 	slow_timer = maxf(0.0, slow_timer - delta)
+	poison_timer = maxf(0.0, poison_timer - delta)
+	poison_parts.emitting = poison_timer > 0.0
+	freeze_timer = maxf(0.0, freeze_timer - delta)
+	freeze_overlay.modulate.a = minf(freeze_timer / 0.3, 1.0) * 0.75
+	if freeze_timer > 0.0 and not freeze_was_active:
+		freeze_was_active = true
+		freeze_gfx.visible = true
+		freeze_gfx.play("start")
+	elif freeze_timer <= 0.0 and freeze_was_active:
+		freeze_was_active = false
+		if freeze_gfx.animation != "end":
+			freeze_gfx.play("end")
+	if frost_dot_timer > 0.0:
+		frost_dot_timer -= delta
+		hp -= frost_dot * delta
+		if hp <= 0.0:
+			died.emit(global_position, gems)
+			queue_free()
+			return
 	if elite_mod == "regen":
 		hp = minf(hp + hp_max * 0.03 * delta, hp_max)
 	if kb_vel != Vector2.ZERO:
@@ -105,6 +166,11 @@ func _physics_process(delta: float) -> void:
 	if flash_timer > 0.0:
 		flash_timer -= delta
 		sprite.modulate = tint.lerp(Color(2.0, 2.0, 2.0), flash_timer / 0.07)
+	elif freeze_timer > 0.0:
+		sprite.modulate = tint * Color(0.65, 0.88, 1.0)
+	elif poison_timer > 0.0:
+		var pt := minf(poison_timer, 0.5) / 0.5
+		sprite.modulate = tint * Color(0.55 + 0.45 * (1.0 - pt), 1.2, 0.55 + 0.45 * (1.0 - pt))
 	elif slow_timer > 0.0:
 		sprite.modulate = tint * Color(0.55, 0.8, 1.45)
 	else:
@@ -148,7 +214,7 @@ func _separate(delta: float) -> void:
 func _chase(delta: float, to_player: Vector2) -> void:
 	rotation = to_player.angle()
 	var dist := to_player.length()
-	var spd := speed * (0.6 if slow_timer > 0.0 else 1.0)
+	var spd := 0.0 if freeze_timer > 0.0 else speed * (0.6 if slow_timer > 0.0 else 1.0)
 
 	walk_t += delta * spd * 0.12
 	sprite.rotation = 0.14 * sin(walk_t)
@@ -280,3 +346,40 @@ func _spawn_dmg_text(damage: float, col: Color, crit: bool) -> void:
 	tw.tween_property(l, "global_position", l.global_position + Vector2(0, rise), 0.55)
 	tw.tween_property(l, "modulate:a", 0.0, 0.55).set_delay(0.15)
 	tw.chain().tween_callback(l.queue_free)
+
+
+func _make_freeze_sprite() -> AnimatedSprite2D:
+	var sf := SpriteFrames.new()
+	sf.add_animation("start")
+	sf.set_animation_loop("start", false)
+	sf.set_animation_speed("start", 14.0)
+	for i in 9:
+		var a := AtlasTexture.new()
+		a.atlas = TEX_FREEZE_START
+		a.region = Rect2(i * 32, 0, 32, 32)
+		sf.add_frame("start", a)
+	sf.add_animation("active")
+	sf.set_animation_loop("active", true)
+	sf.set_animation_speed("active", 10.0)
+	for i in 8:
+		var a := AtlasTexture.new()
+		a.atlas = TEX_FREEZE_ACTIVE
+		a.region = Rect2(i * 32, 0, 32, 32)
+		sf.add_frame("active", a)
+	sf.add_animation("end")
+	sf.set_animation_loop("end", false)
+	sf.set_animation_speed("end", 14.0)
+	for i in 18:
+		var a := AtlasTexture.new()
+		a.atlas = TEX_FREEZE_END
+		a.region = Rect2(i * 32, 0, 32, 32)
+		sf.add_frame("end", a)
+	var s := AnimatedSprite2D.new()
+	s.sprite_frames = sf
+	return s
+
+
+func _on_freeze_anim_finished() -> void:
+	match freeze_gfx.animation:
+		"start": freeze_gfx.play("active")
+		"end":   freeze_gfx.visible = false
