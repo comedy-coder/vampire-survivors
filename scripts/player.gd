@@ -42,7 +42,6 @@ var projectile_damage := 2.0
 var pierce := 0
 var magnet_range := 80.0
 var regen := 0.0
-var thorns := 0.0
 var crit_chance := 0.0
 var revive := false
 var fire_timer := 0.0
@@ -209,11 +208,6 @@ func _physics_process(delta: float) -> void:
 
 	if regen > 0.0:
 		heal(regen * delta)
-
-	if thorns > 0.0:
-		for e in get_tree().get_nodes_in_group("enemies"):
-			if global_position.distance_to(e.global_position) < 42.0:
-				e.take_hit(thorns * delta)
 
 	if shake_amt > 0.0:
 		cam.offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * shake_amt

@@ -6,6 +6,7 @@ const TORNADO := preload("res://scripts/tornado.gd")
 const QUICKSAND := preload("res://scripts/quicksand.gd")
 const PICKUP := preload("res://scripts/pickup.gd")
 const CRATE := preload("res://scripts/crate.gd")
+const FAMILIAR := preload("res://scripts/familiar.gd")
 
 const ICON_PICK_HEAL := preload("res://assets/icons/up_hp.svg")
 const ICON_PICK_MAGNET := preload("res://assets/icons/art_magnet.svg")
@@ -20,12 +21,24 @@ const MUSIC_GAME   := preload("res://assets/audio/music_game.wav")
 const MUSIC_DESERT := preload("res://assets/audio/music_desert.mp3")
 const MUSIC_DEAD   := preload("res://assets/audio/music_dead.mp3")
 const SND_DIE := preload("res://assets/audio/enemy_die.ogg")
+const FONT_ANNOUNCE := preload("res://assets/fonts/Baloo2.ttf")
 const CIRCLE := preload("res://assets/circle.svg")
+const TEX_UI_PANEL := preload("res://assets/ui/ui_panel.png")
+const TEX_UI_FRAME := preload("res://assets/ui/ui_frame.png")
 const TEX_EXPLOSION := preload("res://assets/vfx/explosion_sheet.png")
 const TEX_CHEST := preload("res://assets/decor/chest.png")
 const ICON_CHEST := preload("res://assets/icons/art_chest.svg")
 const TEX_BOSS_DESERT := preload("res://assets/characters/boss_desert.png")
 const TEX_BOSS_BONE   := preload("res://assets/characters/boss_bone.png")
+const TEX_SOLDIER := preload("res://assets/characters/player_soldier.png")
+
+# Boss top-down: sprite quái nhìn từ trên xuống, phóng to, xoay theo hướng như quái thường
+const TOPDOWN_BOSSES := [
+	{"tex": TEX_ZOMBIE,  "name": ["ZOMBIE CHÚA!", "ZOMBIE LORD!"],          "tint": Color(1.0, 0.5, 0.5),  "speed": 72.0, "bullet": 0.0,  "skills": ["dash", "dash", "summon"]},
+	{"tex": TEX_ROBOT,   "name": ["ROBOT PHÁO ĐÀI!", "ROBOT FORTRESS!"],    "tint": Color(0.8, 0.6, 1.0),  "speed": 56.0, "bullet": 10.0, "skills": ["burst", "burst", "summon"]},
+	{"tex": TEX_HITMAN,  "name": ["SÁT THỦ BÓNG ĐÊM!", "SHADOW ASSASSIN!"], "tint": Color(0.55, 0.7, 1.0), "speed": 96.0, "bullet": 9.0,  "skills": ["spiral", "dash", "burst"]},
+	{"tex": TEX_SOLDIER, "name": ["ĐẠI TƯỚNG!", "WARLORD!"],                "tint": Color(1.0, 0.72, 0.4), "speed": 60.0, "bullet": 12.0, "skills": ["burst", "summon", "burst"], "meadow_only": true},
+]
 
 const I18N := {
 	"levelup_title": ["LEVEL UP! Chọn nâng cấp", "LEVEL UP! Choose an upgrade"],
@@ -55,6 +68,13 @@ const I18N := {
 	"weapon_lv": ["%s (Cấp %d → %d)", "%s (Lv %d → %d)"],
 	"artifact_fmt": ["CỔ VẬT: %s\n%s", "ARTIFACT: %s\n%s"],
 	"stage_fmt": ["VÙNG MỚI: %s", "NEW AREA: %s"],
+	"shop_btn": ["🛒 Nâng cấp (Vàng: %d)", "🛒 Upgrades (Gold: %d)"],
+	"shop_title": ["NÂNG CẤP VĨNH VIỄN", "PERMANENT UPGRADES"],
+	"shop_gold": ["💰 Vàng: %d", "💰 Gold: %d"],
+	"shop_close": ["← Quay lại", "← Back"],
+	"shop_buy": ["%s  (Cấp %d/%d)\n%s — Giá %d 💰", "%s  (Lv %d/%d)\n%s — Cost %d 💰"],
+	"shop_max": ["%s  (TỐI ĐA)\n%s", "%s  (MAX)\n%s"],
+	"gold_reward": ["\nVàng nhận: +%d   (Tổng: %d)", "\nGold earned: +%d   (Total: %d)"],
 }
 
 const CHARACTERS := [
@@ -226,10 +246,21 @@ const ICON_FROST := preload("res://assets/icons/w_frost.svg")
 const ARTIFACTS := [
 	{"name": ["Nam châm cổ", "Ancient Magnet"], "desc": ["Hút gem từ xa gấp 3 lần", "Triple gem pickup range"], "fn": "_art_magnet", "icon": preload("res://assets/icons/art_magnet.svg")},
 	{"name": ["Tim phượng hoàng", "Phoenix Heart"], "desc": ["Hồi sinh 1 lần với nửa máu, nổ đẩy lùi quái", "Revive once at half HP with a knockback blast"], "fn": "_art_phoenix", "icon": preload("res://assets/icons/art_phoenix.svg")},
-	{"name": ["Giáp gai", "Thorn Armor"], "desc": ["Quái chạm vào người sẽ bị thương", "Enemies touching you take damage"], "fn": "_art_thorns", "icon": preload("res://assets/icons/art_thorns.svg")},
+	{"name": ["Linh thú bay", "Spirit Familiar"], "desc": ["Triệu hồi linh thú bay quanh người, tự bắn quái gần nhất", "Summon a familiar that orbits you and auto-fires at the nearest enemy"], "fn": "_art_familiar", "icon": preload("res://assets/icons/art_familiar.svg")},
 	{"name": ["Bùa tái sinh", "Regen Charm"], "desc": ["Hồi 2 máu mỗi giây", "Heal 2 HP per second"], "fn": "_art_regen", "icon": preload("res://assets/icons/art_regen.svg")},
 	{"name": ["Kính ngắm cổ", "Ancient Scope"], "desc": ["20% đạn chí mạng, sát thương x2", "20% crit chance for x2 damage"], "fn": "_art_crit", "icon": preload("res://assets/icons/art_crit.svg")},
 	{"name": ["Ngọc kinh nghiệm", "XP Gem"], "desc": ["Mỗi gem cho gấp đôi XP", "Gems give double XP"], "fn": "_art_xp", "icon": preload("res://assets/icons/art_xp.svg")},
+]
+
+# Nâng cấp vĩnh viễn — mua bằng vàng tích lũy qua các ván, cộng dồn vào nhân vật khi bắt đầu
+const META_UPGRADES := [
+	{"id": "hp",     "name": ["Máu tối đa", "Max HP"],         "prop": "max_hp",            "amount": 20.0, "unit": "+20 HP",   "max": 8, "base": 40},
+	{"id": "dmg",    "name": ["Sát thương", "Damage"],          "prop": "projectile_damage", "amount": 0.4,  "unit": "+0.4 DMG", "max": 8, "base": 50},
+	{"id": "fire",   "name": ["Tốc độ bắn", "Fire rate"],       "prop": "fire_rate",         "amount": 0.15, "unit": "+0.15",    "max": 6, "base": 50},
+	{"id": "speed",  "name": ["Tốc độ chạy", "Move speed"],     "prop": "speed",             "amount": 12.0, "unit": "+12",      "max": 6, "base": 40},
+	{"id": "regen",  "name": ["Hồi máu/giây", "HP regen"],      "prop": "regen",             "amount": 0.4,  "unit": "+0.4/s",   "max": 5, "base": 60},
+	{"id": "magnet", "name": ["Tầm hút gem", "Magnet range"],   "prop": "magnet_range",      "amount": 35.0, "unit": "+35",      "max": 4, "base": 30},
+	{"id": "crit",   "name": ["Tỉ lệ chí mạng", "Crit chance"], "prop": "crit_chance",       "amount": 0.03, "unit": "+3%",      "max": 5, "base": 70},
 ]
 
 var time := 0.0
@@ -243,6 +274,7 @@ var boss_timer := BOSS_INTERVAL
 var game_over := false
 var choosing := false
 var pending: Array = []
+var card_frames: Array = []  # khung viền fantasy cho 3 thẻ chọn nâng cấp
 var decor_cells := {}
 var stage := 0
 var stages_announced: Array = []
@@ -258,6 +290,16 @@ var pause_panel: PanelContainer
 var owned_artifacts: Array = []
 var xp_gain := 1
 var lang := 0  # 0 = Tiếng Việt, 1 = English
+var gold := 0
+var meta_levels := {}  # id nâng cấp -> cấp đã mua
+var difficulty := 1.0      # nhân máu quái theo số nâng cấp vĩnh viễn đã mua
+var enemy_dmg_mult := 1.0  # nhân sát thương quái theo số nâng cấp đã mua
+var shop_panel: PanelContainer
+var shop_title: Label
+var shop_gold_label: Label
+var shop_close: Button
+var shop_open_btn: Button
+var shop_rows: Array = []  # mỗi phần tử: {id, btn}
 var chest_title: Label
 var chest_btn: Button
 var pause_title: Label
@@ -269,6 +311,7 @@ var lang_btns: Array = []
 var ground := Sprite2D.new()
 var music := AudioStreamPlayer.new()
 var die_sfx := AudioStreamPlayer.new()
+var announce_font: FontVariation
 
 @onready var player: CharacterBody2D = $Player
 @onready var hp_bar: TextureProgressBar = $UI/HpBar
@@ -288,6 +331,9 @@ var die_sfx := AudioStreamPlayer.new()
 
 func _ready() -> void:
 	randomize()
+	announce_font = FontVariation.new()
+	announce_font.base_font = FONT_ANNOUNCE
+	announce_font.variation_opentype = {"wght": 800}
 	for st: AudioStreamWAV in [MUSIC_MENU, MUSIC_GAME]:
 		st.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		st.loop_end = st.data.size() / 4
@@ -325,8 +371,12 @@ func _ready() -> void:
 	for i in 6:
 		char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1)).pressed.connect(_pick_char.bind(i))
 	_load_lang()
+	_load_meta()
 	_build_lang_row()
+	_build_shop_panel()
+	_build_shop_button()
 	_apply_lang()
+	_skin_levelup()
 	_build_debug_panel()
 	get_tree().paused = true
 
@@ -345,6 +395,141 @@ func _save_lang() -> void:
 	var cf := ConfigFile.new()
 	cf.set_value("ui", "lang", lang)
 	cf.save("user://settings.cfg")
+
+
+# ---------- Meta-progression: vàng + nâng cấp vĩnh viễn ----------
+
+func _load_meta() -> void:
+	var cf := ConfigFile.new()
+	if cf.load("user://save.cfg") != OK:
+		return
+	gold = int(cf.get_value("meta", "gold", 0))
+	for u in META_UPGRADES:
+		meta_levels[u["id"]] = int(cf.get_value("upgrades", u["id"], 0))
+
+
+func _save_meta() -> void:
+	var cf := ConfigFile.new()
+	cf.set_value("meta", "gold", gold)
+	for u in META_UPGRADES:
+		cf.set_value("upgrades", u["id"], int(meta_levels.get(u["id"], 0)))
+	cf.save("user://save.cfg")
+
+
+func _apply_meta_upgrades() -> void:
+	var total := 0
+	for u in META_UPGRADES:
+		var lvl := int(meta_levels.get(u["id"], 0))
+		total += lvl
+		if lvl <= 0:
+			continue
+		player.set(u["prop"], player.get(u["prop"]) + float(u["amount"]) * lvl)
+	player.hp = player.max_hp
+	# Mỗi cấp nâng cấp vĩnh viễn làm quái mạnh thêm để bù lại sức mạnh người chơi
+	difficulty = 1.0 + total * 0.04       # +4% máu quái mỗi cấp
+	enemy_dmg_mult = 1.0 + total * 0.02   # +2% sát thương quái mỗi cấp
+
+
+func _meta_by_id(id: String) -> Dictionary:
+	for u in META_UPGRADES:
+		if u["id"] == id:
+			return u
+	return {}
+
+
+func _upgrade_cost(u: Dictionary, lvl: int) -> int:
+	return int(u["base"]) * (lvl + 1)
+
+
+func _build_shop_panel() -> void:
+	shop_panel = PanelContainer.new()
+	shop_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	shop_panel.visible = false
+	shop_panel.custom_minimum_size = Vector2(560, 0)
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	shop_title = Label.new()
+	shop_title.add_theme_font_size_override("font_size", 30)
+	shop_title.add_theme_color_override("font_color", Color(0.15, 0.17, 0.25))
+	shop_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(shop_title)
+	shop_gold_label = Label.new()
+	shop_gold_label.add_theme_font_size_override("font_size", 24)
+	shop_gold_label.add_theme_color_override("font_color", Color(0.85, 0.6, 0.05))
+	shop_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(shop_gold_label)
+	for u in META_UPGRADES:
+		var b := Button.new()
+		b.add_theme_font_size_override("font_size", 18)
+		b.custom_minimum_size = Vector2(0, 52)
+		b.pressed.connect(_buy_upgrade.bind(String(u["id"])))
+		vbox.add_child(b)
+		shop_rows.append({"id": u["id"], "btn": b})
+	shop_close = Button.new()
+	shop_close.add_theme_font_size_override("font_size", 22)
+	shop_close.pressed.connect(_close_shop)
+	vbox.add_child(shop_close)
+	shop_panel.add_child(vbox)
+	$UI.add_child(shop_panel)
+	shop_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	shop_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	shop_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+
+
+func _build_shop_button() -> void:
+	shop_open_btn = Button.new()
+	shop_open_btn.add_theme_font_size_override("font_size", 20)
+	shop_open_btn.pressed.connect(_open_shop)
+	char_panel.get_node("VBox").add_child(shop_open_btn)
+
+
+func _open_shop() -> void:
+	char_panel.visible = false
+	_refresh_shop()
+	shop_panel.visible = true
+
+
+func _close_shop() -> void:
+	shop_panel.visible = false
+	char_panel.visible = true
+	_update_shop_btn_label()
+
+
+func _buy_upgrade(id: String) -> void:
+	var u := _meta_by_id(id)
+	var lvl := int(meta_levels.get(id, 0))
+	if lvl >= int(u["max"]):
+		return
+	var cost := _upgrade_cost(u, lvl)
+	if gold < cost:
+		return
+	gold -= cost
+	meta_levels[id] = lvl + 1
+	_save_meta()
+	_refresh_shop()
+
+
+func _refresh_shop() -> void:
+	if shop_gold_label == null:
+		return
+	shop_gold_label.text = T("shop_gold") % gold
+	for row in shop_rows:
+		var u := _meta_by_id(String(row["id"]))
+		var lvl := int(meta_levels.get(u["id"], 0))
+		var b: Button = row["btn"]
+		if lvl >= int(u["max"]):
+			b.text = T("shop_max") % [u["name"][lang], u["unit"]]
+			b.disabled = true
+		else:
+			var cost := _upgrade_cost(u, lvl)
+			b.text = T("shop_buy") % [u["name"][lang], lvl, int(u["max"]), u["unit"], cost]
+			b.disabled = gold < cost
+	_update_shop_btn_label()
+
+
+func _update_shop_btn_label() -> void:
+	if shop_open_btn:
+		shop_open_btn.text = T("shop_btn") % gold
 
 
 func _build_lang_row() -> void:
@@ -387,6 +572,9 @@ func _apply_lang() -> void:
 	pause_resume.text = T("resume")
 	pause_reset.text = T("reselect")
 	lang_label.text = T("lang_label")
+	shop_title.text = T("shop_title")
+	shop_close.text = T("shop_close")
+	_refresh_shop()
 	for i in lang_btns.size():
 		lang_btns[i].button_pressed = (i == lang)
 	for i in 6:
@@ -425,6 +613,7 @@ func _pick_char(i: int) -> void:
 	player.projectile_count = c["count"]
 	player.pierce = c["pierce"]
 	player.weapon = c["weapon"]
+	_apply_meta_upgrades()
 	char_panel.visible = false
 	get_tree().paused = false
 	music.stream = MUSIC_GAME
@@ -484,11 +673,8 @@ func _process(delta: float) -> void:
 
 
 func _update_stage() -> void:
-	var s: int
-	if time < stage_len:
-		s = 0
-	else:
-		s = 1 + (int((time - stage_len) / stage_len) % 2)
+	# Lặp vòng cả 3 vùng: Đồng cỏ → Sa mạc → Đất chết → Đồng cỏ ...
+	var s := int(time / stage_len) % 3
 	if s == stage:
 		return
 	stage = s
@@ -504,6 +690,7 @@ func _update_stage() -> void:
 		_announce(T("stage_fmt") % cfg["name"][lang], Color(0.55, 1.0, 0.75))
 	boss_timer = 12.0
 	match s:
+		0: _change_music(MUSIC_GAME)
 		1: _change_music(MUSIC_DESERT)
 		2: _change_music(MUSIC_DEAD)
 
@@ -521,6 +708,10 @@ func _change_music(new_stream: AudioStream) -> void:
 
 
 func _apply_stage(e: Area2D) -> void:
+	# Khó dần theo số nâng cấp vĩnh viễn đã mua
+	e.hp *= difficulty
+	e.dps *= enemy_dmg_mult
+	e.bullet_damage *= enemy_dmg_mult
 	match stage:
 		1:
 			e.hp *= 1.15
@@ -625,47 +816,49 @@ func _spawn_boss() -> void:
 	e.dps = 30.0
 	e.gems = 8
 	var announce := T("boss_announce")
-	match stage:
-		1:
-			# Hung thần sa mạc: thả lốc cát đuổi theo, tạo vũng cát lún, biết lao tới
-			e.tex = TEX_BOSS_DESERT
-			e.upright = true
-			e.vis_scale = 0.5
-			e.speed = 80.0
-			e.skills = ["tornado", "quicksand", "dash"]
-			e.skill_interval = 5.0
-			announce = T("boss_desert")
-		2:
-			# Chúa tể xương: gọi đệ xương liên tục, bắn đạn xoắn ốc và vòng toả tròn
-			e.tex = TEX_BOSS_BONE
-			e.upright = true
-			e.vis_scale = 0.5
-			e.speed = 60.0
-			e.bullet_damage = 11.0
-			e.skills = ["summon", "spiral", "burst"]
-			e.skill_interval = 5.5
-			announce = T("boss_dead")
-		_:
-			if boss_count % 2 == 1:
-				# Zombie chúa: nhấp nháy đỏ rồi lao thẳng vào người chơi, biết gọi đệ
-				e.tex = TEX_ZOMBIE
-				e.tint = Color(1.0, 0.5, 0.5)
-				e.speed = 70.0
-				e.skills = ["dash", "dash", "summon"]
-			else:
-				# Robot pháo đài: bắn vòng đạn toả tròn, biết gọi đệ
-				e.tex = TEX_ROBOT
-				e.tint = Color(0.8, 0.6, 1.0)
-				e.speed = 55.0
-				e.bullet_damage = 10.0
-				e.skills = ["burst", "burst", "summon"]
-				e.skill_interval = 5.0
+	# Vùng có boss riêng (sa mạc/đất chết) thì ~50% ra boss đặc trưng, còn lại ra quái tổng hợp
+	var themed := stage != 0 and randf() < 0.5
+	if stage == 1 and themed:
+		# Hung thần sa mạc: thả lốc cát đuổi theo, tạo vũng cát lún, biết lao tới
+		e.tex = TEX_BOSS_DESERT
+		e.upright = true
+		e.vis_scale = 0.5
+		e.speed = 80.0
+		e.skills = ["tornado", "quicksand", "dash"]
+		e.skill_interval = 5.0
+		announce = T("boss_desert")
+	elif stage == 2 and themed:
+		# Chúa tể xương: gọi đệ xương liên tục, bắn đạn xoắn ốc và vòng toả tròn
+		e.tex = TEX_BOSS_BONE
+		e.upright = true
+		e.vis_scale = 0.5
+		e.speed = 60.0
+		e.bullet_damage = 11.0
+		e.skills = ["summon", "spiral", "burst"]
+		e.skill_interval = 5.5
+		announce = T("boss_dead")
+	else:
+		announce = _apply_topdown_boss(e)
 	_apply_stage(e)
 	add_child(e)
 	e.global_position = player.global_position + Vector2.from_angle(randf() * TAU) * 600.0
 	bosses.append(e)
 	e.died.connect(func(pos: Vector2, _g: int) -> void: _spawn_chest(pos))
-	_announce(announce, Color(1.0, 0.2, 0.2))
+	_announce(announce, Color(1.0, 0.2, 0.2), 8.0)
+
+
+func _apply_topdown_boss(e: Area2D) -> String:
+	# Boss gắn cờ "meadow_only" chỉ được chọn khi đang ở Đồng cỏ (stage 0)
+	var pool: Array = TOPDOWN_BOSSES.filter(func(b: Dictionary) -> bool: return stage == 0 or not b.get("meadow_only", false))
+	var m: Dictionary = pool[boss_count % pool.size()]
+	e.tex = m["tex"]
+	e.tint = m["tint"]
+	e.sprite_scale = 2.2  # to gấp ~1.5 lần boss thường để ra dáng boss
+	e.speed = float(m["speed"])
+	e.bullet_damage = float(m["bullet"])
+	e.skills = m["skills"]
+	e.skill_interval = 5.0
+	return m["name"][lang]
 
 
 func _on_boss_summon(pos: Vector2) -> void:
@@ -854,6 +1047,37 @@ func _on_gem_collected(value: int) -> void:
 		_show_level_up()
 
 
+func _skin_levelup() -> void:
+	# Panel ngoài: khung fantasy tối (Kenney Fantasy UI Borders)
+	var psb := StyleBoxTexture.new()
+	psb.texture = TEX_UI_PANEL
+	psb.set_texture_margin_all(32.0)
+	psb.set_content_margin_all(26.0)
+	psb.modulate_color = Color(0.17, 0.16, 0.24)
+	level_panel.add_theme_stylebox_override("panel", psb)
+	# 3 thẻ: nền tối + khung viền tô màu theo độ hiếm (đặt ở _show_level_up)
+	for i in 3:
+		var btn: Button = level_panel.get_node("VBox/HBox/Btn%d" % (i + 1))
+		var normal := StyleBoxFlat.new()
+		normal.bg_color = Color(0.10, 0.10, 0.15)
+		normal.set_corner_radius_all(12)
+		var hover: StyleBoxFlat = normal.duplicate()
+		hover.bg_color = Color(0.17, 0.17, 0.25)
+		btn.add_theme_stylebox_override("normal", normal)
+		btn.add_theme_stylebox_override("hover", hover)
+		btn.add_theme_stylebox_override("pressed", normal)
+		var frame := NinePatchRect.new()
+		frame.texture = TEX_UI_FRAME
+		frame.patch_margin_left = 32
+		frame.patch_margin_top = 32
+		frame.patch_margin_right = 32
+		frame.patch_margin_bottom = 32
+		frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn.add_child(frame)
+		card_frames.append(frame)
+
+
 func _show_level_up() -> void:
 	choosing = true
 	xp -= xp_needed
@@ -867,15 +1091,17 @@ func _show_level_up() -> void:
 	for i in 3:
 		var b: Button = level_panel.get_node("VBox/HBox/Btn%d" % (i + 1))
 		var fn := String(pending[i]["fn"])
-		var col := Color.WHITE
+		var col := Color(0.5, 1.0, 0.6)  # chỉ số: xanh lá
 		if fn.begins_with("_art"):
-			col = Color(1.0, 0.85, 0.35)
+			col = Color(1.0, 0.78, 0.27)  # cổ vật: hổ phách
 		elif fn.begins_with("_evo"):
-			col = Color(1.0, 0.5, 0.9)
+			col = Color(1.0, 0.4, 0.4)  # tiến hóa: đỏ
 		b.get_node("V/Text").text = pending[i]["label"]
 		var icon: TextureRect = b.get_node("V/Icon")
 		icon.texture = pending[i].get("icon")
 		icon.modulate = col
+		if i < card_frames.size():
+			card_frames[i].self_modulate = col
 
 	level_panel.visible = true
 	get_tree().paused = true
@@ -935,9 +1161,17 @@ func _art_phoenix() -> void:
 	player.revive = true
 
 
-func _art_thorns() -> void:
-	owned_artifacts.append("_art_thorns")
-	player.thorns = 12.0
+func _art_familiar() -> void:
+	owned_artifacts.append("_art_familiar")
+	_spawn_familiar()
+
+
+func _spawn_familiar() -> void:
+	var f := Node2D.new()
+	f.set_script(FAMILIAR)
+	f.player = player
+	add_child(f)
+	f.global_position = player.global_position
 
 
 func _art_regen() -> void:
@@ -1082,27 +1316,49 @@ func _event_frenzy() -> void:
 			e.set_meta("fz", true)
 
 
-func _announce(text: String, color := Color(1.0, 0.9, 0.3)) -> void:
+func _announce(text: String, color := Color(1.0, 0.9, 0.3), shake := 0.0) -> void:
+	if shake > 0.0 and is_instance_valid(player):
+		player.shake_amt = maxf(player.shake_amt, shake)
+	var banner := PanelContainer.new()
+	banner.add_to_group("announce")
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.06, 0.06, 0.09, 0.82)
+	sb.border_color = color
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(8)
+	sb.content_margin_left = 16.0
+	sb.content_margin_right = 16.0
+	sb.content_margin_top = 4.0
+	sb.content_margin_bottom = 6.0
+	sb.shadow_color = Color(0, 0, 0, 0.5)
+	sb.shadow_size = 4
+	banner.add_theme_stylebox_override("panel", sb)
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", 44)
-	l.add_theme_color_override("font_color", color)
+	l.add_theme_font_override("font", announce_font)
+	l.add_theme_font_size_override("font_size", 28)
+	l.add_theme_color_override("font_color", color.lerp(Color.WHITE, 0.35))
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	l.add_theme_constant_override("outline_size", 10)
-	$UI.add_child(l)
+	l.add_theme_constant_override("outline_size", 4)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.add_child(l)
+	$UI.add_child(banner)
 	var vp := get_viewport_rect().size
-	var existing := $UI.get_children().filter(func(n: Node) -> bool: return n is Label and n != l)
-	var offset_y := existing.size() * 60.0
-	l.position = Vector2(vp.x * 0.5 - l.size.x * 0.5, vp.y * 0.22 + offset_y)
+	var offset_y := (get_tree().get_nodes_in_group("announce").size() - 1) * 40.0
 	await get_tree().process_frame
-	l.position.x = vp.x * 0.5 - l.size.x * 0.5
-	l.pivot_offset = l.size * 0.5
-	l.scale = Vector2.ONE * 0.6
-	var tw := l.create_tween()
-	tw.tween_property(l, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	banner.position = Vector2(vp.x * 0.5 - banner.size.x * 0.5, vp.y * 0.20 + offset_y)
+	banner.pivot_offset = banner.size * 0.5
+	banner.scale = Vector2.ONE * 0.7
+	banner.modulate.a = 0.0
+	var tw := banner.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(banner, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(banner, "modulate:a", 1.0, 0.2)
+	tw.set_parallel(false)
 	tw.tween_interval(1.8)
-	tw.tween_property(l, "modulate:a", 0.0, 0.5)
-	tw.tween_callback(l.queue_free)
+	tw.tween_property(banner, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(banner.queue_free)
 
 
 func _build_chest_panel() -> void:
@@ -1286,7 +1542,11 @@ func _update_arrows() -> void:
 
 func _on_player_died() -> void:
 	game_over = true
-	over_label.text = T("gameover_fmt") % [int(time) / 60, int(time) % 60, kills]
+	var reward := kills + boss_count * 20 + int(time / 5.0)
+	gold += reward
+	_save_meta()
+	over_label.text = (T("gameover_fmt") % [int(time) / 60, int(time) % 60, kills]) \
+		+ (T("gold_reward") % [reward, gold])
 	over_label.visible = true
 
 
@@ -1320,9 +1580,15 @@ func _build_debug_panel() -> void:
 		stage_len += 10.0
 		_update_debug_label())
 
+	var btn_familiar := Button.new()
+	btn_familiar.text = "Thú"
+	btn_familiar.add_theme_font_size_override("font_size", 18)
+	btn_familiar.pressed.connect(_spawn_familiar)
+
 	hbox.add_child(btn_minus)
 	hbox.add_child(_debug_label)
 	hbox.add_child(btn_plus)
+	hbox.add_child(btn_familiar)
 	panel.add_child(hbox)
 	$UI.add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
@@ -1333,3 +1599,5 @@ func _build_debug_panel() -> void:
 func _update_debug_label() -> void:
 	if _debug_label:
 		_debug_label.text = "Stage: %.0fs" % stage_len
+
+
