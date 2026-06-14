@@ -2,10 +2,10 @@ Icons from game-icons.net, licensed under CC BY 3.0
 https://creativecommons.org/licenses/by/3.0/
 
 Authors:
-- Lorc (https://lorcblog.blogspot.com): minigun, supersonic-bullet, run,
-  shining-heart, sword-spin, grenade, lightning-branches, poison-gas,
-  magnet, spiked-armor, gems, locked-chest
-- Delapouite (https://delapouite.com): heavy-bullets, split-arrows,
+- Lorc (https://lorcblog.blogspot.com): supersonic-bullet, wingfoot,
+  glass-heart, sword-spin, grenade, lightning-branches, poison-gas,
+  magnet, spiked-armor, gems, locked-chest, stopwatch, missile-swarm
+- Delapouite (https://delapouite.com): heavy-bullets,
   heart-wings, crosshair
 - Zeromancer: heart-plus
 

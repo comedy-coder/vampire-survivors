@@ -1599,5 +1599,3 @@ func _build_debug_panel() -> void:
 func _update_debug_label() -> void:
 	if _debug_label:
 		_debug_label.text = "Stage: %.0fs" % stage_len
-
-

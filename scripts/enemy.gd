@@ -155,7 +155,7 @@ func _physics_process(delta: float) -> void:
 		frost_dot_timer -= delta
 		hp -= frost_dot * delta
 		if hp <= 0.0:
-			died.emit(global_position, gems)
+			died.emit.call_deferred(global_position, gems)
 			queue_free()
 			return
 	if elite_mod == "regen":
@@ -323,7 +323,7 @@ func take_hit(damage: float, show_dmg := false, kb := Vector2.ZERO, col := Color
 	if show_dmg:
 		_spawn_dmg_text(damage, col, crit)
 	if hp <= 0.0:
-		died.emit(global_position, gems)
+		died.emit.call_deferred(global_position, gems)
 		queue_free()
 
 
