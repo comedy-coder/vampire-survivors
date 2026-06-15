@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/game.gd" id="1_game"]
 [ext_resource type="Script" path="res://scripts/player.gd" id="2_player"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/bar_bg.png" id="4_bar_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/bar_red.png" id="5_bar_red"]
 [ext_resource type="Texture2D" path="res://assets/ui/bar_blue.png" id="6_bar_blue"]
+[ext_resource type="Texture2D" path="res://assets/ui/bar_bg_xp.png" id="16_bar_bg_xp"]
 [ext_resource type="Texture2D" path="res://assets/ui/panel_grey.png" id="7_panel"]
 [ext_resource type="Texture2D" path="res://assets/ui/button_blue.png" id="8_btn"]
 [ext_resource type="Texture2D" path="res://assets/ui/button_blue_hover.png" id="9_btn_hover"]
@@ -82,14 +83,14 @@ texture = ExtResource("3_player_tex")
 
 [node name="HpBar" type="TextureProgressBar" parent="UI"]
 offset_left = 20.0
-offset_top = 14.0
-offset_right = 320.0
-offset_bottom = 46.0
+offset_top = 10.0
+offset_right = 330.0
+offset_bottom = 50.0
 nine_patch_stretch = true
-stretch_margin_left = 8
-stretch_margin_top = 8
-stretch_margin_right = 8
-stretch_margin_bottom = 8
+stretch_margin_left = 20
+stretch_margin_top = 4
+stretch_margin_right = 20
+stretch_margin_bottom = 4
 texture_under = ExtResource("4_bar_bg")
 texture_progress = ExtResource("5_bar_red")
 max_value = 100.0
@@ -112,15 +113,15 @@ vertical_alignment = 1
 
 [node name="XpBar" type="TextureProgressBar" parent="UI"]
 offset_left = 20.0
-offset_top = 52.0
-offset_right = 320.0
-offset_bottom = 78.0
+offset_top = 56.0
+offset_right = 330.0
+offset_bottom = 88.0
 nine_patch_stretch = true
-stretch_margin_left = 8
-stretch_margin_top = 8
-stretch_margin_right = 8
-stretch_margin_bottom = 8
-texture_under = ExtResource("4_bar_bg")
+stretch_margin_left = 20
+stretch_margin_top = 4
+stretch_margin_right = 20
+stretch_margin_bottom = 4
+texture_under = ExtResource("16_bar_bg_xp")
 texture_progress = ExtResource("6_bar_blue")
 max_value = 5.0
 value = 0.0

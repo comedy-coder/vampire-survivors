@@ -247,7 +247,7 @@ const ARTIFACTS := [
 	{"name": ["Nam châm cổ", "Ancient Magnet"], "desc": ["Hút gem từ xa gấp 3 lần", "Triple gem pickup range"], "fn": "_art_magnet", "icon": preload("res://assets/icons/art_magnet.svg")},
 	{"name": ["Tim phượng hoàng", "Phoenix Heart"], "desc": ["Hồi sinh 1 lần với nửa máu, nổ đẩy lùi quái", "Revive once at half HP with a knockback blast"], "fn": "_art_phoenix", "icon": preload("res://assets/icons/art_phoenix.svg")},
 	{"name": ["Linh thú bay", "Spirit Familiar"], "desc": ["Triệu hồi linh thú bay quanh người, tự bắn quái gần nhất", "Summon a familiar that orbits you and auto-fires at the nearest enemy"], "fn": "_art_familiar", "icon": preload("res://assets/icons/art_familiar.svg")},
-	{"name": ["Bùa tái sinh", "Regen Charm"], "desc": ["Hồi 2 máu mỗi giây", "Heal 2 HP per second"], "fn": "_art_regen", "icon": preload("res://assets/icons/art_regen.svg")},
+	{"name": ["Bùa tái sinh", "Regen Charm"], "desc": ["Hồi 0.5 máu mỗi giây", "Heal 0.5 HP per second"], "fn": "_art_regen", "icon": preload("res://assets/icons/art_regen.svg")},
 	{"name": ["Kính ngắm cổ", "Ancient Scope"], "desc": ["20% đạn chí mạng, sát thương x2", "20% crit chance for x2 damage"], "fn": "_art_crit", "icon": preload("res://assets/icons/art_crit.svg")},
 	{"name": ["Ngọc kinh nghiệm", "XP Gem"], "desc": ["Mỗi gem cho gấp đôi XP", "Gems give double XP"], "fn": "_art_xp", "icon": preload("res://assets/icons/art_xp.svg")},
 ]
@@ -258,7 +258,6 @@ const META_UPGRADES := [
 	{"id": "dmg",    "name": ["Sát thương", "Damage"],          "prop": "projectile_damage", "amount": 0.4,  "unit": "+0.4 DMG", "max": 8, "base": 50},
 	{"id": "fire",   "name": ["Tốc độ bắn", "Fire rate"],       "prop": "fire_rate",         "amount": 0.15, "unit": "+0.15",    "max": 6, "base": 50},
 	{"id": "speed",  "name": ["Tốc độ chạy", "Move speed"],     "prop": "speed",             "amount": 12.0, "unit": "+12",      "max": 6, "base": 40},
-	{"id": "regen",  "name": ["Hồi máu/giây", "HP regen"],      "prop": "regen",             "amount": 0.4,  "unit": "+0.4/s",   "max": 5, "base": 60},
 	{"id": "magnet", "name": ["Tầm hút gem", "Magnet range"],   "prop": "magnet_range",      "amount": 35.0, "unit": "+35",      "max": 4, "base": 30},
 	{"id": "crit",   "name": ["Tỉ lệ chí mạng", "Crit chance"], "prop": "crit_chance",       "amount": 0.03, "unit": "+3%",      "max": 5, "base": 70},
 ]
@@ -634,7 +633,7 @@ func _process(delta: float) -> void:
 	_update_stage()
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
-		spawn_timer = maxf(0.25, 1.2 - time * 0.012)
+		spawn_timer = maxf(0.22, 0.9 - time * 0.015)
 		_spawn_enemy()
 
 	boss_timer -= delta
@@ -774,29 +773,29 @@ func _make_enemy() -> Area2D:
 func _spawn_enemy() -> void:
 	var e := _make_enemy()
 	var r := randf()
-	if time > 60.0 and r < 0.15:
+	if time > 45.0 and r < 0.15:
 		e.tex = TEX_ROBOT
 		e.hp = (2.5 + time * 0.05) * 3.0
 		e.speed = 45.0
 		e.dps = 25.0
 		e.gems = 3
-	elif time > 40.0 and r < 0.28:
+	elif time > 28.0 and r < 0.28:
 		# Xạ thủ: giữ khoảng cách và bắn đạn về phía người chơi
 		e.tex = TEX_HITMAN
 		e.tint = Color(0.5, 1.0, 0.6)
 		e.kind = ENEMY.Kind.RANGER
 		e.hp = (2.5 + time * 0.05) * 0.9
-		e.speed = 85.0
+		e.speed = 90.0
 		e.bullet_damage = 8.0
 		e.gems = 2
-	elif time > 30.0 and r < 0.45:
+	elif time > 18.0 and r < 0.45:
 		e.tex = TEX_HITMAN
 		e.hp = (2.5 + time * 0.05) * 0.6
-		e.speed = minf(110.0 + time * 0.5, 200.0)
+		e.speed = minf(120.0 + time * 0.5, 210.0)
 		e.gems = 1
 	else:
 		e.hp = 2.5 + time * 0.05
-		e.speed = minf(60.0 + time * 0.6, 150.0)
+		e.speed = minf(75.0 + time * 0.6, 160.0)
 	if time > 45.0 and e.kind == ENEMY.Kind.MELEE and randf() < 0.06:
 		_make_elite(e)
 	_apply_stage(e)
@@ -902,7 +901,7 @@ func _on_enemy_died(pos: Vector2, gem_count: int) -> void:
 	die_sfx.play()
 	for i in gem_count:
 		_spawn_gem(pos)
-	if randf() < 0.02:
+	if randf() < 0.008:
 		_spawn_pickup(pos)
 
 
@@ -964,7 +963,13 @@ func _elite_blast(pos: Vector2) -> void:
 
 func _spawn_pickup(pos: Vector2, kind := "") -> void:
 	if kind == "":
-		kind = ["heal", "magnet", "bomb"].pick_random()
+		var _r := randf()
+		if _r < 0.10:
+			kind = "heal"
+		elif _r < 0.55:
+			kind = "magnet"
+		else:
+			kind = "bomb"
 	var p := Area2D.new()
 	p.set_script(PICKUP)
 	p.player = player
@@ -992,11 +997,13 @@ func _apply_pickup(kind: String) -> void:
 			for g in get_tree().get_nodes_in_group("gems"):
 				g.force_pull = true
 		"bomb":
+			var bomb_radius := 280.0
 			for e in get_tree().get_nodes_in_group("enemies"):
-				e.take_hit(60.0, true,
-					(e.global_position - player.global_position).normalized() * 400.0,
-					Color(1.0, 0.6, 0.3))
-			spawn_explosion(player.global_position, 620.0, 0.6)
+				if e.global_position.distance_to(player.global_position) <= bomb_radius:
+					e.take_hit(60.0, true,
+						(e.global_position - player.global_position).normalized() * 400.0,
+						Color(1.0, 0.6, 0.3))
+			spawn_explosion(player.global_position, bomb_radius * 2.0, 0.6)
 			player.boom_sfx.pitch_scale = 0.8
 			player.boom_sfx.play()
 			player.shake_amt = 14.0
@@ -1119,6 +1126,8 @@ func _choose(i: int) -> void:
 func _build_pool() -> Array:
 	var pool := []
 	for s in STAT_UPGRADES:
+		if s["fn"] == "_up_max_hp" and randf() > 0.10:
+			continue
 		pool.append({"label": s["label"][lang], "fn": s["fn"], "icon": s["icon"]})
 	_add_weapon(pool, player.orbital_count, player.orbital_evolved,
 		["Kiếm xoay", "Spinning swords"], "_up_orbital",
@@ -1146,7 +1155,14 @@ func _build_pool() -> Array:
 			"EVOLVE Blizzard: freezing blast, x1.5 damage"], "_evo_frost", ICON_FROST)
 	var avail := ARTIFACTS.filter(func(a: Dictionary) -> bool: return a["fn"] not in owned_artifacts)
 	if not avail.is_empty():
-		var art: Dictionary = avail.pick_random()
+		# Linh thú bay (familiar) có trọng số 3x so với các cổ vật khác
+		var weighted: Array = []
+		for a in avail:
+			weighted.append(a)
+			if a["fn"] == "_art_familiar":
+				weighted.append(a)
+				weighted.append(a)
+		var art: Dictionary = weighted.pick_random()
 		pool.append({"label": T("artifact_fmt") % [art["name"][lang], art["desc"][lang]], "fn": art["fn"], "icon": art["icon"]})
 	return pool
 
@@ -1176,7 +1192,7 @@ func _spawn_familiar() -> void:
 
 func _art_regen() -> void:
 	owned_artifacts.append("_art_regen")
-	player.regen = 2.0
+	player.regen = 0.5
 
 
 func _art_crit() -> void:
@@ -1542,7 +1558,7 @@ func _update_arrows() -> void:
 
 func _on_player_died() -> void:
 	game_over = true
-	var reward := kills + boss_count * 20 + int(time / 5.0)
+	var reward := int((kills + boss_count * 20 + int(time / 5.0)) * 0.5)
 	gold += reward
 	_save_meta()
 	over_label.text = (T("gameover_fmt") % [int(time) / 60, int(time) % 60, kills]) \
