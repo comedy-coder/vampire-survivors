@@ -19,6 +19,11 @@ var crit := false
 var tex: Texture2D = null
 var freeze_dur := 0.0
 var frost_dot_dmg := 0.0  # custom sprite (overrides CIRCLE if set)
+var hit_shake := 0.0      # rung màn hình nhẹ khi viên đạn trúng (shotgun)
+var chain_explode := false  # quái bị giết có tỉ lệ nổ lan (pháo)
+var burn := 0.0           # signature: đốt cháy (DoT) khi trúng
+var shock := 0.0          # signature: làm chậm (giây) khi trúng
+var exploit := 0.0        # Khai Thác Điểm Yếu: +% dmg lên quái đang dính hiệu ứng
 
 
 func _ready() -> void:
@@ -90,6 +95,36 @@ func _spawn_shards() -> void:
 		tw.chain().tween_callback(sh.queue_free)
 
 
+func _hit_damage(e: Node) -> float:
+	# Khai Thác Điểm Yếu: +dmg nếu mục tiêu đang bị đốt cháy hoặc làm chậm
+	if exploit > 0.0 and (("slow_timer" in e and e.slow_timer > 0.0) or ("frost_dot_timer" in e and e.frost_dot_timer > 0.0)):
+		return damage * (1.0 + exploit)
+	return damage
+
+
+func _apply_dot(e: Node) -> void:
+	# Signature: đốt cháy (DoT) + làm chậm khi trúng
+	if burn > 0.0 and "frost_dot" in e:
+		e.frost_dot = burn
+		e.frost_dot_timer = 3.0
+	if shock > 0.0 and "slow_timer" in e:
+		e.slow_timer = maxf(e.slow_timer, shock)
+
+
+func _chain_blast(pos: Vector2) -> void:
+	# Nổ phụ nhỏ tại xác quái bị pháo giết — dọn thêm quái xung quanh
+	var parent := get_parent()
+	if parent == null:
+		return
+	var radius := 70.0
+	var splash := damage * 0.5
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if pos.distance_to(e.global_position) < radius:
+			e.take_hit(splash, true, (e.global_position - pos).normalized() * 180.0, Color(1.0, 0.6, 0.85))
+	if parent.has_method("spawn_explosion"):
+		parent.spawn_explosion(pos, radius * 2.0, 0.35)
+
+
 func _on_area_entered(area: Area2D) -> void:
 	if not area.has_method("take_hit"):
 		return
@@ -99,7 +134,8 @@ func _on_area_entered(area: Area2D) -> void:
 			area.take_hit(damage, true, dir * kb, color, crit)
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if global_position.distance_to(e.global_position) < aoe:
-				e.take_hit(damage, true, (e.global_position - global_position).normalized() * kb, color, crit)
+				e.take_hit(_hit_damage(e), true, (e.global_position - global_position).normalized() * kb, color, crit)
+				_apply_dot(e)
 				if slow > 0.0:
 					e.slow_timer = slow
 				if freeze_dur > 0.0 and "freeze_timer" in e:
@@ -107,13 +143,23 @@ func _on_area_entered(area: Area2D) -> void:
 					if frost_dot_dmg > 0.0:
 						e.frost_dot = frost_dot_dmg
 						e.frost_dot_timer = freeze_dur
+				# Pháo: quái bị giết có tỉ lệ nổ lan gây sát thương phụ quanh xác
+				if chain_explode and is_instance_valid(e) and e.hp <= 0.0 and randf() < 0.35:
+					_chain_blast(e.global_position)
 		if slow > 0.0 or freeze_dur > 0.0:
 			_spawn_shards()
 		if parent != null and parent.has_method("spawn_explosion"):
 			parent.spawn_explosion(global_position, aoe * 2.0, 0.4)
+		if parent != null and parent.has_method("boom_shake"):
+			parent.boom_shake(clampf(aoe / 18.0, 4.0, 9.0))
 		queue_free()
 		return
-	area.take_hit(damage, true, dir * kb, color, crit)
+	area.take_hit(_hit_damage(area), true, dir * kb, color, crit)
+	_apply_dot(area)
+	if hit_shake > 0.0:
+		var p := get_parent()
+		if p != null and p.has_method("boom_shake"):
+			p.boom_shake(hit_shake)
 	if slow > 0.0 and "slow_timer" in area:
 		area.slow_timer = slow
 		_spawn_shards()

@@ -2,6 +2,8 @@ extends Node2D
 
 const ENEMY := preload("res://scripts/enemy.gd")
 const GEM := preload("res://scripts/gem.gd")
+const COIN := preload("res://scripts/coin.gd")
+const EXTRACTION_GATE := preload("res://scripts/extraction_gate.gd")
 const TORNADO := preload("res://scripts/tornado.gd")
 const QUICKSAND := preload("res://scripts/quicksand.gd")
 const PICKUP := preload("res://scripts/pickup.gd")
@@ -41,19 +43,37 @@ const TOPDOWN_BOSSES := [
 ]
 
 const I18N := {
-	"levelup_title": ["LEVEL UP! Chọn nâng cấp", "LEVEL UP! Choose an upgrade"],
-	"char_title": ["CHỌN NHÂN VẬT", "CHOOSE YOUR CHARACTER"],
+	"levelup_title": ["LEVEL UP! Chọn nâng cấp  (WASD + Space)", "LEVEL UP! Choose an upgrade  (WASD + Space)"],
+	"sig_core_title": ["CẤP 5 — CHỌN LÕI (đổi lối đánh)", "LV 5 — CHOOSE CORE"],
+	"sig_enhance_title": ["CẤP 10 — CƯỜNG HÓA LÕI", "LV 10 — CORE ENHANCED"],
+	"sig_form_title": ["CẤP 15 — CHỌN HÌNH THÁI", "LV 15 — CHOOSE FORM"],
+	"sig_ultimate_title": ["CẤP 20 — THỨC TỈNH TỐI THƯỢNG", "LV 20 — ULTIMATE AWAKENING"],
+	"sig_enhance_label": ["⚡ CƯỜNG HÓA LÕI\nLõi của bạn mạnh hơn nữa — Nhận!", "⚡ CORE ENHANCED\nYour core grows stronger — Take!"],
+	"sig_ultimate_label": ["☆ THỨC TỈNH!\nLõi + Hình thái tối đa & dọn màn — Nhận!", "☆ AWAKENING!\nCore + Form maxed & screen clear — Take!"],
+	"char_title": ["CHỌN NHÂN VẬT  (WASD + Space)", "CHOOSE YOUR CHARACTER  (WASD + Space)"],
 	"sound_title": ["ÂM THANH", "SOUND"],
 	"music": ["Nhạc nền", "Music"],
 	"sfx": ["Tiếng súng", "Sound FX"],
 	"close": ["Đóng", "Close"],
 	"chest_title": ["RƯƠNG BÁU VẬT!", "TREASURE CHEST!"],
-	"chest_take": ["Nhận!", "Take!"],
+	"chest_take": ["Nhận!  (Space)", "Take!  (Space)"],
 	"pause_title": ["TẠM DỪNG", "PAUSED"],
 	"resume": ["Tiếp tục", "Resume"],
 	"reselect": ["Chọn lại nhân vật", "Change character"],
 	"lang_label": ["Ngôn ngữ:", "Language:"],
 	"boss_announce": ["BOSS XUẤT HIỆN!", "BOSS INCOMING!"],
+	"map_title": ["CHỌN BẢN ĐỒ", "CHOOSE A MAP"],
+	"map_locked": ["🔒 Chưa mở khóa", "🔒 Locked"],
+	"miniboss_announce": ["MINI-BOSS!", "MINI-BOSS!"],
+	"final_announce": ["BOSS CUỐI CÙNG!", "FINAL BOSS!"],
+	"gate_announce": ["CỔNG THOÁT HIỆN RA! (30s)", "EXTRACTION GATE! (30s)"],
+	"gate_closed": ["Cổng thoát đã đóng", "Extraction gate closed"],
+	"gate_label": ["RÚT LUI", "EXTRACT"],
+	"extract_fmt": ["RÚT LUI AN TOÀN!\nSống sót %s — %d kills\nNhấn R để về menu",
+		"EXTRACTED SAFELY!\nSurvived %s — %d kills\nPress R for menu"],
+	"win_fmt": ["CHIẾN THẮNG!\nPhá đảo %s — %d kills\nNhấn R để về menu",
+		"VICTORY!\nCleared %s — %d kills\nPress R for menu"],
+	"win_unlock": ["\nĐã mở khóa: %s", "\nUnlocked: %s"],
 	"boss_desert": ["HUNG THẦN SA MẠC!", "DESERT FIEND!"],
 	"boss_dead":  ["CHÚA TỂ XƯƠNG!", "BONE LORD!"],
 	"ev_ring": ["BẦY QUÁI VÂY QUANH!", "SURROUNDED!"],
@@ -68,61 +88,57 @@ const I18N := {
 	"weapon_lv": ["%s (Cấp %d → %d)", "%s (Lv %d → %d)"],
 	"artifact_fmt": ["CỔ VẬT: %s\n%s", "ARTIFACT: %s\n%s"],
 	"stage_fmt": ["VÙNG MỚI: %s", "NEW AREA: %s"],
-	"shop_btn": ["🛒 Nâng cấp (Vàng: %d)", "🛒 Upgrades (Gold: %d)"],
+	"shop_btn": ["🛒 Nâng cấp (💰%d  🔮%d)", "🛒 Upgrades (💰%d  🔮%d)"],
 	"shop_title": ["NÂNG CẤP VĨNH VIỄN", "PERMANENT UPGRADES"],
 	"shop_gold": ["💰 Vàng: %d", "💰 Gold: %d"],
+	"shop_balance": ["💰 Vàng: %d      🔮 Linh Hồn: %d", "💰 Gold: %d      🔮 Souls: %d"],
 	"shop_close": ["← Quay lại", "← Back"],
-	"shop_buy": ["%s  (Cấp %d/%d)\n%s — Giá %d 💰", "%s  (Lv %d/%d)\n%s — Cost %d 💰"],
+	"shop_sec_gold": ["— SINH TỒN (Vàng) —", "— SURVIVAL (Gold) —"],
+	"shop_sec_soul": ["— TẤN CÔNG (Linh Hồn) —", "— ATTACK (Souls) —"],
+	"shop_buy": ["%s  (Cấp %d/%d)\n%s — Giá %d %s", "%s  (Lv %d/%d)\n%s — Cost %d %s"],
 	"shop_max": ["%s  (TỐI ĐA)\n%s", "%s  (MAX)\n%s"],
-	"gold_reward": ["\nVàng nhận: +%d   (Tổng: %d)", "\nGold earned: +%d   (Total: %d)"],
+	"reward_fmt": ["\nVàng: +%d 💰     Linh Hồn: +%d 🔮", "\nGold: +%d 💰     Souls: +%d 🔮"],
+	"death_penalty": ["\n(Chết: chỉ giữ 50% Vàng — Linh Hồn không mất)", "\n(Died: kept 50% gold — souls safe)"],
 }
 
+# Phase 4: tinh gọn còn 4 nhân vật chuyên biệt. "locked" = cần mở khóa (Kiếm khách).
 const CHARACTERS := [
-	{
-		"tex": preload("res://assets/characters/player_blue.png"),
-		"name": ["Dân thường", "Commoner"],
-		"desc": ["Súng lục — cân bằng mọi mặt", "Pistol — balanced all around"],
-		"hp": 100.0, "speed": 220.0, "fire": 1.5, "dmg": 2.8, "count": 1, "pierce": 0,
-		"weapon": "pistol",
-	},
-	{
-		"tex": preload("res://assets/characters/player_woman.png"),
-		"name": ["Nữ chiến binh", "Warrior Woman"],
-		"desc": ["Tiểu liên — bắn cực nhanh, máu giấy", "SMG — blazing fire rate, fragile"],
-		"hp": 75.0, "speed": 285.0, "fire": 3.0, "dmg": 1.4, "count": 1, "pierce": 0,
-		"weapon": "smg",
-	},
 	{
 		"tex": preload("res://assets/characters/player_soldier.png"),
 		"name": ["Lính đặc nhiệm", "Commando"],
-		"desc": ["Shotgun — tỏa 5 viên cận chiến", "Shotgun — 5-pellet close-range spread"],
-		"hp": 100.0, "speed": 200.0, "fire": 1.1, "dmg": 2.2, "count": 1, "pierce": 0,
+		"desc": ["Shotgun — cận chiến tầm trung, dồn sát thương", "Shotgun — mid-range burst damage"],
+		"hp": 110.0, "speed": 205.0, "fire": 1.15, "dmg": 2.4, "count": 1, "pierce": 0,
 		"weapon": "shotgun",
 	},
 	{
 		"tex": preload("res://assets/characters/player_old.png"),
 		"name": ["Ông già gân", "Tough Grandpa"],
-		"desc": ["Pháo — đạn nổ diện rộng, chậm chạp", "Cannon — explosive AoE shells, slow"],
-		"hp": 160.0, "speed": 170.0, "fire": 0.8, "dmg": 6.5, "count": 1, "pierce": 0,
+		"desc": ["Pháo — bắn chậm, nổ lan rộng", "Cannon — slow, wide explosive blasts"],
+		"hp": 165.0, "speed": 170.0, "fire": 0.8, "dmg": 6.5, "count": 1, "pierce": 0,
 		"weapon": "cannon",
-	},
-	{
-		"tex": preload("res://assets/characters/player_survivor.png"),
-		"name": ["Người sống sót", "Survivor"],
-		"desc": ["Laser — đạn xuyên thấu nhiều mục tiêu", "Laser — piercing beam shots"],
-		"hp": 90.0, "speed": 230.0, "fire": 1.4, "dmg": 2.8, "count": 1, "pierce": 2,
-		"weapon": "laser",
 	},
 	{
 		"tex": preload("res://assets/characters/player_brown.png"),
 		"name": ["Thợ săn", "Hunter"],
-		"desc": ["Bắn tỉa — sát thương cực lớn, đạn cực nhanh", "Sniper — huge damage, ultra-fast bullets"],
-		"hp": 85.0, "speed": 225.0, "fire": 0.9, "dmg": 5.5, "count": 1, "pierce": 0,
+		"desc": ["Bắn tỉa — đường thẳng, giữ khoảng cách", "Sniper — straight-line, keep distance"],
+		"hp": 90.0, "speed": 230.0, "fire": 0.95, "dmg": 5.5, "count": 1, "pierce": 1,
 		"weapon": "sniper",
+	},
+	{
+		"tex": preload("res://assets/characters/player_woman.png"),
+		"name": ["Kiếm khách", "Ronin"],
+		"desc": ["Katana — chém góc rộng cận chiến, mạo hiểm cao", "Katana — wide melee arc, high risk"],
+		"hp": 115.0, "speed": 255.0, "fire": 1.7, "dmg": 3.6, "count": 1, "pierce": 0,
+		"weapon": "katana", "locked": true,
 	},
 ]
 
-const BOSS_INTERVAL := 45.0
+const BOSS_INTERVAL := 45.0  # (không còn dùng cho nhịp boss; giữ để tương thích)
+
+# --- Phase 1: nhịp độ 15 phút/ván, boss theo mốc thời gian ---
+const RUN_LEN := 900.0              # 15 phút mỗi ván
+const MINIBOSS_TIMES := [300.0, 600.0]  # Mini-boss ở phút 5 và 10
+const FINAL_TIME := 900.0           # Final boss ở phút 15
 
 const DECOR := [
 	{"tex": preload("res://assets/decor/grass_tuft.png"), "s": [0.6, 1.0]},
@@ -227,13 +243,17 @@ const STAGES := [
 
 const WEAPON_MAX := 4
 
+# Thẻ Thích Ứng: tự nhận diện vũ khí (súng / nổ / cận chiến) để cộng chỉ số phù hợp.
 const STAT_UPGRADES := [
-	{"label": ["+0.6 Sát thương đạn", "+0.6 Bullet damage"], "fn": "_up_damage", "icon": preload("res://assets/icons/up_damage.svg")},
-	{"label": ["+0.5 Tốc độ bắn", "+0.5 Fire rate"], "fn": "_up_fire_rate", "icon": preload("res://assets/icons/up_fire_rate.svg")},
-	{"label": ["+1 Đạn mỗi phát", "+1 Projectile per shot"], "fn": "_up_projectile", "icon": preload("res://assets/icons/up_projectile.svg")},
-	{"label": ["Đạn xuyên +1 mục tiêu", "Bullets pierce +1 enemy"], "fn": "_up_pierce", "icon": preload("res://assets/icons/up_pierce.svg")},
+	{"label": ["Sức Mạnh Giao Tranh: +20% sát thương", "Combat Power: +20% damage"], "fn": "_up_damage", "icon": preload("res://assets/icons/up_damage.svg")},
+	{"label": ["Nhịp Độ Tử Thần: -15% hồi đòn", "Deadly Tempo: -15% cooldown"], "fn": "_up_fire_rate", "icon": preload("res://assets/icons/up_fire_rate.svg")},
+	{"label": ["Nhân Bản / Liên Kích: +1 đạn (Kiếm: chém bồi)", "Multishot / Combo: +1 shot (Katana: combo)"], "fn": "_up_projectile", "icon": preload("res://assets/icons/up_projectile.svg")},
+	{"label": ["Xuyên Thấu / Khuếch Đại: +1 xuyên (Nổ/Kiếm: +15% tầm)", "Pierce / Amplify: +1 pierce (AoE/Melee: +15% reach)"], "fn": "_up_pierce", "icon": preload("res://assets/icons/up_pierce.svg")},
 	{"label": ["+25 Tốc độ chạy", "+25 Move speed"], "fn": "_up_speed", "icon": preload("res://assets/icons/up_speed.svg")},
 	{"label": ["+25 Máu tối đa (hồi đầy)", "+25 Max HP (full heal)"], "fn": "_up_max_hp", "icon": preload("res://assets/icons/up_hp.svg")},
+	{"label": ["Khai Thác Điểm Yếu: +40% dmg lên quái dính hiệu ứng", "Exploit: +40% dmg to afflicted enemies"], "fn": "_up_exploit", "icon": preload("res://assets/icons/up_damage.svg")},
+	{"label": ["Kiên Cường: -20% sát thương nhận", "Fortitude: -20% damage taken"], "fn": "_up_armor", "icon": preload("res://assets/icons/up_hp.svg")},
+	{"label": ["Phản Ứng Dây Chuyền: crit/overkill 20% gây nổ", "Chain Reaction: crit/overkill 20% blast"], "fn": "_up_chainreact", "icon": preload("res://assets/icons/w_grenade.svg")},
 ]
 
 const ICON_ORBITAL := preload("res://assets/icons/w_orbital.svg")
@@ -253,13 +273,40 @@ const ARTIFACTS := [
 ]
 
 # Nâng cấp vĩnh viễn — mua bằng vàng tích lũy qua các ván, cộng dồn vào nhân vật khi bắt đầu
+# cur = "gold" (Vàng — chỉ số Sinh tồn) hoặc "soul" (Mảnh Linh Hồn — chỉ số Tấn công)
+# Giá Vàng đã tăng ~7x do thời lượng game lên 15 phút; giá Linh Hồn nhỏ vì hiếm.
 const META_UPGRADES := [
-	{"id": "hp",     "name": ["Máu tối đa", "Max HP"],         "prop": "max_hp",            "amount": 20.0, "unit": "+20 HP",   "max": 8, "base": 40},
-	{"id": "dmg",    "name": ["Sát thương", "Damage"],          "prop": "projectile_damage", "amount": 0.4,  "unit": "+0.4 DMG", "max": 8, "base": 50},
-	{"id": "fire",   "name": ["Tốc độ bắn", "Fire rate"],       "prop": "fire_rate",         "amount": 0.15, "unit": "+0.15",    "max": 6, "base": 50},
-	{"id": "speed",  "name": ["Tốc độ chạy", "Move speed"],     "prop": "speed",             "amount": 12.0, "unit": "+12",      "max": 6, "base": 40},
-	{"id": "magnet", "name": ["Tầm hút gem", "Magnet range"],   "prop": "magnet_range",      "amount": 35.0, "unit": "+35",      "max": 4, "base": 30},
-	{"id": "crit",   "name": ["Tỉ lệ chí mạng", "Crit chance"], "prop": "crit_chance",       "amount": 0.03, "unit": "+3%",      "max": 5, "base": 70},
+	{"id": "hp",     "cur": "gold", "name": ["Máu tối đa", "Max HP"],         "prop": "max_hp",            "amount": 20.0, "unit": "+20 HP",   "max": 8, "base": 280},
+	{"id": "speed",  "cur": "gold", "name": ["Tốc độ chạy", "Move speed"],     "prop": "speed",             "amount": 12.0, "unit": "+12",      "max": 6, "base": 280},
+	{"id": "magnet", "cur": "gold", "name": ["Tầm hút gem", "Magnet range"],   "prop": "magnet_range",      "amount": 35.0, "unit": "+35",      "max": 4, "base": 200},
+	{"id": "dmg",    "cur": "soul", "name": ["Sát thương", "Damage"],          "prop": "projectile_damage", "amount": 0.4,  "unit": "+0.4 DMG", "max": 8, "base": 2},
+	{"id": "fire",   "cur": "soul", "name": ["Tốc độ bắn", "Fire rate"],       "prop": "fire_rate",         "amount": 0.15, "unit": "+0.15",    "max": 6, "base": 3},
+	{"id": "crit",   "cur": "soul", "name": ["Tỉ lệ chí mạng", "Crit chance"], "prop": "crit_chance",       "amount": 0.03, "unit": "+3%",      "max": 5, "base": 3},
+]
+
+# --- Phase 4b: Nâng cấp Độc bản ---
+# LÕI (cấp 5): riêng theo vũ khí, đổi hẳn lối đánh. HÌNH THÁI (cấp 15): chung.
+const SIG_CORES := {
+	"shotgun": [
+		{"id": "burn",   "name": ["LÕI: Đạn Lửa", "CORE: Fire Shells"],   "desc": ["Đạn gây bỏng (sát thương theo thời gian)", "Pellets ignite enemies (burn DoT)"]},
+		{"id": "pierce", "name": ["LÕI: Đạn Xuyên", "CORE: Slug Rounds"], "desc": ["Đạn xuyên +3 mục tiêu & mạnh hơn", "Pierce +3 and stronger"]},
+	],
+	"cannon": [
+		{"id": "aoe",   "name": ["LÕI: Đại Pháo", "CORE: Heavy Shells"],  "desc": ["Bán kính nổ lớn hơn nhiều", "Much bigger blast radius"]},
+		{"id": "chain", "name": ["LÕI: Nổ Dây Chuyền", "CORE: Chain Blast"], "desc": ["Quái bị giết nổ lan tiếp", "Kills trigger chain explosions"]},
+	],
+	"sniper": [
+		{"id": "pierce",    "name": ["LÕI: Xuyên Giáp", "CORE: Armor Pierce"], "desc": ["Xuyên +3 mục tiêu, sát thương lớn", "Pierce +3, big damage"]},
+		{"id": "explosive", "name": ["LÕI: Đạn Nổ", "CORE: Explosive Rounds"], "desc": ["Đạn bắn tỉa nổ diện rộng khi trúng", "Sniper rounds explode on hit"]},
+	],
+	"katana": [
+		{"id": "wave",      "name": ["LÕI: Kiếm Khí", "CORE: Blade Wave"], "desc": ["Mỗi nhát chém phóng làn kiếm khí bay xa", "Each slash fires a flying blade wave"]},
+		{"id": "lifesteal", "name": ["LÕI: Hút Máu", "CORE: Lifesteal"],   "desc": ["Hồi máu mỗi đòn chém trúng", "Heal on each slash hit"]},
+	],
+}
+const SIG_FORMS := [
+	{"id": "explode_kill", "name": ["HÌNH THÁI: Nổ Chùm", "FORM: Cluster Kill"], "desc": ["Quái bị giết phát nổ nhỏ", "Slain enemies blow up"]},
+	{"id": "shock",        "name": ["HÌNH THÁI: Tê Liệt", "FORM: Shock"],        "desc": ["Đòn đánh làm chậm quái trúng", "Hits slow enemies"]},
 ]
 
 var time := 0.0
@@ -274,6 +321,27 @@ var game_over := false
 var choosing := false
 var pending: Array = []
 var card_frames: Array = []  # khung viền fantasy cho 3 thẻ chọn nâng cấp
+var _sel := 0  # thẻ nâng cấp đang được chọn bằng bàn phím (0..2)
+var _char_sel := 0  # nhân vật đang được chọn bằng bàn phím (0..5, lưới 2 cột)
+var _map_sel := 0  # map đang được chọn bằng bàn phím (0..2)
+var _card_count := 3  # số thẻ đang hiện ở màn lên cấp (1..3)
+var chosen_core := ""  # id Lõi đã chọn ở cấp 5 (Phase 4b)
+var chosen_form := ""  # id Hình thái đã chọn ở cấp 15
+var _kill_blast_budget := 0  # giới hạn số vụ nổ "Nổ Chùm" mỗi khung hình
+# --- Phase 1: chọn map + mở khóa + nhịp boss ---
+var selected_stage := 0     # map đã chọn cho ván hiện tại (cố định cả ván)
+var unlocked_maps := 1      # số map đã mở (1=Đồng cỏ, 2=+Sa mạc, 3=+Đất chết)
+var ronin_unlocked := false # mở khóa Kiếm khách (dùng ở Phase 4) sau khi phá đảo Sa mạc
+var minibosses_spawned := 0 # số Mini-boss đã sinh trong ván
+var final_spawned := false  # đã sinh Final boss chưa
+var won := false            # đã phá đảo (giết Final boss) chưa
+var map_panel: PanelContainer
+var map_title: Label
+var map_btns: Array = []
+var dead_pool_timer := 5.0   # đếm giờ sinh vũng độc ở Vùng đất chết
+var dead_pools: Array = []   # mỗi phần tử: {node, pos, radius, t}
+var gate: Node2D = null      # Cổng thoát hiểm đang mở (nếu có)
+var gate_arrow: Polygon2D = null  # mũi tên chỉ hướng tới cổng khi ngoài màn hình
 var decor_cells := {}
 var stage := 0
 var stages_announced: Array = []
@@ -289,16 +357,24 @@ var pause_panel: PanelContainer
 var owned_artifacts: Array = []
 var xp_gain := 1
 var lang := 0  # 0 = Tiếng Việt, 1 = English
-var gold := 0
+var gold := 0          # Vàng tích lũy (mua chỉ số Sinh tồn)
+var souls := 0         # Mảnh Linh Hồn tích lũy (mua chỉ số Tấn công); KHÔNG mất khi chết
+var run_gold := 0      # Vàng kiếm trong ván hiện tại (chưa gửi vào kho)
+var run_souls := 0     # Mảnh Linh Hồn kiếm trong ván hiện tại
 var meta_levels := {}  # id nâng cấp -> cấp đã mua
 var difficulty := 1.0      # nhân máu quái theo số nâng cấp vĩnh viễn đã mua
 var enemy_dmg_mult := 1.0  # nhân sát thương quái theo số nâng cấp đã mua
+var _hitstop_cd := 0.0     # hồi chiêu hit-stop để không khựng liên tục
+var _deaths_this_frame := 0  # đếm quái chết trong khung hình để bắt "AoE diệt 3+"
 var shop_panel: PanelContainer
 var shop_title: Label
 var shop_gold_label: Label
 var shop_close: Button
 var shop_open_btn: Button
 var shop_rows: Array = []  # mỗi phần tử: {id, btn}
+var shop_sec_labels: Array = []  # mỗi phần tử: {cur, label} — tiêu đề mục Vàng/Linh Hồn
+var shop_nav_btns: Array = []  # các nút điều hướng bằng bàn phím trong shop (6 nâng cấp + Đóng)
+var _shop_sel := 0
 var chest_title: Label
 var chest_btn: Button
 var pause_title: Label
@@ -330,6 +406,7 @@ var announce_font: FontVariation
 
 func _ready() -> void:
 	randomize()
+	Engine.time_scale = 1.0  # an toàn: reset nếu còn kẹt do hit-stop ở ván trước
 	announce_font = FontVariation.new()
 	announce_font.base_font = FONT_ANNOUNCE
 	announce_font.variation_opentype = {"wght": 800}
@@ -365,10 +442,25 @@ func _ready() -> void:
 	listener.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(listener)
 	listener.toggled.connect(_toggle_pause)
+	# Node điều hướng chọn nâng cấp bằng bàn phím (WASD/mũi tên + Space)
+	var lvl_nav := Node.new()
+	lvl_nav.set_script(preload("res://scripts/levelup_nav.gd"))
+	lvl_nav.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(lvl_nav)
+	lvl_nav.nav.connect(_ui_nav)
+	lvl_nav.accept.connect(_ui_accept)
+	lvl_nav.restart.connect(_on_restart)
 	for i in 3:
-		level_panel.get_node("VBox/HBox/Btn%d" % (i + 1)).pressed.connect(_choose.bind(i))
-	for i in 6:
-		char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1)).pressed.connect(_pick_char.bind(i))
+		var lb: Button = level_panel.get_node("VBox/HBox/Btn%d" % (i + 1))
+		lb.focus_mode = Control.FOCUS_NONE  # tránh Space kích hoạt nút đang focus (double-fire)
+		lb.pressed.connect(_choose.bind(i))
+	for i in 4:
+		var cb: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
+		cb.focus_mode = Control.FOCUS_NONE
+		cb.pressed.connect(_pick_char.bind(i))
+	# Phase 4: chỉ còn 4 nhân vật → ẩn 2 ô thừa trong lưới
+	char_panel.get_node("VBox/Grid/CharBtn5").visible = false
+	char_panel.get_node("VBox/Grid/CharBtn6").visible = false
 	_load_lang()
 	_load_meta()
 	_build_lang_row()
@@ -377,6 +469,14 @@ func _ready() -> void:
 	_apply_lang()
 	_skin_levelup()
 	_build_debug_panel()
+	_build_map_panel()
+	_refresh_map_panel()
+	_char_sel = 0
+	_update_char_highlight()
+	# Phase 1: chọn BẢN ĐỒ trước, rồi mới tới chọn nhân vật
+	_map_sel = 0
+	char_panel.visible = false
+	map_panel.visible = true
 	get_tree().paused = true
 
 
@@ -403,6 +503,9 @@ func _load_meta() -> void:
 	if cf.load("user://save.cfg") != OK:
 		return
 	gold = int(cf.get_value("meta", "gold", 0))
+	souls = int(cf.get_value("meta", "souls", 0))
+	unlocked_maps = int(cf.get_value("meta", "unlocked_maps", 1))
+	ronin_unlocked = bool(cf.get_value("meta", "ronin_unlocked", false))
 	for u in META_UPGRADES:
 		meta_levels[u["id"]] = int(cf.get_value("upgrades", u["id"], 0))
 
@@ -410,6 +513,9 @@ func _load_meta() -> void:
 func _save_meta() -> void:
 	var cf := ConfigFile.new()
 	cf.set_value("meta", "gold", gold)
+	cf.set_value("meta", "souls", souls)
+	cf.set_value("meta", "unlocked_maps", unlocked_maps)
+	cf.set_value("meta", "ronin_unlocked", ronin_unlocked)
 	for u in META_UPGRADES:
 		cf.set_value("upgrades", u["id"], int(meta_levels.get(u["id"], 0)))
 	cf.save("user://save.cfg")
@@ -425,8 +531,9 @@ func _apply_meta_upgrades() -> void:
 		player.set(u["prop"], player.get(u["prop"]) + float(u["amount"]) * lvl)
 	player.hp = player.max_hp
 	# Mỗi cấp nâng cấp vĩnh viễn làm quái mạnh thêm để bù lại sức mạnh người chơi
-	difficulty = 1.0 + total * 0.04       # +4% máu quái mỗi cấp
-	enemy_dmg_mult = 1.0 + total * 0.02   # +2% sát thương quái mỗi cấp
+	# (giảm nhẹ để người chơi thực sự cảm thấy mạnh lên khi đầu tư Vàng)
+	difficulty = 1.0 + total * 0.015      # +1.5% máu quái mỗi cấp
+	enemy_dmg_mult = 1.0 + total * 0.015  # +1.5% sát thương quái mỗi cấp
 
 
 func _meta_by_id(id: String) -> Dictionary:
@@ -457,17 +564,34 @@ func _build_shop_panel() -> void:
 	shop_gold_label.add_theme_color_override("font_color", Color(0.85, 0.6, 0.05))
 	shop_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(shop_gold_label)
+	var last_cur := ""
 	for u in META_UPGRADES:
+		var cur := String(u.get("cur", "gold"))
+		if cur != last_cur:
+			last_cur = cur
+			var sec := Label.new()
+			sec.add_theme_font_size_override("font_size", 18)
+			sec.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			sec.add_theme_color_override("font_color",
+				Color(0.85, 0.6, 0.05) if cur == "gold" else Color(0.6, 0.45, 0.95))
+			vbox.add_child(sec)
+			shop_sec_labels.append({"cur": cur, "label": sec})
 		var b := Button.new()
 		b.add_theme_font_size_override("font_size", 18)
 		b.custom_minimum_size = Vector2(0, 52)
+		b.focus_mode = Control.FOCUS_NONE
 		b.pressed.connect(_buy_upgrade.bind(String(u["id"])))
 		vbox.add_child(b)
 		shop_rows.append({"id": u["id"], "btn": b})
 	shop_close = Button.new()
 	shop_close.add_theme_font_size_override("font_size", 22)
+	shop_close.focus_mode = Control.FOCUS_NONE
 	shop_close.pressed.connect(_close_shop)
 	vbox.add_child(shop_close)
+	# Danh sách nút điều hướng bằng bàn phím: 6 nâng cấp rồi tới nút Đóng
+	for row in shop_rows:
+		shop_nav_btns.append(row["btn"])
+	shop_nav_btns.append(shop_close)
 	shop_panel.add_child(vbox)
 	$UI.add_child(shop_panel)
 	shop_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -478,12 +602,14 @@ func _build_shop_panel() -> void:
 func _build_shop_button() -> void:
 	shop_open_btn = Button.new()
 	shop_open_btn.add_theme_font_size_override("font_size", 20)
+	shop_open_btn.focus_mode = Control.FOCUS_NONE
 	shop_open_btn.pressed.connect(_open_shop)
 	char_panel.get_node("VBox").add_child(shop_open_btn)
 
 
 func _open_shop() -> void:
 	char_panel.visible = false
+	_shop_sel = 0
 	_refresh_shop()
 	shop_panel.visible = true
 
@@ -491,6 +617,7 @@ func _open_shop() -> void:
 func _close_shop() -> void:
 	shop_panel.visible = false
 	char_panel.visible = true
+	_update_char_highlight()
 	_update_shop_btn_label()
 
 
@@ -500,9 +627,14 @@ func _buy_upgrade(id: String) -> void:
 	if lvl >= int(u["max"]):
 		return
 	var cost := _upgrade_cost(u, lvl)
-	if gold < cost:
-		return
-	gold -= cost
+	if String(u.get("cur", "gold")) == "soul":
+		if souls < cost:
+			return
+		souls -= cost
+	else:
+		if gold < cost:
+			return
+		gold -= cost
 	meta_levels[id] = lvl + 1
 	_save_meta()
 	_refresh_shop()
@@ -511,24 +643,44 @@ func _buy_upgrade(id: String) -> void:
 func _refresh_shop() -> void:
 	if shop_gold_label == null:
 		return
-	shop_gold_label.text = T("shop_gold") % gold
+	shop_gold_label.text = T("shop_balance") % [gold, souls]
+	for sec in shop_sec_labels:
+		sec["label"].text = T("shop_sec_gold") if sec["cur"] == "gold" else T("shop_sec_soul")
 	for row in shop_rows:
 		var u := _meta_by_id(String(row["id"]))
 		var lvl := int(meta_levels.get(u["id"], 0))
 		var b: Button = row["btn"]
+		var is_soul := String(u.get("cur", "gold")) == "soul"
+		var sym := "🔮" if is_soul else "💰"
+		var bal := souls if is_soul else gold
 		if lvl >= int(u["max"]):
 			b.text = T("shop_max") % [u["name"][lang], u["unit"]]
 			b.disabled = true
 		else:
 			var cost := _upgrade_cost(u, lvl)
-			b.text = T("shop_buy") % [u["name"][lang], lvl, int(u["max"]), u["unit"], cost]
-			b.disabled = gold < cost
+			b.text = T("shop_buy") % [u["name"][lang], lvl, int(u["max"]), u["unit"], cost, sym]
+			b.disabled = bal < cost
+	if not shop_nav_btns.is_empty():
+		_update_shop_highlight()
 	_update_shop_btn_label()
+
+
+func _update_shop_highlight() -> void:
+	for i in shop_nav_btns.size():
+		shop_nav_btns[i].modulate = Color(1.4, 1.4, 1.4) if i == _shop_sel else Color(0.8, 0.8, 0.8)
+
+
+func _shop_accept() -> void:
+	if _shop_sel < shop_rows.size():
+		_buy_upgrade(String(shop_rows[_shop_sel]["id"]))
+		_update_shop_highlight()
+	else:
+		_close_shop()
 
 
 func _update_shop_btn_label() -> void:
 	if shop_open_btn:
-		shop_open_btn.text = T("shop_btn") % gold
+		shop_open_btn.text = T("shop_btn") % [gold, souls]
 
 
 func _build_lang_row() -> void:
@@ -576,11 +728,16 @@ func _apply_lang() -> void:
 	_refresh_shop()
 	for i in lang_btns.size():
 		lang_btns[i].button_pressed = (i == lang)
-	for i in 6:
+	for i in 4:
 		var btn: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
 		var c: Dictionary = CHARACTERS[i]
-		btn.text = "%s\n%s\n%s" % [c["name"][lang], c["desc"][lang],
-			T("char_stats") % [int(c["hp"]), int(c["speed"]), c["dmg"]]]
+		var locked: bool = c.get("locked", false) and not ronin_unlocked
+		if locked:
+			btn.text = "%s  %s\n%s" % [c["name"][lang], T("map_locked"), c["desc"][lang]]
+		else:
+			btn.text = "%s\n%s\n%s" % [c["name"][lang], c["desc"][lang],
+				T("char_stats") % [int(c["hp"]), int(c["speed"]), c["dmg"]]]
+	_refresh_map_panel()
 
 
 func _toggle_settings() -> void:
@@ -603,6 +760,8 @@ func _set_sfx_vol(v: float) -> void:
 
 func _pick_char(i: int) -> void:
 	var c: Dictionary = CHARACTERS[i]
+	if c.get("locked", false) and not ronin_unlocked:
+		return  # Kiếm khách chưa mở khóa
 	player.get_node("Sprite2D").texture = c["tex"]
 	player.max_hp = c["hp"]
 	player.hp = c["hp"]
@@ -615,9 +774,7 @@ func _pick_char(i: int) -> void:
 	_apply_meta_upgrades()
 	char_panel.visible = false
 	get_tree().paused = false
-	music.stream = MUSIC_GAME
-	_set_music_vol(music_slider.value)
-	music.play()
+	_setup_stage()  # áp dụng map đã chọn: nền, nhạc, hiệu ứng vùng
 
 
 func _process(delta: float) -> void:
@@ -626,20 +783,34 @@ func _process(delta: float) -> void:
 			get_tree().reload_current_scene()
 		return
 
+	# Hit-stop khi AoE hạ gục từ 3 quái trở lên cùng lúc (gom theo khung hình)
+	if _deaths_this_frame >= 3:
+		request_hit_stop(0.06)
+	_deaths_this_frame = 0
+	_kill_blast_budget = 16  # giới hạn nổ "Nổ Chùm" mỗi khung hình
+	if _hitstop_cd > 0.0:
+		_hitstop_cd = maxf(0.0, _hitstop_cd - delta)
+
 	ground.global_position = player.global_position.snapped(Vector2(64.0, 64.0))
 	_update_decor()
 
 	time += delta
-	_update_stage()
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
 		spawn_timer = maxf(0.22, 0.9 - time * 0.015)
 		_spawn_enemy()
 
-	boss_timer -= delta
-	if boss_timer <= 0.0:
-		boss_timer = BOSS_INTERVAL
-		_spawn_boss()
+	# Nhịp boss theo mốc: Mini-boss phút 5 & 10, Final boss phút 15
+	if minibosses_spawned < MINIBOSS_TIMES.size() and time >= float(MINIBOSS_TIMES[minibosses_spawned]):
+		minibosses_spawned += 1
+		_spawn_boss(false)
+	if not final_spawned and time >= FINAL_TIME:
+		final_spawned = true
+		_spawn_boss(true)
+
+	# Vùng đất chết: định kỳ tạo vũng độc quanh người chơi
+	if selected_stage == 2:
+		_dead_pool_tick(delta)
 
 	event_timer -= delta
 	if event_timer <= 0.0:
@@ -660,6 +831,7 @@ func _process(delta: float) -> void:
 					e.remove_meta("fz")
 
 	_update_arrows()
+	_update_gate_arrow()
 
 	hp_bar.max_value = player.max_hp
 	hp_bar.value = player.hp
@@ -671,24 +843,20 @@ func _process(delta: float) -> void:
 	kills_label.text = T("kills_fmt") % kills
 
 
-func _update_stage() -> void:
-	# Lặp vòng cả 3 vùng: Đồng cỏ → Sa mạc → Đất chết → Đồng cỏ ...
-	var s := int(time / stage_len) % 3
-	if s == stage:
-		return
-	stage = s
-	var cfg: Dictionary = STAGES[s]
+func _setup_stage() -> void:
+	# Phase 1: map cố định cả ván (không còn tự xoay vòng). Gọi 1 lần khi vào trận.
+	stage = selected_stage
+	var cfg: Dictionary = STAGES[stage]
 	ground.texture = cfg["tile"]
 	ground.modulate = cfg["tile_mod"]
 	for cell in decor_cells.keys():
 		decor_cells[cell].queue_free()
 	decor_cells.clear()
 	_update_decor()
-	if stage not in stages_announced:
-		stages_announced.append(stage)
-		_announce(T("stage_fmt") % cfg["name"][lang], Color(0.55, 1.0, 0.75))
-	boss_timer = 12.0
-	match s:
+	_announce(T("stage_fmt") % cfg["name"][lang], Color(0.55, 1.0, 0.75))
+	# Sa mạc: đi trên cát chậm hơn
+	player.stage_speed_mult = 0.82 if stage == 1 else 1.0
+	match stage:
 		0: _change_music(MUSIC_GAME)
 		1: _change_music(MUSIC_DESERT)
 		2: _change_music(MUSIC_DEAD)
@@ -798,6 +966,9 @@ func _spawn_enemy() -> void:
 		e.speed = minf(75.0 + time * 0.6, 160.0)
 	if time > 45.0 and e.kind == ENEMY.Kind.MELEE and randf() < 0.06:
 		_make_elite(e)
+	# Vùng đất chết (hardcore): quái cận chiến hồi sinh 1 lần
+	if selected_stage == 2 and e.kind == ENEMY.Kind.MELEE:
+		e.can_revive = true
 	_apply_stage(e)
 	add_child(e)
 	e.global_position = player.global_position + Vector2.from_angle(randf() * TAU) * 550.0
@@ -806,7 +977,7 @@ func _spawn_enemy() -> void:
 		e.set_meta("fz", true)
 
 
-func _spawn_boss() -> void:
+func _spawn_boss(is_final: bool) -> void:
 	boss_count += 1
 	var e := _make_enemy()
 	e.kind = ENEMY.Kind.BOSS
@@ -814,9 +985,9 @@ func _spawn_boss() -> void:
 	e.hp = 40.0 + time * 1.2
 	e.dps = 30.0
 	e.gems = 8
-	var announce := T("boss_announce")
-	# Vùng có boss riêng (sa mạc/đất chết) thì ~50% ra boss đặc trưng, còn lại ra quái tổng hợp
-	var themed := stage != 0 and randf() < 0.5
+	var announce := T("miniboss_announce")
+	# Final boss luôn là boss đặc trưng của map; Mini-boss thì ngẫu nhiên như cũ
+	var themed := stage != 0 and (is_final or randf() < 0.5)
 	if stage == 1 and themed:
 		# Hung thần sa mạc: thả lốc cát đuổi theo, tạo vũng cát lún, biết lao tới
 		e.tex = TEX_BOSS_DESERT
@@ -837,19 +1008,119 @@ func _spawn_boss() -> void:
 		e.skill_interval = 5.5
 		announce = T("boss_dead")
 	else:
-		announce = _apply_topdown_boss(e)
+		# Final boss Đồng cỏ luôn là "Đại tướng" (chỉ-số 3 trong TOPDOWN_BOSSES)
+		announce = _apply_topdown_boss(e, 3 if (is_final and stage == 0) else -1)
+	if is_final:
+		# Boss cuối to và mạnh hơn hẳn; Vùng đất chết nhân đôi thông số (Zombie Chúa)
+		announce = T("final_announce")
+		e.sprite_scale *= 1.35
+		e.vis_scale *= 1.35 if e.vis_scale > 0.0 else 1.0
+		e.hp *= (2.0 if stage == 2 else 1.6)
+		e.dps *= (2.0 if stage == 2 else 1.4)
+		e.gems = 20
 	_apply_stage(e)
 	add_child(e)
 	e.global_position = player.global_position + Vector2.from_angle(randf() * TAU) * 600.0
 	bosses.append(e)
 	e.died.connect(func(pos: Vector2, _g: int) -> void: _spawn_chest(pos))
+	# Mảnh Linh Hồn chỉ rớt từ boss: Mini-boss 1, Final boss 3-5
+	var soul_drop := randi_range(3, 5) if is_final else 1
+	e.died.connect(func(_pos: Vector2, _g: int) -> void: run_souls += soul_drop)
+	if is_final:
+		e.died.connect(func(_pos: Vector2, _g: int) -> void: _win_run())
+	else:
+		# Giết Mini-boss → mở Cổng thoát hiểm (rút lui an toàn hoặc tất tay đánh tiếp)
+		e.died.connect(func(_pos: Vector2, _g: int) -> void: _spawn_extraction_gate())
 	_announce(announce, Color(1.0, 0.2, 0.2), 8.0)
 
 
-func _apply_topdown_boss(e: Area2D) -> String:
+func _win_run() -> void:
+	if won:
+		return
+	won = true
+	game_over = true
+	Engine.time_scale = 1.0
+	# Phá đảo = giữ 100% Vàng và Mảnh Linh Hồn kiếm được
+	gold += run_gold
+	souls += run_souls
+	# Mở khóa map kế tiếp khi phá đảo đúng map mới nhất
+	var unlock_msg := ""
+	if selected_stage == 0 and unlocked_maps < 2:
+		unlocked_maps = 2
+		unlock_msg = T("win_unlock") % STAGES[1]["name"][lang]
+	elif selected_stage == 1:
+		if unlocked_maps < 3:
+			unlocked_maps = 3
+			unlock_msg = T("win_unlock") % STAGES[2]["name"][lang]
+		ronin_unlocked = true  # phá đảo Sa mạc mở khóa Kiếm khách (Phase 4)
+	_save_meta()
+	over_label.text = (T("win_fmt") % [STAGES[selected_stage]["name"][lang], kills]) \
+		+ (T("reward_fmt") % [run_gold, run_souls]) + unlock_msg
+	over_label.visible = true
+	get_tree().paused = true  # dừng toàn bộ thế giới khi hiện menu thắng
+
+
+func _spawn_extraction_gate() -> void:
+	if is_instance_valid(gate):
+		return  # chỉ một cổng tại một thời điểm
+	var g := Node2D.new()
+	g.set_script(EXTRACTION_GATE)
+	g.player = player
+	g.title = T("gate_label")
+	g.extracted.connect(_extract)
+	g.expired.connect(_on_gate_expired)
+	add_child(g)
+	g.global_position = player.global_position + Vector2.from_angle(randf() * TAU) * randf_range(600.0, 800.0)
+	gate = g
+	_announce(T("gate_announce"), Color(0.5, 1.0, 0.9), 4.0)
+
+
+func _on_gate_expired() -> void:
+	gate = null
+	_announce(T("gate_closed"), Color(0.6, 0.8, 0.9))
+
+
+func _extract() -> void:
+	if game_over:
+		return
+	game_over = true
+	Engine.time_scale = 1.0
+	gate = null
+	# Rút lui an toàn = giữ 100% Vàng + Mảnh Linh Hồn (không mở khóa map)
+	gold += run_gold
+	souls += run_souls
+	_save_meta()
+	over_label.text = (T("extract_fmt") % [STAGES[selected_stage]["name"][lang], kills]) \
+		+ (T("reward_fmt") % [run_gold, run_souls])
+	over_label.visible = true
+	get_tree().paused = true  # dừng toàn bộ thế giới khi rút lui
+
+
+func _update_gate_arrow() -> void:
+	if gate_arrow == null:
+		gate_arrow = Polygon2D.new()
+		gate_arrow.polygon = PackedVector2Array([Vector2(18, 0), Vector2(-11, 11), Vector2(-11, -11)])
+		gate_arrow.color = Color(0.4, 1.0, 0.85)
+		gate_arrow.visible = false
+		arrows_holder.add_child(gate_arrow)
+	if not is_instance_valid(gate):
+		gate_arrow.visible = false
+		return
+	var to_gate: Vector2 = gate.global_position - player.global_position
+	if to_gate.length() <= 360.0:
+		gate_arrow.visible = false
+		return
+	gate_arrow.visible = true
+	var center := get_viewport_rect().size * 0.5
+	gate_arrow.position = center + to_gate.normalized() * 230.0
+	gate_arrow.rotation = to_gate.angle()
+	gate_arrow.scale = Vector2.ONE * (1.0 + 0.25 * sin(time * 7.0))
+
+
+func _apply_topdown_boss(e: Area2D, force_idx := -1) -> String:
 	# Boss gắn cờ "meadow_only" chỉ được chọn khi đang ở Đồng cỏ (stage 0)
 	var pool: Array = TOPDOWN_BOSSES.filter(func(b: Dictionary) -> bool: return stage == 0 or not b.get("meadow_only", false))
-	var m: Dictionary = pool[boss_count % pool.size()]
+	var m: Dictionary = TOPDOWN_BOSSES[force_idx] if (force_idx >= 0 and force_idx < TOPDOWN_BOSSES.size()) else pool[boss_count % pool.size()]
 	e.tex = m["tex"]
 	e.tint = m["tint"]
 	e.sprite_scale = 2.2  # to gấp ~1.5 lần boss thường để ra dáng boss
@@ -894,8 +1165,27 @@ func _on_boss_quicksand(pos: Vector2) -> void:
 		q.global_position = pos + Vector2.from_angle(TAU * i / 3.0 + randf() * 1.5) * randf_range(0.0, 130.0)
 
 
+func request_hit_stop(duration := 0.05) -> void:
+	# Khựng khung hình rất ngắn để tạo cảm giác va đập (crit / AoE diệt nhiều quái)
+	if game_over or choosing or _hitstop_cd > 0.0:
+		return
+	_hitstop_cd = 0.2
+	Engine.time_scale = 0.001
+	# Hẹn giờ chạy theo thời gian thực (bỏ qua time_scale) để khôi phục tốc độ
+	var t := get_tree().create_timer(duration, true, false, true)
+	t.timeout.connect(func() -> void: Engine.time_scale = 1.0)
+
+
+func boom_shake(amt: float) -> void:
+	# Cho các vũ khí nổ (pháo/lựu đạn/nova...) rung màn hình qua camera người chơi
+	if is_instance_valid(player):
+		player.shake_amt = maxf(player.shake_amt, amt)
+
+
 func _on_enemy_died(pos: Vector2, gem_count: int) -> void:
 	kills += 1
+	_deaths_this_frame += 1
+	_spawn_coin(pos, gem_count)  # Vàng rơi ra nhặt như gem (giá trị theo độ "ngon" của quái)
 	_spawn_death_fx(pos)
 	die_sfx.pitch_scale = randf_range(0.85, 1.15)
 	die_sfx.play()
@@ -903,6 +1193,10 @@ func _on_enemy_died(pos: Vector2, gem_count: int) -> void:
 		_spawn_gem(pos)
 	if randf() < 0.008:
 		_spawn_pickup(pos)
+	# Hình thái "Nổ Chùm": quái chết phát nổ (giới hạn để tránh dây chuyền vô hạn)
+	if player.sig_explode_on_kill and _kill_blast_budget > 0:
+		_kill_blast_budget -= 1
+		_signature_kill_blast(pos)
 
 
 func _spawn_gem(pos: Vector2, value := 1) -> void:
@@ -913,6 +1207,22 @@ func _spawn_gem(pos: Vector2, value := 1) -> void:
 	g.collected.connect(_on_gem_collected)
 	add_child(g)
 	g.global_position = pos + Vector2.from_angle(randf() * TAU) * (randf() * 20.0)
+
+
+func _spawn_coin(pos: Vector2, value: int) -> void:
+	if value <= 0:
+		return
+	var c := Area2D.new()
+	c.set_script(COIN)
+	c.player = player
+	c.value = value
+	c.collected.connect(_on_coin_collected)
+	add_child(c)
+	c.global_position = pos + Vector2.from_angle(randf() * TAU) * (randf() * 22.0)
+
+
+func _on_coin_collected(value: int) -> void:
+	run_gold += value
 
 
 func _make_elite(e: Area2D) -> void:
@@ -996,6 +1306,8 @@ func _apply_pickup(kind: String) -> void:
 		"magnet":
 			for g in get_tree().get_nodes_in_group("gems"):
 				g.force_pull = true
+			for c in get_tree().get_nodes_in_group("coins"):
+				c.force_pull = true
 		"bomb":
 			var bomb_radius := 280.0
 			for e in get_tree().get_nodes_in_group("enemies"):
@@ -1022,6 +1334,8 @@ func _spawn_crate() -> void:
 
 func _on_crate_broke(pos: Vector2) -> void:
 	spawn_explosion(pos, 90.0, 0.4)
+	for i in 3:  # Vàng từ thùng gỗ — nổ ra một chùm đồng xu
+		_spawn_coin(pos, randi_range(5, 12))
 	if randf() < 0.7:
 		_spawn_pickup(pos)
 	else:
@@ -1088,39 +1402,251 @@ func _skin_levelup() -> void:
 func _show_level_up() -> void:
 	choosing = true
 	xp -= xp_needed
-	xp_needed = int(xp_needed * 1.4) + 2
+	# Đường cong XP mềm hơn: lên cấp liên tục, "ting ting" đều đặn cả late game
+	xp_needed = int(xp_needed * 1.15) + 5
 	level += 1
 	player.heal(20.0)
 
-	var pool := _build_pool()
-	pool.shuffle()
-	pending = pool.slice(0, 3)
-	for i in 3:
-		var b: Button = level_panel.get_node("VBox/HBox/Btn%d" % (i + 1))
-		var fn := String(pending[i]["fn"])
-		var col := Color(0.5, 1.0, 0.6)  # chỉ số: xanh lá
-		if fn.begins_with("_art"):
-			col = Color(1.0, 0.78, 0.27)  # cổ vật: hổ phách
-		elif fn.begins_with("_evo"):
-			col = Color(1.0, 0.4, 0.4)  # tiến hóa: đỏ
-		b.get_node("V/Text").text = pending[i]["label"]
-		var icon: TextureRect = b.get_node("V/Icon")
-		icon.texture = pending[i].get("icon")
-		icon.modulate = col
-		if i < card_frames.size():
-			card_frames[i].self_modulate = col
+	# Mốc Đan Chéo 5/10/15/20 chèn Nâng cấp Độc bản; còn lại là 3 thẻ ngẫu nhiên
+	var cards := _milestone_cards(level)
+	var is_milestone := not cards.is_empty()
+	if not is_milestone:
+		var pool := _build_pool()
+		pool.shuffle()
+		cards = pool.slice(0, 3)
+	pending = cards
+	_card_count = pending.size()
+	_populate_level_panel(is_milestone)
 
+	_sel = 0
+	_update_levelup_highlight()
 	level_panel.visible = true
 	get_tree().paused = true
 
 
+func _populate_level_panel(is_milestone: bool) -> void:
+	var title := T("levelup_title")
+	if is_milestone:
+		match level:
+			5:  title = T("sig_core_title")
+			10: title = T("sig_enhance_title")
+			15: title = T("sig_form_title")
+			20: title = T("sig_ultimate_title")
+	level_panel.get_node("VBox/Title").text = title
+	for i in 3:
+		var b: Button = level_panel.get_node("VBox/HBox/Btn%d" % (i + 1))
+		if i >= pending.size():
+			b.visible = false
+			continue
+		b.visible = true
+		var card: Dictionary = pending[i]
+		var col := Color(0.5, 1.0, 0.6)  # chỉ số: xanh lá
+		if card.has("col"):
+			col = card["col"]
+		else:
+			var fn = card["fn"]
+			if fn is String and fn.begins_with("_art"):
+				col = Color(1.0, 0.78, 0.27)  # cổ vật: hổ phách
+			elif fn is String and fn.begins_with("_evo"):
+				col = Color(1.0, 0.4, 0.4)  # tiến hóa: đỏ
+		b.get_node("V/Text").text = card["label"]
+		var icon: TextureRect = b.get_node("V/Icon")
+		icon.texture = card.get("icon", null)
+		icon.modulate = col
+		if i < card_frames.size():
+			card_frames[i].self_modulate = col
+
+
+func _update_levelup_highlight() -> void:
+	# Làm nổi thẻ đang chọn, mờ các thẻ còn lại — chỉ dẫn rõ cho điều khiển bàn phím
+	for i in 3:
+		var b: Button = level_panel.get_node("VBox/HBox/Btn%d" % (i + 1))
+		if i >= _card_count:
+			continue
+		b.modulate = Color(1.35, 1.35, 1.35) if i == _sel else Color(0.7, 0.7, 0.7)
+
+
+func _ui_nav(dx: int, dy: int) -> void:
+	# Định tuyến phím điều hướng tới màn đang mở
+	if choosing:
+		_sel = wrapi(_sel + dx + dy, 0, maxi(1, _card_count))
+		_update_levelup_highlight()
+	elif chest_panel.visible:
+		pass  # rương chỉ có 1 nút, không cần di chuyển
+	elif shop_panel != null and shop_panel.visible:
+		_shop_sel = wrapi(_shop_sel + dx + dy, 0, shop_nav_btns.size())
+		_update_shop_highlight()
+	elif map_panel != null and map_panel.visible:
+		_map_sel = wrapi(_map_sel + dx + dy, 0, 3)
+		_update_map_highlight()
+	elif char_panel.visible:
+		_char_nav(dx, dy)
+
+
+func _ui_accept() -> void:
+	if choosing:
+		_choose(_sel)
+	elif chest_panel.visible:
+		_close_chest()
+	elif shop_panel != null and shop_panel.visible:
+		_shop_accept()
+	elif map_panel != null and map_panel.visible:
+		_pick_map(_map_sel)
+	elif char_panel.visible and not shop_panel.visible:
+		if _char_sel >= 4:
+			_open_shop()
+		else:
+			_pick_char(_char_sel)
+
+
+func _char_nav(dx: int, dy: int) -> void:
+	# Lưới 2 cột × 2 hàng nhân vật (0..3) + nút Shop là chỉ số 4
+	if _char_sel >= 4:  # đang ở nút Shop
+		if dy < 0:
+			_char_sel = 2   # lên → hàng nhân vật dưới
+		elif dy > 0:
+			_char_sel = 0   # xuống → vòng lên hàng đầu
+		_update_char_highlight()
+		return
+	var col := _char_sel % 2
+	var row := _char_sel / 2
+	if dx != 0:
+		col = wrapi(col + dx, 0, 2)
+		_char_sel = row * 2 + col
+	elif dy != 0:
+		var nr := row + dy
+		if nr > 1 or nr < 0:
+			_char_sel = 4   # ra khỏi lưới nhân vật → tới nút Shop
+		else:
+			_char_sel = nr * 2 + col
+	_update_char_highlight()
+
+
+func _update_char_highlight() -> void:
+	for i in 4:
+		var b: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
+		b.modulate = Color(1.35, 1.35, 1.35) if i == _char_sel else Color(0.7, 0.7, 0.7)
+	if shop_open_btn:
+		shop_open_btn.modulate = Color(1.35, 1.35, 1.35) if _char_sel == 4 else Color(0.85, 0.85, 0.85)
+
+
 func _choose(i: int) -> void:
-	call(pending[i]["fn"])
+	if i >= pending.size():
+		return
+	var fn = pending[i]["fn"]
+	if fn is Callable:
+		fn.call()
+	else:
+		call(fn)
 	level_panel.visible = false
 	get_tree().paused = false
 	choosing = false
+	# Trả thẻ về độ sáng bình thường và hiện lại đủ 3 thẻ cho lần mở kế tiếp
+	for j in 3:
+		var b: Button = level_panel.get_node("VBox/HBox/Btn%d" % (j + 1))
+		b.modulate = Color.WHITE
+		b.visible = true
 	if xp >= xp_needed:
 		_show_level_up()
+
+
+# Trả về thẻ cho các mốc Đan Chéo (5/10/15/20); rỗng nếu cấp thường
+func _milestone_cards(lvl: int) -> Array:
+	var cards := []
+	match lvl:
+		5:
+			var cores: Array = SIG_CORES.get(player.weapon, [])
+			for cdef in cores:
+				var cid := String(cdef["id"])
+				cards.append({
+					"label": "%s\n%s" % [cdef["name"][lang], cdef["desc"][lang]],
+					"fn": func() -> void: _sig_apply_core(cid),
+					"col": Color(1.0, 0.78, 0.27),  # hổ phách = Lõi
+				})
+		10:
+			cards.append({
+				"label": T("sig_enhance_label"),
+				"fn": func() -> void: _sig_enhance(),
+				"col": Color(1.0, 0.55, 0.3),
+			})
+		15:
+			for fdef in SIG_FORMS:
+				var fid := String(fdef["id"])
+				cards.append({
+					"label": "%s\n%s" % [fdef["name"][lang], fdef["desc"][lang]],
+					"fn": func() -> void: _sig_apply_form(fid),
+					"col": Color(0.6, 0.45, 0.95),  # tím = Hình thái
+				})
+		20:
+			cards.append({
+				"label": T("sig_ultimate_label"),
+				"fn": func() -> void: _sig_ultimate(),
+				"col": Color(1.0, 0.3, 0.3),
+			})
+	return cards
+
+
+func _sig_apply_core(id: String) -> void:
+	chosen_core = id
+	match id:
+		"burn":      player.sig_burn = 6.0
+		"pierce":    player.sig_pierce_bonus += 3; player.sig_dmg_mul *= 1.12
+		"aoe":       player.sig_aoe_bonus += 70.0
+		"chain":     player.sig_chain = true
+		"explosive": player.sig_aoe_bonus += 70.0
+		"wave":      player.sig_blade_wave = true
+		"lifesteal": player.sig_lifesteal = 1.5
+
+
+func _sig_enhance() -> void:
+	# Cấp 10: cường hóa chính Lõi đã chọn ở cấp 5
+	match chosen_core:
+		"burn":      player.sig_burn *= 2.2
+		"pierce":    player.sig_pierce_bonus += 3; player.sig_dmg_mul *= 1.15
+		"aoe":       player.sig_aoe_bonus += 60.0
+		"chain":     player.sig_chain = true; player.sig_aoe_bonus += 30.0
+		"explosive": player.sig_aoe_bonus += 50.0; player.sig_dmg_mul *= 1.1
+		"wave":      player.sig_dmg_mul *= 1.2
+		"lifesteal": player.sig_lifesteal += 1.5; player.sig_dmg_mul *= 1.1
+		_:           player.sig_dmg_mul *= 1.2
+
+
+func _sig_apply_form(id: String) -> void:
+	chosen_form = id
+	match id:
+		"explode_kill": player.sig_explode_on_kill = true
+		"shock":        player.sig_shock = 1.2
+
+
+func _sig_ultimate() -> void:
+	# Cấp 20: đẩy Lõi + Hình thái lên giới hạn + dọn màn
+	player.sig_dmg_mul *= 1.6
+	player.fire_rate += 0.8
+	_sig_enhance()  # cường hóa Lõi thêm lần nữa
+	if chosen_form == "explode_kill":
+		player.sig_explode_on_kill = true
+	elif chosen_form == "shock":
+		player.sig_shock = maxf(player.sig_shock, 2.0)
+	_signature_nuke()
+
+
+func _signature_nuke() -> void:
+	# Dọn màn: gây sát thương rất lớn cho mọi quái quanh người chơi
+	var c: Vector2 = player.global_position
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if c.distance_to(e.global_position) < 1100.0:
+			e.take_hit(400.0, true, (e.global_position - c).normalized() * 520.0, Color(1.0, 0.9, 0.4), true)
+	spawn_explosion(c, 1200.0, 0.8)
+	player.shake_amt = 18.0
+
+
+func _signature_kill_blast(pos: Vector2) -> void:
+	# Hình thái "Nổ Chùm": quái chết phát nổ nhỏ (có giới hạn theo khung hình)
+	var dmg: float = 8.0 + player.projectile_damage
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if pos.distance_to(e.global_position) < 80.0:
+			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 150.0, Color(1.0, 0.6, 0.3))
+	spawn_explosion(pos, 130.0, 0.3)
 
 
 func _build_pool() -> Array:
@@ -1128,6 +1654,8 @@ func _build_pool() -> Array:
 	for s in STAT_UPGRADES:
 		if s["fn"] == "_up_max_hp" and randf() > 0.10:
 			continue
+		if s["fn"] == "_up_chainreact" and player.chain_react:
+			continue  # đã có Phản Ứng Dây Chuyền thì không hiện lại
 		pool.append({"label": s["label"][lang], "fn": s["fn"], "icon": s["icon"]})
 	_add_weapon(pool, player.orbital_count, player.orbital_evolved,
 		["Kiếm xoay", "Spinning swords"], "_up_orbital",
@@ -1230,19 +1758,32 @@ func _evo_poison() -> void:
 
 
 func _up_damage() -> void:
-	player.projectile_damage += 0.8
+	# "Sức Mạnh Giao Tranh": +20% sát thương cơ bản (cả đạn lẫn đòn chém)
+	player.sig_dmg_mul *= 1.2
 
 
 func _up_fire_rate() -> void:
-	player.fire_rate += 0.5
+	# "Nhịp Độ Tử Thần": giảm 15% thời gian hồi đòn
+	player.fire_rate /= 0.85
 
 
 func _up_projectile() -> void:
-	player.projectile_count += 1
+	# "Nhân Bản / Liên Kích": Katana chém bồi; còn lại +1 đạn
+	if player.weapon == "katana":
+		player.katana_combo += 1
+	else:
+		player.projectile_count += 1
 
 
 func _up_pierce() -> void:
-	player.pierce += 1
+	# "Xuyên Thấu / Khuếch Đại": thích ứng theo loại vũ khí
+	match player.weapon:
+		"katana":
+			player.katana_reach *= 1.15        # chém xa hơn, an toàn hơn
+		"cannon":
+			player.aoe_mult *= 1.15             # bán kính nổ to hơn
+		_:
+			player.pierce += 1                  # súng đơn: +1 xuyên
 
 
 func _up_speed() -> void:
@@ -1252,6 +1793,29 @@ func _up_speed() -> void:
 func _up_max_hp() -> void:
 	player.max_hp += 25.0
 	player.heal(player.max_hp)
+
+
+func _up_exploit() -> void:
+	# "Khai Thác Điểm Yếu": +40% dmg lên quái đang dính hiệu ứng
+	player.exploit_dmg += 0.4
+
+
+func _up_armor() -> void:
+	# "Kiên Cường": giảm 20% sát thương nhận (tối đa 75%)
+	player.damage_reduction = minf(player.damage_reduction + 0.2, 0.75)
+
+
+func _up_chainreact() -> void:
+	# "Phản Ứng Dây Chuyền": crit/overkill có 20% gây nổ nhẹ
+	player.chain_react = true
+
+
+func chain_react(pos: Vector2) -> void:
+	# Gọi từ enemy khi crit/overkill hạ gục — nổ nhẹ, có giới hạn theo khung hình
+	if _kill_blast_budget <= 0:
+		return
+	_kill_blast_budget -= 1
+	_signature_kill_blast(pos)
 
 
 func _up_orbital() -> void:
@@ -1432,6 +1996,7 @@ func _build_chest_panel() -> void:
 	chest_btn.add_theme_color_override("font_hover_color", Color(0.2, 0.12, 0.0))
 	chest_btn.add_theme_color_override("font_pressed_color", Color(0.2, 0.12, 0.0))
 	chest_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	chest_btn.focus_mode = Control.FOCUS_NONE
 	chest_btn.pressed.connect(_close_chest)
 	vbox.add_child(chest_btn)
 	chest_panel.add_child(vbox)
@@ -1439,6 +2004,99 @@ func _build_chest_panel() -> void:
 	chest_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	chest_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	chest_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+
+
+func _build_map_panel() -> void:
+	map_panel = PanelContainer.new()
+	map_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	map_panel.visible = false
+	map_panel.custom_minimum_size = Vector2(440, 0)
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	map_title = Label.new()
+	map_title.add_theme_font_size_override("font_size", 34)
+	map_title.add_theme_color_override("font_color", Color(0.6, 1.0, 0.8))
+	map_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(map_title)
+	for i in 3:
+		var b := Button.new()
+		b.add_theme_font_size_override("font_size", 22)
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(0, 56)
+		b.pressed.connect(_pick_map.bind(i))
+		map_btns.append(b)
+		vbox.add_child(b)
+	map_panel.add_child(vbox)
+	$UI.add_child(map_panel)
+	map_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	map_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	map_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+
+
+func _refresh_map_panel() -> void:
+	if map_panel == null:
+		return
+	map_title.text = T("map_title")
+	for i in 3:
+		var unlocked := i < unlocked_maps
+		map_btns[i].disabled = not unlocked
+		if unlocked:
+			map_btns[i].text = STAGES[i]["name"][lang]
+		else:
+			map_btns[i].text = "%s  %s" % [STAGES[i]["name"][lang], T("map_locked")]
+	_update_map_highlight()
+
+
+func _update_map_highlight() -> void:
+	for i in 3:
+		if i == _map_sel:
+			map_btns[i].modulate = Color(1.35, 1.35, 1.35)
+		elif i >= unlocked_maps:
+			map_btns[i].modulate = Color(0.55, 0.55, 0.55)
+		else:
+			map_btns[i].modulate = Color(0.85, 0.85, 0.85)
+
+
+func _pick_map(i: int) -> void:
+	if i >= unlocked_maps:
+		return
+	selected_stage = i
+	map_panel.visible = false
+	char_panel.visible = true
+	_char_sel = 0
+	_update_char_highlight()
+
+
+func _dead_pool_tick(delta: float) -> void:
+	dead_pool_timer -= delta
+	if dead_pool_timer <= 0.0:
+		dead_pool_timer = randf_range(4.5, 7.0)
+		_spawn_dead_pool()
+	for idx in range(dead_pools.size() - 1, -1, -1):
+		var p: Dictionary = dead_pools[idx]
+		p["t"] -= delta
+		if p["t"] <= 0.0:
+			if is_instance_valid(p["node"]):
+				p["node"].queue_free()
+			dead_pools.remove_at(idx)
+			continue
+		if is_instance_valid(player) and player.alive and player.global_position.distance_to(p["pos"]) < p["radius"]:
+			player.take_damage(12.0 * delta)
+
+
+func _spawn_dead_pool() -> void:
+	var radius := randf_range(70.0, 110.0)
+	var pos := player.global_position + Vector2.from_angle(randf() * TAU) * randf_range(140.0, 340.0)
+	var spr := Sprite2D.new()
+	spr.texture = CIRCLE
+	spr.modulate = Color(0.35, 0.9, 0.4, 0.0)
+	spr.scale = Vector2.ONE * (radius * 2.0 / CIRCLE.get_size().x)
+	spr.z_index = -6
+	add_child(spr)
+	spr.global_position = pos
+	var tw := spr.create_tween()
+	tw.tween_property(spr, "modulate:a", 0.45, 0.5)
+	dead_pools.append({"node": spr, "pos": pos, "radius": radius, "t": 8.0})
 
 
 func _spawn_chest(pos: Vector2) -> void:
@@ -1558,12 +2216,26 @@ func _update_arrows() -> void:
 
 func _on_player_died() -> void:
 	game_over = true
-	var reward := int((kills + boss_count * 20 + int(time / 5.0)) * 0.5)
-	gold += reward
+	Engine.time_scale = 1.0  # đảm bảo không kẹt khựng khung hình khi chết
+	if is_instance_valid(gate):
+		gate.queue_free()
+	gate = null
+	# Chết = chỉ giữ 50% Vàng kiếm trong ván; Mảnh Linh Hồn không bao giờ mất
+	var kept_gold := int(run_gold * 0.5)
+	gold += kept_gold
+	souls += run_souls
 	_save_meta()
 	over_label.text = (T("gameover_fmt") % [int(time) / 60, int(time) % 60, kills]) \
-		+ (T("gold_reward") % [reward, gold])
+		+ (T("reward_fmt") % [kept_gold, run_souls]) + T("death_penalty")
 	over_label.visible = true
+	get_tree().paused = true  # dừng toàn bộ thế giới khi hiện menu kết thúc
+
+
+func _on_restart() -> void:
+	# Phím R ở màn kết thúc → bỏ pause và tải lại (về menu chọn map/nhân vật)
+	if game_over:
+		get_tree().paused = false
+		get_tree().reload_current_scene()
 
 
 var _debug_label: Label

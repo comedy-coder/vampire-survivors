@@ -1,91 +1,92 @@
-[gd_scene load_steps=22 format=3]
+[gd_scene format=3 uid="uid://cv1l5r0kfy13m"]
 
-[ext_resource type="Script" path="res://scripts/game.gd" id="1_game"]
-[ext_resource type="Script" path="res://scripts/player.gd" id="2_player"]
-[ext_resource type="Texture2D" path="res://assets/characters/player.png" id="3_player_tex"]
-[ext_resource type="Texture2D" path="res://assets/ui/bar_bg.png" id="4_bar_bg"]
-[ext_resource type="Texture2D" path="res://assets/ui/bar_red.png" id="5_bar_red"]
-[ext_resource type="Texture2D" path="res://assets/ui/bar_blue.png" id="6_bar_blue"]
-[ext_resource type="Texture2D" path="res://assets/ui/bar_bg_xp.png" id="16_bar_bg_xp"]
-[ext_resource type="Texture2D" path="res://assets/ui/panel_grey.png" id="7_panel"]
-[ext_resource type="Texture2D" path="res://assets/ui/button_blue.png" id="8_btn"]
-[ext_resource type="Texture2D" path="res://assets/ui/button_blue_hover.png" id="9_btn_hover"]
-[ext_resource type="Texture2D" path="res://assets/characters/player_blue.png" id="10_char_blue"]
-[ext_resource type="Texture2D" path="res://assets/characters/player_woman.png" id="11_char_woman"]
-[ext_resource type="Texture2D" path="res://assets/characters/player_soldier.png" id="12_char_soldier"]
-[ext_resource type="Texture2D" path="res://assets/characters/player_old.png" id="13_char_old"]
-[ext_resource type="Texture2D" path="res://assets/characters/player_survivor.png" id="14_char_survivor"]
-[ext_resource type="Texture2D" path="res://assets/characters/player_brown.png" id="15_char_brown"]
+[ext_resource type="Script" uid="uid://b73shfykmq6ul" path="res://scripts/game.gd" id="1_game"]
+[ext_resource type="Script" uid="uid://bkmqd7hjc314g" path="res://scripts/player.gd" id="2_player"]
+[ext_resource type="Texture2D" uid="uid://c61k4bbewjqus" path="res://assets/characters/player.png" id="3_player_tex"]
+[ext_resource type="Texture2D" uid="uid://bskrk02revjar" path="res://assets/ui/bar_bg.png" id="4_bar_bg"]
+[ext_resource type="Texture2D" uid="uid://dip84tgiokvh5" path="res://assets/ui/bar_red.png" id="5_bar_red"]
+[ext_resource type="Texture2D" uid="uid://dbigs3xh50711" path="res://assets/ui/bar_blue.png" id="6_bar_blue"]
+[ext_resource type="Texture2D" uid="uid://c68l1vbndgc76" path="res://assets/ui/panel_grey.png" id="7_panel"]
+[ext_resource type="Texture2D" uid="uid://s10rjrg6lnys" path="res://assets/ui/button_blue.png" id="8_btn"]
+[ext_resource type="Texture2D" uid="uid://dmxo3q6vxs67" path="res://assets/ui/button_blue_hover.png" id="9_btn_hover"]
+[ext_resource type="Texture2D" uid="uid://btx7llih8er6e" path="res://assets/characters/player_blue.png" id="10_char_blue"]
+[ext_resource type="Texture2D" uid="uid://5njw2wnrggo3" path="res://assets/characters/player_woman.png" id="11_char_woman"]
+[ext_resource type="Texture2D" uid="uid://d1f1wu5nv11dj" path="res://assets/characters/player_soldier.png" id="12_char_soldier"]
+[ext_resource type="Texture2D" uid="uid://cfhr476ac3i7x" path="res://assets/characters/player_old.png" id="13_char_old"]
+[ext_resource type="Texture2D" uid="uid://d0c8tnb34nr7i" path="res://assets/characters/player_survivor.png" id="14_char_survivor"]
+[ext_resource type="Texture2D" uid="uid://baqeqcro7x3ek" path="res://assets/characters/player_brown.png" id="15_char_brown"]
+[ext_resource type="Texture2D" uid="uid://bawosb58hvock" path="res://assets/ui/bar_bg_xp.png" id="16_bar_bg_xp"]
 
 [sub_resource type="CircleShape2D" id="player_shape"]
 radius = 12.0
 
 [sub_resource type="StyleBoxTexture" id="panel_style"]
+content_margin_left = 24.0
+content_margin_top = 20.0
+content_margin_right = 24.0
+content_margin_bottom = 20.0
 texture = ExtResource("7_panel")
 texture_margin_left = 16.0
 texture_margin_top = 16.0
 texture_margin_right = 16.0
 texture_margin_bottom = 16.0
-content_margin_left = 24.0
-content_margin_top = 20.0
-content_margin_right = 24.0
-content_margin_bottom = 20.0
 
 [sub_resource type="StyleBoxTexture" id="btn_normal"]
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
 texture = ExtResource("8_btn")
 texture_margin_left = 8.0
 texture_margin_top = 8.0
 texture_margin_right = 8.0
 texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="btn_pressed"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+texture = ExtResource("8_btn")
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="btn_hover"]
 content_margin_left = 14.0
 content_margin_top = 8.0
 content_margin_right = 14.0
 content_margin_bottom = 10.0
-
-[sub_resource type="StyleBoxTexture" id="btn_hover"]
 texture = ExtResource("9_btn_hover")
 texture_margin_left = 8.0
 texture_margin_top = 8.0
 texture_margin_right = 8.0
 texture_margin_bottom = 8.0
-content_margin_left = 14.0
-content_margin_top = 8.0
-content_margin_right = 14.0
-content_margin_bottom = 10.0
 
-[sub_resource type="StyleBoxTexture" id="btn_pressed"]
-texture = ExtResource("8_btn")
-texture_margin_left = 8.0
-texture_margin_top = 8.0
-texture_margin_right = 8.0
-texture_margin_bottom = 8.0
-content_margin_left = 14.0
-content_margin_top = 10.0
-content_margin_right = 14.0
-content_margin_bottom = 8.0
-
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=1909176730]
 script = ExtResource("1_game")
 
-[node name="Player" type="CharacterBody2D" parent="."]
+[node name="Player" type="CharacterBody2D" parent="." unique_id=601710211]
 script = ExtResource("2_player")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player" unique_id=1412810221]
 shape = SubResource("player_shape")
 
-[node name="Sprite2D" type="Sprite2D" parent="Player"]
+[node name="Sprite2D" type="Sprite2D" parent="Player" unique_id=480637518]
 scale = Vector2(0.7, 0.7)
 texture = ExtResource("3_player_tex")
 
-[node name="Camera2D" type="Camera2D" parent="Player"]
+[node name="Camera2D" type="Camera2D" parent="Player" unique_id=2085128660]
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=1506298094]
 
-[node name="HpBar" type="TextureProgressBar" parent="UI"]
+[node name="HpBar" type="TextureProgressBar" parent="UI" unique_id=52390855]
 offset_left = 20.0
 offset_top = 10.0
 offset_right = 330.0
 offset_bottom = 50.0
+value = 100.0
 nine_patch_stretch = true
 stretch_margin_left = 20
 stretch_margin_top = 4
@@ -93,10 +94,8 @@ stretch_margin_right = 20
 stretch_margin_bottom = 4
 texture_under = ExtResource("4_bar_bg")
 texture_progress = ExtResource("5_bar_red")
-max_value = 100.0
-value = 100.0
 
-[node name="HpLabel" type="Label" parent="UI/HpBar"]
+[node name="HpLabel" type="Label" parent="UI/HpBar" unique_id=798765421]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -111,11 +110,12 @@ text = "HP: 100 / 100"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="XpBar" type="TextureProgressBar" parent="UI"]
+[node name="XpBar" type="TextureProgressBar" parent="UI" unique_id=1736067670]
 offset_left = 20.0
 offset_top = 56.0
 offset_right = 330.0
 offset_bottom = 88.0
+max_value = 5.0
 nine_patch_stretch = true
 stretch_margin_left = 20
 stretch_margin_top = 4
@@ -123,10 +123,8 @@ stretch_margin_right = 20
 stretch_margin_bottom = 4
 texture_under = ExtResource("16_bar_bg_xp")
 texture_progress = ExtResource("6_bar_blue")
-max_value = 5.0
-value = 0.0
 
-[node name="LevelLabel" type="Label" parent="UI/XpBar"]
+[node name="LevelLabel" type="Label" parent="UI/XpBar" unique_id=1594022253]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -141,7 +139,7 @@ text = "Level 1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="KillsLabel" type="Label" parent="UI"]
+[node name="KillsLabel" type="Label" parent="UI" unique_id=111936626]
 offset_left = 20.0
 offset_top = 84.0
 offset_right = 320.0
@@ -152,7 +150,7 @@ theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 22
 text = "Kills: 0"
 
-[node name="TimeLabel" type="Label" parent="UI"]
+[node name="TimeLabel" type="Label" parent="UI" unique_id=34555209]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
@@ -168,7 +166,7 @@ theme_override_font_sizes/font_size = 34
 text = "00:00"
 horizontal_alignment = 1
 
-[node name="LevelUpPanel" type="PanelContainer" parent="UI"]
+[node name="LevelUpPanel" type="PanelContainer" parent="UI" unique_id=504779712]
 process_mode = 3
 visible = false
 anchors_preset = 8
@@ -184,31 +182,31 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("panel_style")
 
-[node name="VBox" type="VBoxContainer" parent="UI/LevelUpPanel"]
+[node name="VBox" type="VBoxContainer" parent="UI/LevelUpPanel" unique_id=1037964103]
 layout_mode = 2
 theme_override_constants/separation = 18
 
-[node name="Title" type="Label" parent="UI/LevelUpPanel/VBox"]
+[node name="Title" type="Label" parent="UI/LevelUpPanel/VBox" unique_id=1854941675]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.17, 0.25, 1)
 theme_override_font_sizes/font_size = 32
 text = "LEVEL UP! Chọn nâng cấp"
 horizontal_alignment = 1
 
-[node name="HBox" type="HBoxContainer" parent="UI/LevelUpPanel/VBox"]
+[node name="HBox" type="HBoxContainer" parent="UI/LevelUpPanel/VBox" unique_id=567168573]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 16
 
-[node name="Btn1" type="Button" parent="UI/LevelUpPanel/VBox/HBox"]
+[node name="Btn1" type="Button" parent="UI/LevelUpPanel/VBox/HBox" unique_id=1244619105]
 custom_minimum_size = Vector2(228, 280)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
 
-[node name="V" type="VBoxContainer" parent="UI/LevelUpPanel/VBox/HBox/Btn1"]
+[node name="V" type="VBoxContainer" parent="UI/LevelUpPanel/VBox/HBox/Btn1" unique_id=1248453360]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -222,14 +220,14 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_constants/separation = 14
 
-[node name="Icon" type="TextureRect" parent="UI/LevelUpPanel/VBox/HBox/Btn1/V"]
+[node name="Icon" type="TextureRect" parent="UI/LevelUpPanel/VBox/HBox/Btn1/V" unique_id=2014323416]
 custom_minimum_size = Vector2(0, 90)
 layout_mode = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Text" type="Label" parent="UI/LevelUpPanel/VBox/HBox/Btn1/V"]
+[node name="Text" type="Label" parent="UI/LevelUpPanel/VBox/HBox/Btn1/V" unique_id=927891625]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -237,15 +235,15 @@ theme_override_font_sizes/font_size = 19
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="Btn2" type="Button" parent="UI/LevelUpPanel/VBox/HBox"]
+[node name="Btn2" type="Button" parent="UI/LevelUpPanel/VBox/HBox" unique_id=1002845758]
 custom_minimum_size = Vector2(228, 280)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
 
-[node name="V" type="VBoxContainer" parent="UI/LevelUpPanel/VBox/HBox/Btn2"]
+[node name="V" type="VBoxContainer" parent="UI/LevelUpPanel/VBox/HBox/Btn2" unique_id=1236970448]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -259,14 +257,14 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_constants/separation = 14
 
-[node name="Icon" type="TextureRect" parent="UI/LevelUpPanel/VBox/HBox/Btn2/V"]
+[node name="Icon" type="TextureRect" parent="UI/LevelUpPanel/VBox/HBox/Btn2/V" unique_id=594748339]
 custom_minimum_size = Vector2(0, 90)
 layout_mode = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Text" type="Label" parent="UI/LevelUpPanel/VBox/HBox/Btn2/V"]
+[node name="Text" type="Label" parent="UI/LevelUpPanel/VBox/HBox/Btn2/V" unique_id=1603280881]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -274,15 +272,15 @@ theme_override_font_sizes/font_size = 19
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="Btn3" type="Button" parent="UI/LevelUpPanel/VBox/HBox"]
+[node name="Btn3" type="Button" parent="UI/LevelUpPanel/VBox/HBox" unique_id=1845793896]
 custom_minimum_size = Vector2(228, 280)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
 
-[node name="V" type="VBoxContainer" parent="UI/LevelUpPanel/VBox/HBox/Btn3"]
+[node name="V" type="VBoxContainer" parent="UI/LevelUpPanel/VBox/HBox/Btn3" unique_id=110071398]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -296,14 +294,14 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_constants/separation = 14
 
-[node name="Icon" type="TextureRect" parent="UI/LevelUpPanel/VBox/HBox/Btn3/V"]
+[node name="Icon" type="TextureRect" parent="UI/LevelUpPanel/VBox/HBox/Btn3/V" unique_id=725327817]
 custom_minimum_size = Vector2(0, 90)
 layout_mode = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Text" type="Label" parent="UI/LevelUpPanel/VBox/HBox/Btn3/V"]
+[node name="Text" type="Label" parent="UI/LevelUpPanel/VBox/HBox/Btn3/V" unique_id=1485762825]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -311,7 +309,7 @@ theme_override_font_sizes/font_size = 19
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="CharSelectPanel" type="PanelContainer" parent="UI"]
+[node name="CharSelectPanel" type="PanelContainer" parent="UI" unique_id=264403908]
 process_mode = 3
 anchors_preset = 8
 anchor_left = 0.5
@@ -326,102 +324,102 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("panel_style")
 
-[node name="VBox" type="VBoxContainer" parent="UI/CharSelectPanel"]
+[node name="VBox" type="VBoxContainer" parent="UI/CharSelectPanel" unique_id=1230072532]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Title" type="Label" parent="UI/CharSelectPanel/VBox"]
+[node name="Title" type="Label" parent="UI/CharSelectPanel/VBox" unique_id=757054187]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.17, 0.25, 1)
 theme_override_font_sizes/font_size = 32
 text = "CHỌN NHÂN VẬT"
 horizontal_alignment = 1
 
-[node name="Grid" type="GridContainer" parent="UI/CharSelectPanel/VBox"]
+[node name="Grid" type="GridContainer" parent="UI/CharSelectPanel/VBox" unique_id=512714416]
 layout_mode = 2
-columns = 2
 theme_override_constants/h_separation = 16
 theme_override_constants/v_separation = 12
+columns = 2
 
-[node name="CharBtn1" type="Button" parent="UI/CharSelectPanel/VBox/Grid"]
+[node name="CharBtn1" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=1334565699]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
-icon = ExtResource("10_char_blue")
+theme_override_styles/hover = SubResource("btn_hover")
 text = "Dân thường"
+icon = ExtResource("10_char_blue")
 
-[node name="CharBtn2" type="Button" parent="UI/CharSelectPanel/VBox/Grid"]
+[node name="CharBtn2" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=349991132]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
-icon = ExtResource("11_char_woman")
+theme_override_styles/hover = SubResource("btn_hover")
 text = "Nữ chiến binh"
+icon = ExtResource("11_char_woman")
 
-[node name="CharBtn3" type="Button" parent="UI/CharSelectPanel/VBox/Grid"]
+[node name="CharBtn3" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=1076733867]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
-icon = ExtResource("12_char_soldier")
+theme_override_styles/hover = SubResource("btn_hover")
 text = "Lính đặc nhiệm"
+icon = ExtResource("12_char_soldier")
 
-[node name="CharBtn4" type="Button" parent="UI/CharSelectPanel/VBox/Grid"]
+[node name="CharBtn4" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=1517902231]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
-icon = ExtResource("13_char_old")
+theme_override_styles/hover = SubResource("btn_hover")
 text = "Ông già gân"
+icon = ExtResource("13_char_old")
 
-[node name="CharBtn5" type="Button" parent="UI/CharSelectPanel/VBox/Grid"]
+[node name="CharBtn5" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=260806846]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
-icon = ExtResource("14_char_survivor")
+theme_override_styles/hover = SubResource("btn_hover")
 text = "Người sống sót"
+icon = ExtResource("14_char_survivor")
 
-[node name="CharBtn6" type="Button" parent="UI/CharSelectPanel/VBox/Grid"]
+[node name="CharBtn6" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=1762710799]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
-icon = ExtResource("15_char_brown")
+theme_override_styles/hover = SubResource("btn_hover")
 text = "Thợ săn"
+icon = ExtResource("15_char_brown")
 
-[node name="SoundBtn" type="Button" parent="UI"]
+[node name="SoundBtn" type="Button" parent="UI" unique_id=1875457216]
 process_mode = 3
 anchors_preset = 1
 anchor_left = 1.0
@@ -432,15 +430,15 @@ offset_right = -20.0
 offset_bottom = 56.0
 grow_horizontal = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
 text = "♪"
 
-[node name="PauseBtn" type="Button" parent="UI"]
+[node name="PauseBtn" type="Button" parent="UI" unique_id=699252266]
 process_mode = 3
 anchors_preset = 1
 anchor_left = 1.0
@@ -451,15 +449,15 @@ offset_right = -76.0
 offset_bottom = 56.0
 grow_horizontal = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
 text = "II"
 
-[node name="SettingsPanel" type="PanelContainer" parent="UI"]
+[node name="SettingsPanel" type="PanelContainer" parent="UI" unique_id=681095996]
 process_mode = 3
 visible = false
 anchors_preset = 8
@@ -475,29 +473,29 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("panel_style")
 
-[node name="VBox" type="VBoxContainer" parent="UI/SettingsPanel"]
+[node name="VBox" type="VBoxContainer" parent="UI/SettingsPanel" unique_id=1530435174]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="UI/SettingsPanel/VBox"]
+[node name="Title" type="Label" parent="UI/SettingsPanel/VBox" unique_id=1218883825]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.17, 0.25, 1)
 theme_override_font_sizes/font_size = 28
 text = "ÂM THANH"
 horizontal_alignment = 1
 
-[node name="MusicRow" type="HBoxContainer" parent="UI/SettingsPanel/VBox"]
+[node name="MusicRow" type="HBoxContainer" parent="UI/SettingsPanel/VBox" unique_id=1917801126]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="Label" type="Label" parent="UI/SettingsPanel/VBox/MusicRow"]
-layout_mode = 2
+[node name="Label" type="Label" parent="UI/SettingsPanel/VBox/MusicRow" unique_id=725579870]
 custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.17, 0.25, 1)
 theme_override_font_sizes/font_size = 20
 text = "Nhạc nền"
 
-[node name="Slider" type="HSlider" parent="UI/SettingsPanel/VBox/MusicRow"]
+[node name="Slider" type="HSlider" parent="UI/SettingsPanel/VBox/MusicRow" unique_id=2042702214]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -505,18 +503,18 @@ max_value = 1.0
 step = 0.05
 value = 0.25
 
-[node name="SfxRow" type="HBoxContainer" parent="UI/SettingsPanel/VBox"]
+[node name="SfxRow" type="HBoxContainer" parent="UI/SettingsPanel/VBox" unique_id=200640069]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="Label" type="Label" parent="UI/SettingsPanel/VBox/SfxRow"]
-layout_mode = 2
+[node name="Label" type="Label" parent="UI/SettingsPanel/VBox/SfxRow" unique_id=497447470]
 custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.17, 0.25, 1)
 theme_override_font_sizes/font_size = 20
 text = "Tiếng súng"
 
-[node name="Slider" type="HSlider" parent="UI/SettingsPanel/VBox/SfxRow"]
+[node name="Slider" type="HSlider" parent="UI/SettingsPanel/VBox/SfxRow" unique_id=1058512536]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -524,18 +522,18 @@ max_value = 1.0
 step = 0.05
 value = 0.3
 
-[node name="CloseBtn" type="Button" parent="UI/SettingsPanel/VBox"]
+[node name="CloseBtn" type="Button" parent="UI/SettingsPanel/VBox" unique_id=1190100643]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
 text = "Đóng"
 
-[node name="GameOverLabel" type="Label" parent="UI"]
+[node name="GameOverLabel" type="Label" parent="UI" unique_id=888036046]
 visible = false
 anchors_preset = 8
 anchor_left = 0.5

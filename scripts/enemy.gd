@@ -32,6 +32,8 @@ var gems := 1
 
 var elite_mod := ""  # "" / "regen" / "split" / "explode" — quái tinh nhuệ
 var hp_max := 0.0
+var can_revive := false  # Vùng đất chết: quái hồi sinh 1 lần khi chết
+var revived := false
 var badge: Sprite2D
 
 var kind := Kind.MELEE
@@ -155,9 +157,12 @@ func _physics_process(delta: float) -> void:
 		frost_dot_timer -= delta
 		hp -= frost_dot * delta
 		if hp <= 0.0:
-			died.emit.call_deferred(global_position, gems)
-			queue_free()
-			return
+			if can_revive and not revived:
+				_revive()
+			else:
+				died.emit.call_deferred(global_position, gems)
+				queue_free()
+				return
 	if elite_mod == "regen":
 		hp = minf(hp + hp_max * 0.03 * delta, hp_max)
 	if kb_vel != Vector2.ZERO:
@@ -323,8 +328,68 @@ func take_hit(damage: float, show_dmg := false, kb := Vector2.ZERO, col := Color
 	if show_dmg:
 		_spawn_dmg_text(damage, col, crit)
 	if hp <= 0.0:
+		# Vùng đất chết: hồi sinh 1 lần thay vì chết hẳn
+		if can_revive and not revived:
+			_revive()
+			return
+		var overkill := hp <= -hp_max * 0.2
+		# Overkill bằng đòn nặng (nổ/đẩy mạnh) → văng xác vỡ thành mảnh vụn
+		if kind != Kind.BOSS and kb.length() >= 180.0 and hp <= -hp_max * 0.15:
+			_spawn_shatter(kb)
+		if is_instance_valid(player):
+			var g := player.get_parent()
+			if g != null:
+				# Crit hạ gục → khựng khung hình rất ngắn cho cảm giác va đập
+				if crit and g.has_method("request_hit_stop"):
+					g.request_hit_stop(0.05)
+				# Phản Ứng Dây Chuyền: crit/overkill có 20% gây nổ nhẹ
+				if player.chain_react and (crit or overkill) and randf() < 0.2 and g.has_method("chain_react"):
+					g.chain_react(global_position)
 		died.emit.call_deferred(global_position, gems)
 		queue_free()
+
+
+func _revive() -> void:
+	revived = true
+	hp = hp_max * 0.45
+	flash_timer = 0.07
+	# Lóe sáng xanh + phình to rồi co lại báo hiệu hồi sinh
+	var ring := Sprite2D.new()
+	ring.texture = TEX_GLOW
+	ring.modulate = Color(0.4, 1.0, 0.5, 0.8)
+	ring.scale = Vector2.ONE * (50.0 * (sprite_scale / 0.75) / TEX_GLOW.get_size().x)
+	ring.z_index = 3
+	add_child(ring)
+	var tw := ring.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(ring, "scale", ring.scale * 2.2, 0.45).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.tween_property(ring, "modulate:a", 0.0, 0.45)
+	tw.chain().tween_callback(ring.queue_free)
+
+
+func _spawn_shatter(kb: Vector2) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var base_dir := kb.normalized()
+	var power := clampf(kb.length() / 400.0, 0.6, 2.2)
+	for i in 6:
+		var sh := Sprite2D.new()
+		sh.texture = tex
+		sh.modulate = tint
+		sh.scale = Vector2(vis_scale, vis_scale) * randf_range(0.3, 0.5)
+		sh.z_index = 9
+		parent.add_child(sh)
+		sh.global_position = global_position
+		var ang := base_dir.rotated(randf_range(-1.0, 1.0))
+		var dest := global_position + ang * randf_range(45.0, 120.0) * power
+		var tw := sh.create_tween()
+		tw.set_parallel(true)
+		tw.tween_property(sh, "global_position", dest, randf_range(0.3, 0.5)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(sh, "rotation", randf_range(-TAU, TAU), 0.45)
+		tw.tween_property(sh, "scale", sh.scale * 0.15, 0.45)
+		tw.tween_property(sh, "modulate:a", 0.0, 0.45)
+		tw.chain().tween_callback(sh.queue_free)
 
 
 func _spawn_dmg_text(damage: float, col: Color, crit: bool) -> void:

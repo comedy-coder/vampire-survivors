@@ -19,13 +19,13 @@ const SND_BOOM := preload("res://assets/audio/explosion.ogg")
 const SND_ZAP := preload("res://assets/audio/zap.ogg")
 
 const WEAPONS := {
-	"pistol": {"color": Color(1.0, 0.95, 0.6)},
+	"pistol": {"color": Color(1.0, 0.95, 0.6), "pierce": 1},
 	"smg": {"color": Color(0.5, 1.0, 1.0), "size": 0.13, "speed": 560.0, "spread": 0.12,
-		"trail": Color(0.5, 1.0, 1.0, 0.45)},
+		"pierce": 1, "trail": Color(0.5, 1.0, 1.0, 0.45)},
 	"shotgun": {"color": Color(1.0, 0.7, 0.25), "size": 0.13, "speed": 540.0, "life": 0.5,
-		"extra_shots": 4, "scatter": true, "dmg_mul": 0.55, "kb": 220.0},
-	"cannon": {"color": Color(0.85, 0.55, 1.0), "size": 0.3, "speed": 320.0, "aoe": 75.0,
-		"kb": 260.0, "trail": Color(0.85, 0.55, 1.0, 0.35)},
+		"extra_shots": 6, "scatter": true, "dmg_mul": 0.7, "kb": 350.0, "hit_shake": 1.4},
+	"cannon": {"color": Color(0.85, 0.55, 1.0), "size": 0.3, "speed": 320.0, "aoe": 120.0,
+		"kb": 260.0, "chain": true, "trail": Color(0.85, 0.55, 1.0, 0.35)},
 	"laser": {"color": Color(0.4, 1.0, 0.5), "size": 0.15, "speed": 700.0, "stretch": 3.0,
 		"pierce": 1, "trail": Color(0.4, 1.0, 0.5, 0.4)},
 	"sniper": {"color": Color(1.0, 0.35, 0.3), "size": 0.17, "speed": 780.0, "kb": 320.0,
@@ -34,6 +34,25 @@ const WEAPONS := {
 
 var weapon := "pistol"
 var speed := 220.0
+var stage_speed_mult := 1.0  # hệ số tốc độ theo vùng (Sa mạc đi trên cát chậm hơn)
+
+# --- Phase 4b: Nâng cấp Độc bản (Lõi / Hình thái / Thức tỉnh) ---
+var sig_dmg_mul := 1.0        # nhân sát thương vũ khí chính
+var sig_pierce_bonus := 0     # cộng xuyên
+var sig_aoe_bonus := 0.0      # cộng bán kính nổ
+var sig_chain := false        # đạn nổ dây chuyền
+var sig_burn := 0.0           # đốt cháy (DoT) khi trúng
+var sig_shock := 0.0          # làm chậm khi trúng (giây)
+var sig_explode_on_kill := false  # quái chết phát nổ (đọc bởi game.gd)
+var sig_lifesteal := 0.0      # Katana hồi máu mỗi đòn trúng
+var sig_blade_wave := false   # Katana phóng kiếm khí bay xa
+
+# --- Thẻ Thích Ứng & Cộng Hưởng ---
+var katana_combo := 0         # số nhát "chém bồi" (50% dmg) sau nhát chính
+var aoe_mult := 1.0           # nhân bán kính nổ (thẻ Khuếch Đại cho vũ khí nổ)
+var exploit_dmg := 0.0        # +% dmg lên quái đang dính hiệu ứng (Khai Thác Điểm Yếu)
+var damage_reduction := 0.0   # giảm % sát thương nhận vào (Kiên Cường), tối đa 0.75
+var chain_react := false      # Crit/overkill có thể gây nổ dây chuyền (Phản Ứng Dây Chuyền)
 var max_hp := 100.0
 var hp := max_hp
 var fire_rate := 1.5
@@ -134,7 +153,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	slow_timer = maxf(0.0, slow_timer - delta)
-	var spd := speed * (0.55 if slow_timer > 0.0 else 1.0)
+	var spd := speed * stage_speed_mult * (0.55 if slow_timer > 0.0 else 1.0)
 	velocity = Input.get_vector("move_left", "move_right", "move_up", "move_down") * spd
 	move_and_slide()
 
@@ -203,8 +222,8 @@ func _physics_process(delta: float) -> void:
 			if global_position.distance_to(e.global_position) < pr:
 				e.take_hit(pdmg)
 				e.poison_timer = 1.2
-				if poison_evolved:
-					e.slow_timer = 0.2
+				# Làm chậm nhẹ ở mọi cấp; tiến hóa thì chậm mạnh hơn (kiểm soát đám đông)
+				e.slow_timer = maxf(e.slow_timer, 0.35 if poison_evolved else 0.18)
 
 	if regen > 0.0:
 		heal(regen * delta)
@@ -219,6 +238,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _fire() -> void:
+	if weapon == "katana":
+		_slash()
+		return
 	var target := _nearest_enemy()
 	if target == null:
 		return
@@ -248,18 +270,124 @@ func _fire() -> void:
 		p.dir = d
 		var is_crit := randf() < crit_chance
 		p.crit = is_crit
-		p.damage = projectile_damage * float(cfg.get("dmg_mul", 1.0)) * (2.0 if is_crit else 1.0)
-		p.pierce = pierce + int(cfg.get("pierce", 0))
+		p.damage = projectile_damage * float(cfg.get("dmg_mul", 1.0)) * (2.0 if is_crit else 1.0) * sig_dmg_mul
+		p.pierce = pierce + int(cfg.get("pierce", 0)) + sig_pierce_bonus
 		p.speed = float(cfg.get("speed", 420.0)) * randf_range(0.95, 1.05)
 		p.color = wcolor
 		p.size = float(cfg.get("size", 0.18))
 		p.kb = float(cfg.get("kb", 150.0))
-		p.aoe = float(cfg.get("aoe", 0.0))
+		p.aoe = (float(cfg.get("aoe", 0.0)) + sig_aoe_bonus) * aoe_mult
 		p.stretch = float(cfg.get("stretch", 1.0))
 		p.trail_color = cfg.get("trail", Color(0, 0, 0, 0))
 		p.life = float(cfg.get("life", 2.0))
+		p.hit_shake = float(cfg.get("hit_shake", 0.0))
+		p.chain_explode = bool(cfg.get("chain", false)) or sig_chain
+		p.burn = sig_burn
+		p.shock = sig_shock
+		p.exploit = exploit_dmg
 		get_parent().add_child(p)
 		p.global_position = global_position
+
+
+# Katana: chém một cung rộng trước mặt (cận chiến, mạo hiểm cao vì phải áp sát)
+var katana_arc := 1.25     # nửa góc cung (~72° → tổng ~144°)
+var katana_reach := 135.0  # tầm với của nhát chém
+var katana_dmg_mul := 3.2  # bù cho tầm gần
+
+func _slash_hit(power: float) -> void:
+	var facing := sprite.rotation  # sprite đã tự xoay về quái gần nhất
+	var base := projectile_damage * katana_dmg_mul * sig_dmg_mul * power
+	var hit_any := false
+	for e in get_tree().get_nodes_in_group("enemies"):
+		var to_e: Vector2 = e.global_position - global_position
+		if to_e.length() <= katana_reach and absf(angle_difference(facing, to_e.angle())) <= katana_arc:
+			var is_crit: bool = randf() < crit_chance
+			var dmg := base * (2.0 if is_crit else 1.0)
+			# Khai Thác Điểm Yếu: +dmg lên quái đang bị đốt/làm chậm
+			if exploit_dmg > 0.0 and (e.slow_timer > 0.0 or e.frost_dot_timer > 0.0):
+				dmg *= (1.0 + exploit_dmg)
+			e.take_hit(dmg, true, to_e.normalized() * 260.0, Color(0.8, 1.0, 1.0), is_crit)
+			if sig_burn > 0.0:
+				e.frost_dot = sig_burn
+				e.frost_dot_timer = 3.0
+			if sig_shock > 0.0:
+				e.slow_timer = maxf(e.slow_timer, sig_shock)
+			if sig_lifesteal > 0.0:
+				heal(sig_lifesteal)
+			hit_any = true
+	if hit_any:
+		shake_amt = maxf(shake_amt, 2.5)
+	_slash_fx(facing)
+
+
+func _slash() -> void:
+	_slash_hit(1.0)
+	shoot_sfx.pitch_scale = randf_range(0.8, 1.0)
+	shoot_sfx.play()
+	# Thẻ "Liên Kích": chém bồi tự động sau nhát chính (mỗi nhát 50% sát thương)
+	for k in katana_combo:
+		var t := get_tree().create_timer(0.15 * (k + 1))
+		t.timeout.connect(func() -> void:
+			if alive:
+				_slash_hit(0.5))
+	# Lõi "Kiếm khí": phóng một làn chém bay xa theo hướng mặt
+	if sig_blade_wave:
+		var facing := sprite.rotation
+		var p := Area2D.new()
+		p.set_script(PROJECTILE)
+		p.dir = Vector2.from_angle(facing)
+		p.damage = projectile_damage * 2.0 * sig_dmg_mul
+		p.speed = 560.0
+		p.pierce = 4
+		p.color = Color(0.7, 1.0, 1.0)
+		p.size = 0.22
+		p.stretch = 2.4
+		p.kb = 180.0
+		p.life = 0.7
+		p.trail_color = Color(0.7, 1.0, 1.0, 0.4)
+		p.burn = sig_burn
+		p.shock = sig_shock
+		p.exploit = exploit_dmg
+		get_parent().add_child(p)
+		p.global_position = global_position + p.dir * 30.0
+
+
+func _slash_fx(facing: float) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	# Cung sáng thể hiện vùng chém
+	var cone := Polygon2D.new()
+	var pts := PackedVector2Array([Vector2.ZERO])
+	var seg := 12
+	for i in seg + 1:
+		var a := facing - katana_arc + (2.0 * katana_arc) * i / seg
+		pts.append(Vector2.from_angle(a) * katana_reach)
+	cone.polygon = pts
+	cone.color = Color(0.7, 1.0, 1.0, 0.22)
+	cone.z_index = 5
+	parent.add_child(cone)
+	cone.global_position = global_position
+	var tw2 := cone.create_tween()
+	tw2.tween_property(cone, "modulate:a", 0.0, 0.16)
+	tw2.tween_callback(cone.queue_free)
+	# Lưỡi katana quét từ mép này sang mép kia
+	var pivot := Node2D.new()
+	pivot.z_index = 6
+	parent.add_child(pivot)
+	pivot.global_position = global_position
+	pivot.rotation = facing - katana_arc
+	var s := Sprite2D.new()
+	s.texture = TEX_SWORD
+	s.modulate = Color(0.85, 1.0, 1.0, 0.95)
+	s.scale = Vector2.ONE * (95.0 / TEX_SWORD.get_size().x)
+	s.position = Vector2(katana_reach * 0.65, 0.0)
+	s.rotation = -PI / 4.0
+	pivot.add_child(s)
+	var tw := pivot.create_tween()
+	tw.tween_property(pivot, "rotation", facing + katana_arc, 0.16).set_trans(Tween.TRANS_SINE)
+	tw.parallel().tween_property(s, "modulate:a", 0.0, 0.16)
+	tw.chain().tween_callback(pivot.queue_free)
 
 
 func _nearest_enemy() -> Node2D:
@@ -354,7 +482,7 @@ func _fire_grenade() -> void:
 
 
 func _explode_grenade(spr: Sprite2D, pos: Vector2) -> void:
-	var radius := 90.0 + 10.0 * grenade_level
+	var radius := 120.0 + 20.0 * grenade_level
 	var dmg := 11.0 + 5.0 * (grenade_level - 1)
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if pos.distance_to(e.global_position) < radius:
@@ -396,7 +524,7 @@ func _fire_lightning() -> void:
 		pts.append(cur.global_position)
 		cur.take_hit(dmg, true, Vector2.ZERO, Color(0.85, 0.7, 1.0))
 		var best: Node2D = null
-		var best_d := 170.0 * 170.0
+		var best_d := 250.0 * 250.0
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if e in hit:
 				continue
@@ -522,6 +650,7 @@ func update_poison_ring() -> void:
 func take_damage(amount: float) -> void:
 	if not alive:
 		return
+	amount *= (1.0 - damage_reduction)  # thẻ Kiên Cường
 	hp -= amount
 	if hurt_fx_t <= 0.0:
 		hurt_fx_t = 0.35
