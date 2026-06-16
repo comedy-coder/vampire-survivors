@@ -251,9 +251,9 @@ const STAT_UPGRADES := [
 	{"label": ["Xuyên Thấu / Khuếch Đại: +1 xuyên (Nổ/Kiếm: +15% tầm)", "Pierce / Amplify: +1 pierce (AoE/Melee: +15% reach)"], "fn": "_up_pierce", "icon": preload("res://assets/icons/up_pierce.svg")},
 	{"label": ["+25 Tốc độ chạy", "+25 Move speed"], "fn": "_up_speed", "icon": preload("res://assets/icons/up_speed.svg")},
 	{"label": ["+25 Máu tối đa (hồi đầy)", "+25 Max HP (full heal)"], "fn": "_up_max_hp", "icon": preload("res://assets/icons/up_hp.svg")},
-	{"label": ["Khai Thác Điểm Yếu: +40% dmg lên quái dính hiệu ứng", "Exploit: +40% dmg to afflicted enemies"], "fn": "_up_exploit", "icon": preload("res://assets/icons/up_damage.svg")},
+	{"label": ["Khai Thác Điểm Yếu: +40% dmg lên quái dính hiệu ứng", "Exploit: +40% dmg to afflicted enemies"], "fn": "_up_exploit", "icon": preload("res://assets/icons/up_exploit.svg")},
 	{"label": ["Kiên Cường: -20% sát thương nhận", "Fortitude: -20% damage taken"], "fn": "_up_armor", "icon": preload("res://assets/icons/up_hp.svg")},
-	{"label": ["Phản Ứng Dây Chuyền: crit/overkill 20% gây nổ", "Chain Reaction: crit/overkill 20% blast"], "fn": "_up_chainreact", "icon": preload("res://assets/icons/w_grenade.svg")},
+	{"label": ["Phản Ứng Dây Chuyền: crit/overkill 20% gây nổ", "Chain Reaction: crit/overkill 20% blast"], "fn": "_up_chainreact", "icon": preload("res://assets/icons/up_chainreact.svg")},
 ]
 
 const ICON_ORBITAL := preload("res://assets/icons/w_orbital.svg")
