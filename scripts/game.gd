@@ -468,6 +468,7 @@ func _ready() -> void:
 	_build_shop_button()
 	_apply_lang()
 	_skin_levelup()
+	_skin_char_select()
 	_build_debug_panel()
 	_build_map_panel()
 	_refresh_map_panel()
@@ -551,42 +552,69 @@ func _build_shop_panel() -> void:
 	shop_panel = PanelContainer.new()
 	shop_panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	shop_panel.visible = false
-	shop_panel.custom_minimum_size = Vector2(560, 0)
+	shop_panel.custom_minimum_size = Vector2(620, 0)
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 8)
 	shop_title = Label.new()
-	shop_title.add_theme_font_size_override("font_size", 30)
-	shop_title.add_theme_color_override("font_color", Color(0.15, 0.17, 0.25))
+	shop_title.add_theme_font_size_override("font_size", 26)
 	shop_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(shop_title)
 	shop_gold_label = Label.new()
-	shop_gold_label.add_theme_font_size_override("font_size", 24)
+	shop_gold_label.add_theme_font_size_override("font_size", 20)
 	shop_gold_label.add_theme_color_override("font_color", Color(0.85, 0.6, 0.05))
 	shop_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(shop_gold_label)
-	var last_cur := ""
+	# Tách nâng cấp theo loại tiền: Vàng (cột trái) / Linh Hồn (cột phải)
+	var gold_ups := []
+	var soul_ups := []
 	for u in META_UPGRADES:
-		var cur := String(u.get("cur", "gold"))
-		if cur != last_cur:
-			last_cur = cur
-			var sec := Label.new()
-			sec.add_theme_font_size_override("font_size", 18)
-			sec.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			sec.add_theme_color_override("font_color",
-				Color(0.85, 0.6, 0.05) if cur == "gold" else Color(0.6, 0.45, 0.95))
-			vbox.add_child(sec)
-			shop_sec_labels.append({"cur": cur, "label": sec})
-		var b := Button.new()
-		b.add_theme_font_size_override("font_size", 18)
-		b.custom_minimum_size = Vector2(0, 52)
-		b.focus_mode = Control.FOCUS_NONE
-		b.pressed.connect(_buy_upgrade.bind(String(u["id"])))
-		vbox.add_child(b)
-		shop_rows.append({"id": u["id"], "btn": b})
+		if String(u.get("cur", "gold")) == "soul":
+			soul_ups.append(u)
+		else:
+			gold_ups.append(u)
+	# Hàng tiêu đề 2 mục đặt trên 2 cột
+	var sec_row := HBoxContainer.new()
+	sec_row.add_theme_constant_override("separation", 12)
+	for cur in ["gold", "soul"]:
+		var sec := Label.new()
+		sec.add_theme_font_size_override("font_size", 15)
+		sec.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		sec.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sec.add_theme_color_override("font_color",
+			Color(0.85, 0.6, 0.05) if cur == "gold" else Color(0.6, 0.45, 0.95))
+		sec_row.add_child(sec)
+		shop_sec_labels.append({"cur": cur, "label": sec})
+	vbox.add_child(sec_row)
+	# Lưới 2 cột: trái = nâng cấp Vàng, phải = nâng cấp Linh Hồn
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 8)
+	var rows := maxi(gold_ups.size(), soul_ups.size())
+	for i in rows:
+		for col_list in [gold_ups, soul_ups]:
+			if i >= col_list.size():
+				grid.add_child(Control.new())  # ô trống nếu lệch số lượng
+				continue
+			var u: Dictionary = col_list[i]
+			var b := Button.new()
+			b.add_theme_font_size_override("font_size", 17)
+			b.custom_minimum_size = Vector2(0, 60)
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			b.focus_mode = Control.FOCUS_NONE
+			b.pressed.connect(_buy_upgrade.bind(String(u["id"])))
+			# Viền vàng cho nâng cấp mua bằng vàng, tím cho mua bằng linh hồn
+			var accent: Color = Color(0.7, 0.55, 1.0) if String(u.get("cur", "gold")) == "soul" else Color(1.0, 0.78, 0.3)
+			_skin_menu_button(b, accent)
+			grid.add_child(b)
+			shop_rows.append({"id": u["id"], "btn": b})
+	vbox.add_child(grid)
 	shop_close = Button.new()
-	shop_close.add_theme_font_size_override("font_size", 22)
+	shop_close.add_theme_font_size_override("font_size", 20)
+	shop_close.custom_minimum_size = Vector2(0, 40)
 	shop_close.focus_mode = Control.FOCUS_NONE
 	shop_close.pressed.connect(_close_shop)
+	_skin_menu_button(shop_close, Color(0.9, 0.5, 0.45))
 	vbox.add_child(shop_close)
 	# Danh sách nút điều hướng bằng bàn phím: 6 nâng cấp rồi tới nút Đóng
 	for row in shop_rows:
@@ -594,6 +622,8 @@ func _build_shop_panel() -> void:
 	shop_nav_btns.append(shop_close)
 	shop_panel.add_child(vbox)
 	$UI.add_child(shop_panel)
+	_skin_menu_panel(shop_panel, 16.0)
+	_style_menu_title(shop_title)
 	shop_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	shop_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	shop_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
@@ -1267,7 +1297,7 @@ func _elite_blast(pos: Vector2) -> void:
 		if is_instance_valid(player) and player.global_position.distance_to(pos) < 130.0:
 			player.take_damage(25.0)
 		spawn_explosion(pos, 260.0, 0.5)
-		player.shake_amt = maxf(player.shake_amt, 6.0)
+		player.shake_amt = maxf(player.shake_amt, 3.5)
 		warn.queue_free())
 
 
@@ -1318,7 +1348,7 @@ func _apply_pickup(kind: String) -> void:
 			spawn_explosion(player.global_position, bomb_radius * 2.0, 0.6)
 			player.boom_sfx.pitch_scale = 0.8
 			player.boom_sfx.play()
-			player.shake_amt = 14.0
+			player.shake_amt = 8.0
 
 
 func _spawn_crate() -> void:
@@ -1397,6 +1427,111 @@ func _skin_levelup() -> void:
 		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		btn.add_child(frame)
 		card_frames.append(frame)
+
+
+# --- Style menu dùng chung: khung fantasy tối giống panel lên cấp ---
+
+# Nền panel: khung fantasy tối (Kenney Fantasy UI Borders)
+func _skin_menu_panel(panel: PanelContainer, cm := 28.0) -> void:
+	var psb := StyleBoxTexture.new()
+	psb.texture = TEX_UI_PANEL
+	psb.set_texture_margin_all(32.0)
+	psb.set_content_margin_all(cm)
+	psb.modulate_color = Color(0.16, 0.15, 0.22)
+	panel.add_theme_stylebox_override("panel", psb)
+
+
+# Tiêu đề menu: chữ vàng ấm + viền tối cho dễ đọc trên nền tối
+func _style_menu_title(lbl: Label, col := Color(1.0, 0.86, 0.45)) -> void:
+	lbl.add_theme_color_override("font_color", col)
+	lbl.add_theme_color_override("font_outline_color", Color(0.06, 0.05, 0.1))
+	lbl.add_theme_constant_override("outline_size", 6)
+
+
+# Thẻ lớn có thể chọn (nhân vật / bản đồ): nền tối bo góc + viền fantasy tô màu accent
+func _skin_menu_card(btn: Button, accent: Color) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.11, 0.11, 0.16)
+	normal.set_corner_radius_all(10)
+	normal.content_margin_left = 16.0
+	normal.content_margin_right = 16.0
+	normal.content_margin_top = 10.0
+	normal.content_margin_bottom = 12.0
+	var hover: StyleBoxFlat = normal.duplicate()
+	hover.bg_color = Color(0.18, 0.18, 0.27)
+	var disabled: StyleBoxFlat = normal.duplicate()
+	disabled.bg_color = Color(0.07, 0.07, 0.11)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", hover)
+	btn.add_theme_stylebox_override("disabled", disabled)
+	btn.add_theme_color_override("font_color", Color(0.93, 0.93, 0.98))
+	btn.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+	btn.add_theme_color_override("font_pressed_color", Color(1, 1, 1))
+	btn.add_theme_color_override("font_disabled_color", Color(0.55, 0.55, 0.6))
+	var frame := NinePatchRect.new()
+	frame.texture = TEX_UI_FRAME
+	frame.patch_margin_left = 32
+	frame.patch_margin_top = 32
+	frame.patch_margin_right = 32
+	frame.patch_margin_bottom = 32
+	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.modulate = accent
+	btn.add_child(frame)
+
+
+# Nút phụ (ngôn ngữ / shop / đóng / hàng nâng cấp): nền tối bo góc + viền màu mảnh
+func _skin_menu_button(btn: Button, accent: Color) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.13, 0.13, 0.19)
+	normal.set_corner_radius_all(8)
+	normal.set_border_width_all(2)
+	normal.border_color = Color(accent.r, accent.g, accent.b, 0.65)
+	normal.content_margin_left = 14.0
+	normal.content_margin_right = 14.0
+	normal.content_margin_top = 7.0
+	normal.content_margin_bottom = 8.0
+	var hover: StyleBoxFlat = normal.duplicate()
+	hover.bg_color = Color(0.2, 0.2, 0.3)
+	hover.border_color = accent
+	var pressed: StyleBoxFlat = normal.duplicate()
+	pressed.bg_color = Color(accent.r * 0.4, accent.g * 0.4, accent.b * 0.45, 1.0)
+	pressed.border_color = accent
+	var disabled: StyleBoxFlat = normal.duplicate()
+	disabled.bg_color = Color(0.08, 0.08, 0.12)
+	disabled.border_color = Color(0.3, 0.3, 0.35)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("hover_pressed", pressed)
+	btn.add_theme_stylebox_override("disabled", disabled)
+	btn.add_theme_color_override("font_color", Color(0.93, 0.93, 0.98))
+	btn.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+	btn.add_theme_color_override("font_pressed_color", Color(1, 1, 1))
+	btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.55))
+
+
+# Áp style fantasy cho màn chọn nhân vật (panel dựng sẵn trong scene)
+func _skin_char_select() -> void:
+	_skin_menu_panel(char_panel)
+	_style_menu_title(char_panel.get_node("VBox/Title"))
+	# Mỗi nhân vật một màu viền theo vũ khí/vai trò, vẫn chung khung fantasy
+	var accents := [
+		Color(0.45, 0.75, 1.0),   # Lính đặc nhiệm — xanh thép
+		Color(1.0, 0.7, 0.3),     # Ông già gân — hổ phách
+		Color(0.55, 0.95, 0.55),  # Thợ săn — xanh lá
+		Color(0.95, 0.45, 0.5),   # Kiếm khách — đỏ thẫm
+	]
+	for i in 4:
+		var b: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
+		_skin_menu_card(b, accents[i])
+	if shop_open_btn:
+		_skin_menu_button(shop_open_btn, Color(1.0, 0.82, 0.35))
+	for lb in lang_btns:
+		_skin_menu_button(lb, Color(0.72, 0.72, 0.88))
+	if lang_label:
+		lang_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
 
 
 func _show_level_up() -> void:
@@ -1647,7 +1782,7 @@ func _signature_nuke() -> void:
 		if c.distance_to(e.global_position) < 1100.0:
 			e.take_hit(400.0, true, (e.global_position - c).normalized() * 520.0, Color(1.0, 0.9, 0.4), true)
 	spawn_explosion(c, 1200.0, 0.8)
-	player.shake_amt = 18.0
+	player.shake_amt = 11.0
 
 
 func _signature_kill_blast(pos: Vector2) -> void:
@@ -2025,19 +2160,27 @@ func _build_map_panel() -> void:
 	vbox.add_theme_constant_override("separation", 12)
 	map_title = Label.new()
 	map_title.add_theme_font_size_override("font_size", 34)
-	map_title.add_theme_color_override("font_color", Color(0.6, 1.0, 0.8))
 	map_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(map_title)
+	# Mỗi biome một màu viền: Đồng cỏ / Sa mạc / Vùng chết
+	var map_accents := [
+		Color(0.5, 0.9, 0.5),     # Đồng cỏ — xanh lá
+		Color(1.0, 0.78, 0.4),    # Sa mạc — cát vàng
+		Color(0.75, 0.55, 1.0),   # Vùng chết — tím
+	]
 	for i in 3:
 		var b := Button.new()
 		b.add_theme_font_size_override("font_size", 22)
 		b.focus_mode = Control.FOCUS_NONE
-		b.custom_minimum_size = Vector2(0, 56)
+		b.custom_minimum_size = Vector2(0, 64)
 		b.pressed.connect(_pick_map.bind(i))
+		_skin_menu_card(b, map_accents[i])
 		map_btns.append(b)
 		vbox.add_child(b)
 	map_panel.add_child(vbox)
 	$UI.add_child(map_panel)
+	_skin_menu_panel(map_panel)
+	_style_menu_title(map_title)
 	map_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	map_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	map_panel.grow_vertical = Control.GROW_DIRECTION_BOTH

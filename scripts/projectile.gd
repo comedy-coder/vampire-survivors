@@ -151,7 +151,7 @@ func _on_area_entered(area: Area2D) -> void:
 		if parent != null and parent.has_method("spawn_explosion"):
 			parent.spawn_explosion(global_position, aoe * 2.0, 0.4)
 		if parent != null and parent.has_method("boom_shake"):
-			parent.boom_shake(clampf(aoe / 18.0, 4.0, 9.0))
+			parent.boom_shake(clampf(aoe / 28.0, 2.5, 5.5))
 		queue_free()
 		return
 	area.take_hit(_hit_damage(area), true, dir * kb, color, crit)
