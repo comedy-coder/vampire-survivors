@@ -288,25 +288,25 @@ const META_UPGRADES := [
 # LÕI (cấp 5): riêng theo vũ khí, đổi hẳn lối đánh. HÌNH THÁI (cấp 15): chung.
 const SIG_CORES := {
 	"shotgun": [
-		{"id": "burn",   "name": ["LÕI: Đạn Lửa", "CORE: Fire Shells"],   "desc": ["Đạn gây bỏng (sát thương theo thời gian)", "Pellets ignite enemies (burn DoT)"]},
-		{"id": "pierce", "name": ["LÕI: Đạn Xuyên", "CORE: Slug Rounds"], "desc": ["Đạn xuyên +3 mục tiêu & mạnh hơn", "Pierce +3 and stronger"]},
+		{"id": "burn",   "name": ["LÕI: Đạn Lửa", "CORE: Fire Shells"],   "desc": ["Đạn gây bỏng (sát thương theo thời gian)", "Pellets ignite enemies (burn DoT)"],   "icon": preload("res://assets/icons/core_fire.svg")},
+		{"id": "pierce", "name": ["LÕI: Đạn Xuyên", "CORE: Slug Rounds"], "desc": ["Đạn xuyên +3 mục tiêu & mạnh hơn", "Pierce +3 and stronger"],                      "icon": preload("res://assets/icons/core_pierce.svg")},
 	],
 	"cannon": [
-		{"id": "aoe",   "name": ["LÕI: Đại Pháo", "CORE: Heavy Shells"],  "desc": ["Bán kính nổ lớn hơn nhiều", "Much bigger blast radius"]},
-		{"id": "chain", "name": ["LÕI: Nổ Dây Chuyền", "CORE: Chain Blast"], "desc": ["Quái bị giết nổ lan tiếp", "Kills trigger chain explosions"]},
+		{"id": "aoe",   "name": ["LÕI: Đại Pháo", "CORE: Heavy Shells"],     "desc": ["Bán kính nổ lớn hơn nhiều", "Much bigger blast radius"],          "icon": preload("res://assets/icons/core_aoe.svg")},
+		{"id": "chain", "name": ["LÕI: Nổ Dây Chuyền", "CORE: Chain Blast"], "desc": ["Quái bị giết nổ lan tiếp", "Kills trigger chain explosions"],      "icon": preload("res://assets/icons/core_chain.svg")},
 	],
 	"sniper": [
-		{"id": "pierce",    "name": ["LÕI: Xuyên Giáp", "CORE: Armor Pierce"], "desc": ["Xuyên +3 mục tiêu, sát thương lớn", "Pierce +3, big damage"]},
-		{"id": "explosive", "name": ["LÕI: Đạn Nổ", "CORE: Explosive Rounds"], "desc": ["Đạn bắn tỉa nổ diện rộng khi trúng", "Sniper rounds explode on hit"]},
+		{"id": "pierce",    "name": ["LÕI: Xuyên Giáp", "CORE: Armor Pierce"],    "desc": ["Xuyên +3 mục tiêu, sát thương lớn", "Pierce +3, big damage"],              "icon": preload("res://assets/icons/core_pierce.svg")},
+		{"id": "explosive", "name": ["LÕI: Đạn Nổ", "CORE: Explosive Rounds"],   "desc": ["Đạn bắn tỉa nổ diện rộng khi trúng", "Sniper rounds explode on hit"],       "icon": preload("res://assets/icons/core_explosive.svg")},
 	],
 	"katana": [
-		{"id": "wave",      "name": ["LÕI: Kiếm Khí", "CORE: Blade Wave"], "desc": ["Mỗi nhát chém phóng làn kiếm khí bay xa", "Each slash fires a flying blade wave"]},
-		{"id": "lifesteal", "name": ["LÕI: Hút Máu", "CORE: Lifesteal"],   "desc": ["Hồi máu mỗi đòn chém trúng", "Heal on each slash hit"]},
+		{"id": "wave",      "name": ["LÕI: Kiếm Khí", "CORE: Blade Wave"], "desc": ["Mỗi nhát chém phóng làn kiếm khí bay xa", "Each slash fires a flying blade wave"], "icon": preload("res://assets/icons/core_wave.svg")},
+		{"id": "lifesteal", "name": ["LÕI: Hút Máu", "CORE: Lifesteal"],   "desc": ["Hồi máu mỗi đòn chém trúng", "Heal on each slash hit"],                           "icon": preload("res://assets/icons/core_lifesteal.svg")},
 	],
 }
 const SIG_FORMS := [
-	{"id": "explode_kill", "name": ["HÌNH THÁI: Nổ Chùm", "FORM: Cluster Kill"], "desc": ["Quái bị giết phát nổ nhỏ", "Slain enemies blow up"]},
-	{"id": "shock",        "name": ["HÌNH THÁI: Tê Liệt", "FORM: Shock"],        "desc": ["Đòn đánh làm chậm quái trúng", "Hits slow enemies"]},
+	{"id": "explode_kill", "name": ["HÌNH THÁI: Nổ Chùm", "FORM: Cluster Kill"], "desc": ["Quái bị giết phát nổ nhỏ", "Slain enemies blow up"],       "icon": preload("res://assets/icons/form_explode.svg")},
+	{"id": "shock",        "name": ["HÌNH THÁI: Tê Liệt", "FORM: Shock"],        "desc": ["Đòn đánh làm chậm quái trúng", "Hits slow enemies"],        "icon": preload("res://assets/icons/form_shock.svg")},
 ]
 
 var time := 0.0
@@ -1561,13 +1561,15 @@ func _milestone_cards(lvl: int) -> Array:
 				cards.append({
 					"label": "%s\n%s" % [cdef["name"][lang], cdef["desc"][lang]],
 					"fn": func() -> void: _sig_apply_core(cid),
-					"col": Color(1.0, 0.78, 0.27),  # hổ phách = Lõi
+					"col": Color(1.0, 0.78, 0.27),
+					"icon": cdef.get("icon", null),
 				})
 		10:
 			cards.append({
 				"label": T("sig_enhance_label"),
 				"fn": func() -> void: _sig_enhance(),
 				"col": Color(1.0, 0.55, 0.3),
+				"icon": preload("res://assets/icons/sig_enhance.svg"),
 			})
 		15:
 			for fdef in SIG_FORMS:
@@ -1575,13 +1577,15 @@ func _milestone_cards(lvl: int) -> Array:
 				cards.append({
 					"label": "%s\n%s" % [fdef["name"][lang], fdef["desc"][lang]],
 					"fn": func() -> void: _sig_apply_form(fid),
-					"col": Color(0.6, 0.45, 0.95),  # tím = Hình thái
+					"col": Color(0.6, 0.45, 0.95),
+					"icon": fdef.get("icon", null),
 				})
 		20:
 			cards.append({
 				"label": T("sig_ultimate_label"),
 				"fn": func() -> void: _sig_ultimate(),
 				"col": Color(1.0, 0.3, 0.3),
+				"icon": preload("res://assets/icons/sig_ultimate.svg"),
 			})
 	return cards
 
