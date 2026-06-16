@@ -1433,12 +1433,18 @@ func _populate_level_panel(is_milestone: bool) -> void:
 			15: title = T("sig_form_title")
 			20: title = T("sig_ultimate_title")
 	level_panel.get_node("VBox/Title").text = title
+	var hbox: HBoxContainer = level_panel.get_node("VBox/HBox")
+	if pending.size() == 1:
+		hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	else:
+		hbox.alignment = BoxContainer.ALIGNMENT_BEGIN
 	for i in 3:
 		var b: Button = level_panel.get_node("VBox/HBox/Btn%d" % (i + 1))
 		if i >= pending.size():
 			b.visible = false
 			continue
 		b.visible = true
+		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER if pending.size() == 1 else Control.SIZE_EXPAND_FILL
 		var card: Dictionary = pending[i]
 		var col := Color(0.5, 1.0, 0.6)  # chỉ số: xanh lá
 		if card.has("col"):
