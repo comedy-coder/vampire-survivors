@@ -224,8 +224,9 @@ theme_override_constants/separation = 14
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 size_flags_horizontal = 4
+size_flags_vertical = 4
 mouse_filter = 2
-expand_mode = 0
+expand_mode = 1
 stretch_mode = 5
 
 [node name="Text" type="Label" parent="UI/LevelUpPanel/VBox/HBox/Btn1/V" unique_id=927891625]
@@ -262,8 +263,9 @@ theme_override_constants/separation = 14
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 size_flags_horizontal = 4
+size_flags_vertical = 4
 mouse_filter = 2
-expand_mode = 0
+expand_mode = 1
 stretch_mode = 5
 
 [node name="Text" type="Label" parent="UI/LevelUpPanel/VBox/HBox/Btn2/V" unique_id=1603280881]
@@ -300,8 +302,9 @@ theme_override_constants/separation = 14
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 size_flags_horizontal = 4
+size_flags_vertical = 4
 mouse_filter = 2
-expand_mode = 0
+expand_mode = 1
 stretch_mode = 5
 
 [node name="Text" type="Label" parent="UI/LevelUpPanel/VBox/HBox/Btn3/V" unique_id=1485762825]
