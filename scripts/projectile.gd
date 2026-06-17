@@ -21,6 +21,7 @@ var freeze_dur := 0.0
 var frost_dot_dmg := 0.0  # custom sprite (overrides CIRCLE if set)
 var hit_shake := 0.0      # rung màn hình nhẹ khi viên đạn trúng (shotgun)
 var chain_explode := false  # quái bị giết có tỉ lệ nổ lan (pháo)
+var no_shake := false       # không rung màn hình khi nổ (pháo)
 var burn := 0.0           # signature: đốt cháy (DoT) khi trúng
 var shock := 0.0          # signature: làm chậm (giây) khi trúng
 var exploit := 0.0        # Khai Thác Điểm Yếu: +% dmg lên quái đang dính hiệu ứng
@@ -149,9 +150,10 @@ func _on_area_entered(area: Area2D) -> void:
 		if slow > 0.0 or freeze_dur > 0.0:
 			_spawn_shards()
 		if parent != null and parent.has_method("spawn_explosion"):
-			parent.spawn_explosion(global_position, aoe * 2.0, 0.4)
-		if parent != null and parent.has_method("boom_shake"):
-			parent.boom_shake(clampf(aoe / 28.0, 2.5, 5.5))
+			var expl_diam := aoe * (1.0 if no_shake else 2.0)
+			parent.spawn_explosion(global_position, expl_diam, 0.4)
+		if not no_shake and parent != null and parent.has_method("boom_shake"):
+			parent.boom_shake(clampf(aoe / 36.0, 1.5, 4.5))
 		queue_free()
 		return
 	area.take_hit(_hit_damage(area), true, dir * kb, color, crit)

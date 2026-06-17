@@ -282,6 +282,7 @@ func _fire() -> void:
 		p.life = float(cfg.get("life", 2.0))
 		p.hit_shake = float(cfg.get("hit_shake", 0.0))
 		p.chain_explode = bool(cfg.get("chain", false)) or sig_chain
+		p.no_shake = weapon == "cannon"
 		p.burn = sig_burn
 		p.shock = sig_shock
 		p.exploit = exploit_dmg

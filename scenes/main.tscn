@@ -16,6 +16,9 @@
 [ext_resource type="Texture2D" uid="uid://d0c8tnb34nr7i" path="res://assets/characters/player_survivor.png" id="14_char_survivor"]
 [ext_resource type="Texture2D" uid="uid://baqeqcro7x3ek" path="res://assets/characters/player_brown.png" id="15_char_brown"]
 [ext_resource type="Texture2D" uid="uid://bawosb58hvock" path="res://assets/ui/bar_bg_xp.png" id="16_bar_bg_xp"]
+[ext_resource type="Texture2D" path="res://assets/ui/bar_bg_new.png" id="17_bar_bg_new"]
+[ext_resource type="Texture2D" path="res://assets/ui/bar_green_new.png" id="18_bar_green_new"]
+[ext_resource type="Texture2D" path="res://assets/ui/bar_blue_new.png" id="19_bar_blue_new"]
 
 [sub_resource type="CircleShape2D" id="player_shape"]
 radius = 12.0
@@ -323,81 +326,93 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -320.0
-offset_top = -230.0
+offset_top = -248.0
 offset_right = 320.0
-offset_bottom = 230.0
+offset_bottom = 248.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("panel_style")
 
 [node name="VBox" type="VBoxContainer" parent="UI/CharSelectPanel" unique_id=1230072532]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 
 [node name="Title" type="Label" parent="UI/CharSelectPanel/VBox" unique_id=757054187]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.17, 0.25, 1)
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 30
 text = "CHỌN NHÂN VẬT"
 horizontal_alignment = 1
 
 [node name="Grid" type="GridContainer" parent="UI/CharSelectPanel/VBox" unique_id=512714416]
 layout_mode = 2
-theme_override_constants/h_separation = 16
-theme_override_constants/v_separation = 12
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
 columns = 2
 
 [node name="CharBtn1" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=1334565699]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 128)
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 16
+theme_override_constants/icon_max_width = 62
 theme_override_styles/normal = SubResource("btn_normal")
 theme_override_styles/pressed = SubResource("btn_pressed")
 theme_override_styles/hover = SubResource("btn_hover")
-text = "Dân thường"
-icon = ExtResource("10_char_blue")
-
-[node name="CharBtn2" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=349991132]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/pressed = SubResource("btn_pressed")
-theme_override_styles/hover = SubResource("btn_hover")
-text = "Nữ chiến binh"
-icon = ExtResource("11_char_woman")
-
-[node name="CharBtn3" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=1076733867]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/pressed = SubResource("btn_pressed")
-theme_override_styles/hover = SubResource("btn_hover")
+expand_icon = true
 text = "Lính đặc nhiệm"
 icon = ExtResource("12_char_soldier")
 
-[node name="CharBtn4" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=1517902231]
+[node name="CharBtn2" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=349991132]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 128)
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 16
+theme_override_constants/icon_max_width = 62
 theme_override_styles/normal = SubResource("btn_normal")
 theme_override_styles/pressed = SubResource("btn_pressed")
 theme_override_styles/hover = SubResource("btn_hover")
+expand_icon = true
 text = "Ông già gân"
 icon = ExtResource("13_char_old")
+
+[node name="CharBtn3" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=1076733867]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 128)
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_constants/icon_max_width = 62
+theme_override_styles/normal = SubResource("btn_normal")
+theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
+expand_icon = true
+text = "Thợ săn"
+icon = ExtResource("15_char_brown")
+
+[node name="CharBtn4" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=1517902231]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 128)
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_constants/icon_max_width = 62
+theme_override_styles/normal = SubResource("btn_normal")
+theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
+expand_icon = true
+text = "Kiếm khách"
+icon = ExtResource("11_char_woman")
 
 [node name="CharBtn5" type="Button" parent="UI/CharSelectPanel/VBox/Grid" unique_id=260806846]
 layout_mode = 2

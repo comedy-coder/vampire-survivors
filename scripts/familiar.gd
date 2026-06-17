@@ -143,7 +143,6 @@ func _shoot(target: Node2D) -> void:
 
 
 func _fire_nova() -> void:
-	sfx.play()
 
 	var tgt := _nearest_enemy()
 	var dir := (tgt.global_position - global_position).normalized() \
@@ -185,6 +184,7 @@ func _fire_nova() -> void:
 			return  # đã nổ do trúng quái rồi
 		var boom_pos := p.global_position
 		p.queue_free()
+		sfx.play()
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if boom_pos.distance_to(e.global_position) <= NOVA_RADIUS:
 				var is_crit: bool = randf() < player.crit_chance

@@ -31,7 +31,7 @@ The scene tree is **deliberately minimal**. `scenes/main.tscn` contains only:
 Main (Node2D, game.gd)
 ├── Player (CharacterBody2D, player.gd) — Sprite2D, Camera2D, CollisionShape2D
 └── UI (CanvasLayer) — HP/XP bars, labels, level-up panel, character-select panel,
-                       settings panel, buttons (built-in nodes only)
+					   settings panel, buttons (built-in nodes only)
 ```
 
 **Almost every other game object is created in code, not as a `.tscn`.** Enemies,

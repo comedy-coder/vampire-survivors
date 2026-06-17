@@ -107,6 +107,7 @@ const CHARACTERS := [
 		"tex": preload("res://assets/characters/player_soldier.png"),
 		"name": ["Lính đặc nhiệm", "Commando"],
 		"desc": ["Shotgun — cận chiến tầm trung, dồn sát thương", "Shotgun — mid-range burst damage"],
+		"weapon_short": ["Shotgun • cận chiến", "Shotgun • close range"],
 		"hp": 110.0, "speed": 205.0, "fire": 1.15, "dmg": 2.4, "count": 1, "pierce": 0,
 		"weapon": "shotgun",
 	},
@@ -114,6 +115,7 @@ const CHARACTERS := [
 		"tex": preload("res://assets/characters/player_old.png"),
 		"name": ["Ông già gân", "Tough Grandpa"],
 		"desc": ["Pháo — bắn chậm, nổ lan rộng", "Cannon — slow, wide explosive blasts"],
+		"weapon_short": ["Pháo • nổ diện rộng", "Cannon • wide blast"],
 		"hp": 165.0, "speed": 170.0, "fire": 0.8, "dmg": 6.5, "count": 1, "pierce": 0,
 		"weapon": "cannon",
 	},
@@ -121,6 +123,7 @@ const CHARACTERS := [
 		"tex": preload("res://assets/characters/player_brown.png"),
 		"name": ["Thợ săn", "Hunter"],
 		"desc": ["Bắn tỉa — đường thẳng, giữ khoảng cách", "Sniper — straight-line, keep distance"],
+		"weapon_short": ["Sniper • xuyên giáp", "Sniper • armor pierce"],
 		"hp": 90.0, "speed": 230.0, "fire": 0.95, "dmg": 5.5, "count": 1, "pierce": 1,
 		"weapon": "sniper",
 	},
@@ -128,6 +131,7 @@ const CHARACTERS := [
 		"tex": preload("res://assets/characters/player_woman.png"),
 		"name": ["Kiếm khách", "Ronin"],
 		"desc": ["Katana — chém góc rộng cận chiến, mạo hiểm cao", "Katana — wide melee arc, high risk"],
+		"weapon_short": ["Katana • cận chiến rủi ro", "Katana • risky melee"],
 		"hp": 115.0, "speed": 255.0, "fire": 1.7, "dmg": 3.6, "count": 1, "pierce": 0,
 		"weapon": "katana", "locked": true,
 	},
@@ -137,8 +141,8 @@ const BOSS_INTERVAL := 45.0  # (không còn dùng cho nhịp boss; giữ để t
 
 # --- Phase 1: nhịp độ 15 phút/ván, boss theo mốc thời gian ---
 const RUN_LEN := 900.0              # 15 phút mỗi ván
-const MINIBOSS_TIMES := [300.0, 600.0]  # Mini-boss ở phút 5 và 10
-const FINAL_TIME := 900.0           # Final boss ở phút 15
+const MINIBOSS_TIMES := [120.0, 240.0]  # Mini-boss ở phút 2 và 4
+const FINAL_TIME := 420.0           # Final boss ở phút 7
 
 const DECOR := [
 	{"tex": preload("res://assets/decor/grass_tuft.png"), "s": [0.6, 1.0]},
@@ -365,6 +369,7 @@ var meta_levels := {}  # id nâng cấp -> cấp đã mua
 var difficulty := 1.0      # nhân máu quái theo số nâng cấp vĩnh viễn đã mua
 var enemy_dmg_mult := 1.0  # nhân sát thương quái theo số nâng cấp đã mua
 var _hitstop_cd := 0.0     # hồi chiêu hit-stop để không khựng liên tục
+var _boom_shake_cd := 0.0  # hồi chiêu rung màn hình để tránh rung liên tục
 var _deaths_this_frame := 0  # đếm quái chết trong khung hình để bắt "AoE diệt 3+"
 var shop_panel: PanelContainer
 var shop_title: Label
@@ -762,11 +767,11 @@ func _apply_lang() -> void:
 		var btn: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
 		var c: Dictionary = CHARACTERS[i]
 		var locked: bool = c.get("locked", false) and not ronin_unlocked
+		btn.icon = c["tex"]
 		if locked:
-			btn.text = "%s  %s\n%s" % [c["name"][lang], T("map_locked"), c["desc"][lang]]
+			btn.text = "%s  %s\n%s" % [c["name"][lang], T("map_locked"), c["weapon_short"][lang]]
 		else:
-			btn.text = "%s\n%s\n%s" % [c["name"][lang], c["desc"][lang],
-				T("char_stats") % [int(c["hp"]), int(c["speed"]), c["dmg"]]]
+			btn.text = "%s\n%s" % [c["name"][lang], c["weapon_short"][lang]]
 	_refresh_map_panel()
 
 
@@ -827,7 +832,7 @@ func _process(delta: float) -> void:
 	time += delta
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
-		spawn_timer = maxf(0.22, 0.9 - time * 0.015)
+		spawn_timer = maxf(0.15, 0.65 - time * 0.015)
 		_spawn_enemy()
 
 	# Nhịp boss theo mốc: Mini-boss phút 5 & 10, Final boss phút 15
@@ -974,7 +979,7 @@ func _spawn_enemy() -> void:
 	if time > 45.0 and r < 0.15:
 		e.tex = TEX_ROBOT
 		e.hp = (2.5 + time * 0.05) * 3.0
-		e.speed = 45.0
+		e.speed = 55.0
 		e.dps = 25.0
 		e.gems = 3
 	elif time > 28.0 and r < 0.28:
@@ -983,17 +988,17 @@ func _spawn_enemy() -> void:
 		e.tint = Color(0.5, 1.0, 0.6)
 		e.kind = ENEMY.Kind.RANGER
 		e.hp = (2.5 + time * 0.05) * 0.9
-		e.speed = 90.0
+		e.speed = 110.0
 		e.bullet_damage = 8.0
 		e.gems = 2
 	elif time > 18.0 and r < 0.45:
 		e.tex = TEX_HITMAN
 		e.hp = (2.5 + time * 0.05) * 0.6
-		e.speed = minf(120.0 + time * 0.5, 210.0)
+		e.speed = minf(145.0 + time * 0.5, 250.0)
 		e.gems = 1
 	else:
 		e.hp = 2.5 + time * 0.05
-		e.speed = minf(75.0 + time * 0.6, 160.0)
+		e.speed = minf(90.0 + time * 0.6, 190.0)
 	if time > 45.0 and e.kind == ENEMY.Kind.MELEE and randf() < 0.06:
 		_make_elite(e)
 	# Vùng đất chết (hardcore): quái cận chiến hồi sinh 1 lần
@@ -1208,8 +1213,10 @@ func request_hit_stop(duration := 0.05) -> void:
 
 func boom_shake(amt: float) -> void:
 	# Cho các vũ khí nổ (pháo/lựu đạn/nova...) rung màn hình qua camera người chơi
-	if is_instance_valid(player):
+	var now := Time.get_ticks_msec() / 1000.0
+	if is_instance_valid(player) and now >= _boom_shake_cd:
 		player.shake_amt = maxf(player.shake_amt, amt)
+		_boom_shake_cd = now + 0.25
 
 
 func _on_enemy_died(pos: Vector2, gem_count: int) -> void:
@@ -1568,6 +1575,28 @@ func _populate_level_panel(is_milestone: bool) -> void:
 			15: title = T("sig_form_title")
 			20: title = T("sig_ultimate_title")
 	level_panel.get_node("VBox/Title").text = title
+
+	# Thu hẹp panel theo số thẻ để viền ôm sát nội dung
+	var _card_w := 228.0
+	var _hbox_sep := 16.0
+	var _margin_h := 52.0   # content_margin_left + right (26*2)
+	var _inner_w := _card_w * pending.size() + _hbox_sep * maxf(pending.size() - 1, 0)
+	var _half_w := minf((_inner_w + _margin_h) * 0.5 + 8.0, 380.0)
+	level_panel.offset_left  = -_half_w
+	level_panel.offset_right = _half_w
+
+	# Căn dọc đối xứng: bù bottom margin = khoảng title+sep phía trên để cards nằm giữa panel
+	var _margin_v := 26.0    # content_margin_top (từ _skin_levelup)
+	var _title_h  := 50.0    # chiều cao 1 dòng font_size=32
+	var _vbox_sep := 18.0    # VBox separation
+	var _cards_h  := 280.0   # custom_minimum_size.y của Button
+	var panel_sb := level_panel.get_theme_stylebox("panel") as StyleBoxTexture
+	if panel_sb != null:
+		panel_sb.set_content_margin(SIDE_BOTTOM, _title_h + _vbox_sep + _margin_v)
+	var _half_h := _margin_v + _title_h + _vbox_sep + _cards_h * 0.5  # = 234
+	level_panel.offset_top    = -_half_h
+	level_panel.offset_bottom =  _half_h
+
 	var hbox: HBoxContainer = level_panel.get_node("VBox/HBox")
 	if pending.size() == 1:
 		hbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -2426,10 +2455,24 @@ func _build_debug_panel() -> void:
 	btn_familiar.add_theme_font_size_override("font_size", 18)
 	btn_familiar.pressed.connect(_spawn_familiar)
 
+	var btn_reset := Button.new()
+	btn_reset.text = "Reset NV"
+	btn_reset.add_theme_font_size_override("font_size", 18)
+	btn_reset.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+	btn_reset.pressed.connect(func() -> void:
+		gold = 0
+		souls = 0
+		meta_levels.clear()
+		unlocked_maps = 1
+		ronin_unlocked = false
+		_save_meta()
+		_refresh_shop())
+
 	hbox.add_child(btn_minus)
 	hbox.add_child(_debug_label)
 	hbox.add_child(btn_plus)
 	hbox.add_child(btn_familiar)
+	hbox.add_child(btn_reset)
 	panel.add_child(hbox)
 	$UI.add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
