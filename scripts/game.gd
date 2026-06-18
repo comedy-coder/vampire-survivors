@@ -14,6 +14,9 @@ const ICON_PICK_HEAL := preload("res://assets/icons/up_hp.svg")
 const ICON_PICK_MAGNET := preload("res://assets/icons/art_magnet.svg")
 const ICON_PICK_BOMB := preload("res://assets/icons/w_grenade.svg")
 
+const TEX_FOG_CLOUD := preload("res://assets/vfx/fog_cloud.png")
+const TEX_FOG_PUFF  := preload("res://assets/vfx/fog_puff.png")
+const TEX_FOG_TILE  := preload("res://assets/vfx/fog_tile.png")
 const TEX_ZOMBIE := preload("res://assets/characters/zombie.png")
 const TEX_HITMAN := preload("res://assets/characters/hitman.png")
 const TEX_ROBOT := preload("res://assets/characters/robot.png")
@@ -76,6 +79,14 @@ const I18N := {
 	"win_unlock": ["\nĐã mở khóa: %s", "\nUnlocked: %s"],
 	"boss_desert": ["HUNG THẦN SA MẠC!", "DESERT FIEND!"],
 	"boss_dead":  ["CHÚA TỂ XƯƠNG!", "BONE LORD!"],
+	"core_frenzy_on":  ["⚡ CUỒNG NỘ! Mọi chỉ số ×2!", "⚡ FRENZY! All stats ×2!"],
+	"core_frenzy_off": ["Cuồng nộ tan dần...", "Frenzy fades..."],
+	"wx_fog": ["🌫 SƯƠNG MÙ PHỦ KHẮP!", "🌫 FOG ROLLS IN!"],
+	"wx_fog_end": ["Sương mù tan dần...", "The fog clears..."],
+	"wx_rain": ["🌧 MƯA LỚN! Vùng mưa làm chậm di chuyển", "🌧 HEAVY RAIN! Rain zone slows movement"],
+	"wx_rain_end": ["Mưa tạnh.", "Rain stopped."],
+	"wx_rain_enter": ["Mưa — chậm lại!", "Rain — slowed!"],
+	"wx_rain_exit": ["Thoát khỏi vùng mưa", "Left the rain"],
 	"ev_ring": ["BẦY QUÁI VÂY QUANH!", "SURROUNDED!"],
 	"ev_flood": ["QUÁI TRÀN TỚI!", "MONSTER FLOOD!"],
 	"ev_frenzy": ["PHÚT CUỒNG NỘ!", "FRENZY!"],
@@ -257,7 +268,7 @@ const STAT_UPGRADES := [
 	{"label": ["+25 Máu tối đa (hồi đầy)", "+25 Max HP (full heal)"], "fn": "_up_max_hp", "icon": preload("res://assets/icons/up_hp.svg")},
 	{"label": ["Khai Thác Điểm Yếu: +40% dmg lên quái dính hiệu ứng", "Exploit: +40% dmg to afflicted enemies"], "fn": "_up_exploit", "icon": preload("res://assets/icons/up_exploit.svg")},
 	{"label": ["Kiên Cường: -20% sát thương nhận", "Fortitude: -20% damage taken"], "fn": "_up_armor", "icon": preload("res://assets/icons/up_hp.svg")},
-	{"label": ["Phản Ứng Dây Chuyền: crit/overkill 20% gây nổ", "Chain Reaction: crit/overkill 20% blast"], "fn": "_up_chainreact", "icon": preload("res://assets/icons/up_chainreact.svg")},
+	{"label": ["Sức Mạnh Tối Thượng: +20% sát thương vĩnh viễn", "Brute Force: +20% damage permanently"], "fn": "_up_dmg_boost", "icon": preload("res://assets/icons/up_chainreact.svg")},
 ]
 
 const ICON_ORBITAL := preload("res://assets/icons/w_orbital.svg")
@@ -297,7 +308,7 @@ const SIG_CORES := {
 	],
 	"cannon": [
 		{"id": "aoe",   "name": ["LÕI: Đại Pháo", "CORE: Heavy Shells"],     "desc": ["Bán kính nổ lớn hơn nhiều", "Much bigger blast radius"],          "icon": preload("res://assets/icons/core_aoe.svg")},
-		{"id": "chain", "name": ["LÕI: Nổ Dây Chuyền", "CORE: Chain Blast"], "desc": ["Quái bị giết nổ lan tiếp", "Kills trigger chain explosions"],      "icon": preload("res://assets/icons/core_chain.svg")},
+		{"id": "frenzy", "name": ["LÕI: CUỒNG NỘ", "CORE: FRENZY"], "desc": ["Mỗi 30s: 6 giây tất cả chỉ số ×2", "Every 30s: 6 sec all stats ×2"], "icon": preload("res://assets/icons/core_chain.svg")},
 	],
 	"sniper": [
 		{"id": "pierce",    "name": ["LÕI: Xuyên Giáp", "CORE: Armor Pierce"],    "desc": ["Xuyên +3 mục tiêu, sát thương lớn", "Pierce +3, big damage"],              "icon": preload("res://assets/icons/core_pierce.svg")},
@@ -309,7 +320,7 @@ const SIG_CORES := {
 	],
 }
 const SIG_FORMS := [
-	{"id": "explode_kill", "name": ["HÌNH THÁI: Nổ Chùm", "FORM: Cluster Kill"], "desc": ["Quái bị giết phát nổ nhỏ", "Slain enemies blow up"],       "icon": preload("res://assets/icons/form_explode.svg")},
+	{"id": "lifedrain",    "name": ["HÌNH THÁI: Hút Hồn", "FORM: Soul Drain"],   "desc": ["Mỗi lần giết quái hồi 0.5 HP", "Killing enemies restores 0.5 HP"], "icon": preload("res://assets/icons/form_explode.svg")},
 	{"id": "shock",        "name": ["HÌNH THÁI: Tê Liệt", "FORM: Shock"],        "desc": ["Đòn đánh làm chậm quái trúng", "Hits slow enemies"],        "icon": preload("res://assets/icons/form_shock.svg")},
 ]
 
@@ -330,6 +341,10 @@ var _char_sel := 0  # nhân vật đang được chọn bằng bàn phím (0..5,
 var _map_sel := 0  # map đang được chọn bằng bàn phím (0..2)
 var _card_count := 3  # số thẻ đang hiện ở màn lên cấp (1..3)
 var chosen_core := ""  # id Lõi đã chọn ở cấp 5 (Phase 4b)
+var _frenzy_cd := 0.0          # đếm ngược đến lần cuồng nộ tiếp theo
+var _frenzy_dur := 0.0         # thời gian còn lại của đợt cuồng nộ
+var _frenzy_on := false        # đang trong trạng thái cuồng nộ
+var _frenzy_backup := {}       # lưu chỉ số gốc để khôi phục sau cuồng nộ
 var chosen_form := ""  # id Hình thái đã chọn ở cấp 15
 var _kill_blast_budget := 0  # giới hạn số vụ nổ "Nổ Chùm" mỗi khung hình
 # --- Phase 1: chọn map + mở khóa + nhịp boss ---
@@ -371,6 +386,14 @@ var enemy_dmg_mult := 1.0  # nhân sát thương quái theo số nâng cấp đ�
 var _hitstop_cd := 0.0     # hồi chiêu hit-stop để không khựng liên tục
 var _boom_shake_cd := 0.0  # hồi chiêu rung màn hình để tránh rung liên tục
 var _deaths_this_frame := 0  # đếm quái chết trong khung hình để bắt "AoE diệt 3+"
+var _rain_active := false
+var _rain_fading := false
+var _rain_cd := 40.0
+var _rain_dur := 0.0
+var _rain_slowing := false
+var _rain_speed_backup := 0.0
+var _rain_fog_sprs: Array = []
+var _rain_prev_pos := Vector2.ZERO
 var shop_panel: PanelContainer
 var shop_title: Label
 var shop_gold_label: Label
@@ -474,6 +497,7 @@ func _ready() -> void:
 	_apply_lang()
 	_skin_levelup()
 	_skin_char_select()
+
 	_build_debug_panel()
 	_build_map_panel()
 	_refresh_map_panel()
@@ -809,6 +833,16 @@ func _pick_char(i: int) -> void:
 	_apply_meta_upgrades()
 	char_panel.visible = false
 	get_tree().paused = false
+	_rain_active = false
+	_rain_fading = false
+	_rain_cd = 40.0
+	if _rain_slowing and is_instance_valid(player):
+		player.speed = _rain_speed_backup
+	_rain_slowing = false
+	for spr in _rain_fog_sprs:
+		if is_instance_valid(spr):
+			spr.queue_free()
+	_rain_fog_sprs.clear()
 	_setup_stage()  # áp dụng map đã chọn: nền, nhạc, hiệu ứng vùng
 
 
@@ -822,7 +856,7 @@ func _process(delta: float) -> void:
 	if _deaths_this_frame >= 3:
 		request_hit_stop(0.06)
 	_deaths_this_frame = 0
-	_kill_blast_budget = 16  # giới hạn nổ "Nổ Chùm" mỗi khung hình
+	_kill_blast_budget = 3  # giới hạn nổ "Nổ Chùm" mỗi khung hình
 	if _hitstop_cd > 0.0:
 		_hitstop_cd = maxf(0.0, _hitstop_cd - delta)
 
@@ -832,7 +866,7 @@ func _process(delta: float) -> void:
 	time += delta
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
-		spawn_timer = maxf(0.15, 0.65 - time * 0.015)
+		spawn_timer = maxf(0.35, 1.1 - time * 0.015)
 		_spawn_enemy()
 
 	# Nhịp boss theo mốc: Mini-boss phút 5 & 10, Final boss phút 15
@@ -846,6 +880,12 @@ func _process(delta: float) -> void:
 	# Vùng đất chết: định kỳ tạo vũng độc quanh người chơi
 	if selected_stage == 2:
 		_dead_pool_tick(delta)
+
+	_rain_tick(delta)
+
+	# Lõi Cuồng nộ: chu kỳ x2 chỉ số
+	if chosen_core == "frenzy":
+		_frenzy_core_tick(delta)
 
 	event_timer -= delta
 	if event_timer <= 0.0:
@@ -978,7 +1018,7 @@ func _spawn_enemy() -> void:
 	var r := randf()
 	if time > 45.0 and r < 0.15:
 		e.tex = TEX_ROBOT
-		e.hp = (2.5 + time * 0.05) * 3.0
+		e.hp = (2.5 + time * 0.05) * 6.0
 		e.speed = 55.0
 		e.dps = 25.0
 		e.gems = 3
@@ -987,17 +1027,17 @@ func _spawn_enemy() -> void:
 		e.tex = TEX_HITMAN
 		e.tint = Color(0.5, 1.0, 0.6)
 		e.kind = ENEMY.Kind.RANGER
-		e.hp = (2.5 + time * 0.05) * 0.9
+		e.hp = (2.5 + time * 0.05) * 1.8
 		e.speed = 110.0
 		e.bullet_damage = 8.0
 		e.gems = 2
 	elif time > 18.0 and r < 0.45:
 		e.tex = TEX_HITMAN
-		e.hp = (2.5 + time * 0.05) * 0.6
+		e.hp = (2.5 + time * 0.05) * 1.2
 		e.speed = minf(145.0 + time * 0.5, 250.0)
 		e.gems = 1
 	else:
-		e.hp = 2.5 + time * 0.05
+		e.hp = (2.5 + time * 0.05) * 2.0
 		e.speed = minf(90.0 + time * 0.6, 190.0)
 	if time > 45.0 and e.kind == ENEMY.Kind.MELEE and randf() < 0.06:
 		_make_elite(e)
@@ -1230,10 +1270,9 @@ func _on_enemy_died(pos: Vector2, gem_count: int) -> void:
 		_spawn_gem(pos)
 	if randf() < 0.008:
 		_spawn_pickup(pos)
-	# Hình thái "Nổ Chùm": quái chết phát nổ (giới hạn để tránh dây chuyền vô hạn)
-	if player.sig_explode_on_kill and _kill_blast_budget > 0:
-		_kill_blast_budget -= 1
-		_signature_kill_blast(pos)
+	# Hình thái "Hút Hồn": mỗi lần giết hồi 0.5 HP
+	if player.sig_lifedrain_on_kill and is_instance_valid(player):
+		player.heal(0.5)
 
 
 func _spawn_gem(pos: Vector2, value := 1) -> void:
@@ -1765,9 +1804,10 @@ func _sig_apply_core(id: String) -> void:
 	match id:
 		"burn":      player.sig_burn = 6.0
 		"pierce":    player.sig_pierce_bonus += 3; player.sig_dmg_mul *= 1.12
-		"aoe":       player.sig_aoe_bonus += 70.0
+		"aoe":       player.sig_aoe_bonus += 35.0
 		"chain":     player.sig_chain = true
-		"explosive": player.sig_aoe_bonus += 70.0
+		"frenzy":    _frenzy_cd = 5.0  # kích hoạt lần đầu nhanh để thấy ngay
+		"explosive": player.sig_aoe_bonus += 20.0
 		"wave":      player.sig_blade_wave = true
 		"lifesteal": player.sig_lifesteal = 1.5
 
@@ -1777,9 +1817,10 @@ func _sig_enhance() -> void:
 	match chosen_core:
 		"burn":      player.sig_burn *= 2.2
 		"pierce":    player.sig_pierce_bonus += 3; player.sig_dmg_mul *= 1.15
-		"aoe":       player.sig_aoe_bonus += 60.0
+		"aoe":       player.sig_aoe_bonus += 30.0
 		"chain":     player.sig_chain = true; player.sig_aoe_bonus += 30.0
-		"explosive": player.sig_aoe_bonus += 50.0; player.sig_dmg_mul *= 1.1
+		"frenzy":    _frenzy_cd = maxf(_frenzy_cd, 1.0); _frenzy_dur = 8.0  # tăng thời lượng lên 8s
+		"explosive": player.sig_aoe_bonus += 15.0; player.sig_dmg_mul *= 1.08
 		"wave":      player.sig_dmg_mul *= 1.2
 		"lifesteal": player.sig_lifesteal += 1.5; player.sig_dmg_mul *= 1.1
 		_:           player.sig_dmg_mul *= 1.2
@@ -1788,7 +1829,7 @@ func _sig_enhance() -> void:
 func _sig_apply_form(id: String) -> void:
 	chosen_form = id
 	match id:
-		"explode_kill": player.sig_explode_on_kill = true
+		"lifedrain":    player.sig_lifedrain_on_kill = true
 		"shock":        player.sig_shock = 1.2
 
 
@@ -1797,8 +1838,8 @@ func _sig_ultimate() -> void:
 	player.sig_dmg_mul *= 1.6
 	player.fire_rate += 0.8
 	_sig_enhance()  # cường hóa Lõi thêm lần nữa
-	if chosen_form == "explode_kill":
-		player.sig_explode_on_kill = true
+	if chosen_form == "lifedrain":
+		player.sig_lifedrain_on_kill = true
 	elif chosen_form == "shock":
 		player.sig_shock = maxf(player.sig_shock, 2.0)
 	_signature_nuke()
@@ -1816,11 +1857,11 @@ func _signature_nuke() -> void:
 
 func _signature_kill_blast(pos: Vector2) -> void:
 	# Hình thái "Nổ Chùm": quái chết phát nổ nhỏ (có giới hạn theo khung hình)
-	var dmg: float = 8.0 + player.projectile_damage
+	var dmg: float = 2.0 + player.projectile_damage * 0.2
 	for e in get_tree().get_nodes_in_group("enemies"):
-		if pos.distance_to(e.global_position) < 80.0:
-			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 150.0, Color(1.0, 0.6, 0.3))
-	spawn_explosion(pos, 130.0, 0.3)
+		if pos.distance_to(e.global_position) < 40.0:
+			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 80.0, Color(1.0, 0.6, 0.3))
+	spawn_explosion(pos, 65.0, 0.25)
 
 
 func _build_pool() -> Array:
@@ -1828,8 +1869,8 @@ func _build_pool() -> Array:
 	for s in STAT_UPGRADES:
 		if s["fn"] == "_up_max_hp" and randf() > 0.10:
 			continue
-		if s["fn"] == "_up_chainreact" and player.chain_react:
-			continue  # đã có Phản Ứng Dây Chuyền thì không hiện lại
+		if s["fn"] == "_up_dmg_boost" and player.sig_dmg_mul >= 1.8:
+			continue  # đã buff đủ mạnh thì ẩn đi
 		pool.append({"label": s["label"][lang], "fn": s["fn"], "icon": s["icon"]})
 	_add_weapon(pool, player.orbital_count, player.orbital_evolved,
 		["Kiếm xoay", "Spinning swords"], "_up_orbital",
@@ -1979,9 +2020,8 @@ func _up_armor() -> void:
 	player.damage_reduction = minf(player.damage_reduction + 0.2, 0.75)
 
 
-func _up_chainreact() -> void:
-	# "Phản Ứng Dây Chuyền": crit/overkill có 20% gây nổ nhẹ
-	player.chain_react = true
+func _up_dmg_boost() -> void:
+	player.sig_dmg_mul *= 1.2
 
 
 func chain_react(pos: Vector2) -> void:
@@ -2068,6 +2108,37 @@ func _event_frenzy() -> void:
 		if not e.has_meta("fz"):
 			e.speed *= 1.45
 			e.set_meta("fz", true)
+
+
+func _frenzy_core_tick(delta: float) -> void:
+	if _frenzy_on:
+		_frenzy_dur -= delta
+		if _frenzy_dur <= 0.0:
+			# Tắt cuồng nộ — khôi phục chỉ số gốc
+			_frenzy_on = false
+			if not _frenzy_backup.is_empty() and is_instance_valid(player):
+				player.speed              = _frenzy_backup["speed"]
+				player.fire_rate          = _frenzy_backup["fire_rate"]
+				player.projectile_damage  = _frenzy_backup["dmg"]
+			_frenzy_backup = {}
+			_frenzy_cd = 30.0
+			_announce(T("core_frenzy_off"), Color(1.0, 0.5, 0.2))
+	else:
+		_frenzy_cd -= delta
+		if _frenzy_cd <= 0.0 and is_instance_valid(player) and player.alive:
+			# Bật cuồng nộ — nhân đôi tất cả chỉ số
+			_frenzy_on = true
+			var dur := 6.0 if _frenzy_dur == 0.0 else _frenzy_dur
+			_frenzy_dur = dur
+			_frenzy_backup = {
+				"speed":     player.speed,
+				"fire_rate": player.fire_rate,
+				"dmg":       player.projectile_damage,
+			}
+			player.speed             *= 2.0
+			player.fire_rate         *= 2.0
+			player.projectile_damage *= 2.0
+			_announce(T("core_frenzy_on"), Color(1.0, 0.25, 0.1), 3.0)
 
 
 func _announce(text: String, color := Color(1.0, 0.9, 0.3), shake := 0.0) -> void:
@@ -2279,6 +2350,123 @@ func _spawn_dead_pool() -> void:
 	var tw := spr.create_tween()
 	tw.tween_property(spr, "modulate:a", 0.45, 0.5)
 	dead_pools.append({"node": spr, "pos": pos, "radius": radius, "t": 8.0})
+
+
+
+
+const TEX_RAIN_SHEET  := preload("res://assets/vfx/rain_sheet.png")
+const TEX_PUDDLE      := preload("res://assets/vfx/puddle_sheet.png")
+const TEX_RAIN_SPLASH := preload("res://assets/vfx/rain_splash.png")
+const TEX_RAIN_CLOUD1 := preload("res://assets/vfx/rain_cloud1.png")
+const TEX_RAIN_CLOUD2 := preload("res://assets/vfx/rain_cloud2.png")
+const TEX_RAIN_CLOUD3 := preload("res://assets/vfx/rain_cloud3.png")
+
+func _rain_tick(delta: float) -> void:
+	# Di chuyển và scroll từng patch sương mù nhỏ
+	if (_rain_active or _rain_fading) and not _rain_fog_sprs.is_empty():
+		var vp := get_viewport().get_visible_rect().size
+		for spr in _rain_fog_sprs:
+			if not is_instance_valid(spr):
+				continue
+			# Drift position
+			spr.position += spr.get_meta("vel") * delta
+			# Wrap khi ra ngoài màn hình
+			var hw: float = spr.texture.get_width() * spr.scale.x * 0.5
+			var hh: float = spr.texture.get_height() * spr.scale.y * 0.5
+			if spr.position.x - hw > vp.x:
+				spr.position.x = -hw
+			if spr.position.x + hw < 0.0:
+				spr.position.x = vp.x + hw
+			if spr.position.y - hh > vp.y:
+				spr.position.y = -hh
+			if spr.position.y + hh < 0.0:
+				spr.position.y = vp.y + hh
+			# Scroll texture bên trong patch
+			if spr.modulate.a <= 0.0:
+				continue
+			var scroll: Vector2 = spr.get_meta("scroll", Vector2.ZERO) + spr.get_meta("spd") * delta
+			spr.set_meta("scroll", scroll)
+			(spr.material as ShaderMaterial).set_shader_parameter("u_scroll", scroll)
+
+	if _rain_active:
+		_rain_dur -= delta
+		if _rain_dur <= 0.0:
+			_stop_rain()
+	elif not _rain_fading:
+		_rain_cd -= delta
+		if _rain_cd <= 0.0:
+			_start_rain()
+
+
+func _start_rain() -> void:
+	_rain_active = true
+	_rain_fading = false
+	_rain_dur = randf_range(14.0, 22.0)
+	_rain_cd = randf_range(35.0, 55.0)
+	if is_instance_valid(player):
+		_rain_speed_backup = player.speed
+		player.speed *= 0.55
+		_rain_slowing = true
+		_rain_prev_pos = player.global_position
+	var vp := get_viewport().get_visible_rect().size
+	var sh := Shader.new()
+	# Tiling fog + radial soft edge (elip ngang như đám mây)
+	sh.code = ("shader_type canvas_item;\n"
+		+ "uniform vec2 u_scroll = vec2(0.0);\n"
+		+ "uniform float u_tiles = 2.0;\n"
+		+ "void fragment() {\n"
+		+ "\tvec2 tuv = fract(UV * u_tiles + u_scroll);\n"
+		+ "\tvec4 fog = texture(TEXTURE, tuv);\n"
+		+ "\tvec2 d = (UV - vec2(0.5)) * vec2(1.0, 1.9);\n"
+		+ "\tfloat mask = 1.0 - smoothstep(0.32, 0.50, length(d));\n"
+		+ "\tCOLOR = vec4(fog.rgb, fog.a * mask);\n"
+		+ "}")
+	for i in 6:
+		var spr := Sprite2D.new()
+		spr.texture = TEX_FOG_TILE
+		spr.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+		# Kích thước lớn hơn, dẹt ngang như đám mây
+		var sw := randf_range(0.50, 0.85)
+		spr.scale = Vector2(sw * vp.x / 640.0, sw * 0.40 * vp.y / 480.0)
+		spr.position = Vector2(randf() * vp.x, randf() * vp.y)
+		# Tint xám xanh nhẹ
+		spr.modulate = Color(0.78, 0.83, 0.92, 0.0)
+		var sm := ShaderMaterial.new()
+		sm.shader = sh
+		sm.set_shader_parameter("u_tiles", randf_range(1.2, 2.2))
+		spr.material = sm
+		spr.set_meta("spd", Vector2(randf_range(0.02, 0.06), randf_range(-0.01, 0.01)))
+		spr.set_meta("scroll", Vector2.ZERO)
+		spr.set_meta("vel", Vector2(randf_range(15.0, 35.0), randf_range(-6.0, 6.0)))
+		$UI.add_child(spr)
+		$UI.move_child(spr, 0)
+		var tw: Tween = create_tween()
+		tw.tween_interval(float(i) * 0.6)
+		tw.tween_property(spr, "modulate:a", randf_range(0.55, 0.75), randf_range(3.0, 5.0))
+		_rain_fog_sprs.append(spr)
+
+
+func _stop_rain() -> void:
+	_rain_active = false
+	_rain_fading = true
+	if _rain_slowing and is_instance_valid(player):
+		player.speed = _rain_speed_backup
+		_rain_slowing = false
+	var snap := _rain_fog_sprs.duplicate()
+	for spr in snap:
+		if not is_instance_valid(spr):
+			continue
+		var tw: Tween = create_tween()
+		tw.tween_property(spr, "modulate:a", 0.0, 4.0)
+	var cleanup := create_tween()
+	cleanup.tween_interval(5.0)
+	cleanup.tween_callback(func():
+		_rain_fading = false
+		for spr in snap:
+			if is_instance_valid(spr):
+				spr.queue_free()
+		_rain_fog_sprs.clear()
+	)
 
 
 func _spawn_chest(pos: Vector2) -> void:

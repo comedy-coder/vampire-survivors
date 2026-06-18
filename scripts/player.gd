@@ -44,6 +44,7 @@ var sig_chain := false        # đạn nổ dây chuyền
 var sig_burn := 0.0           # đốt cháy (DoT) khi trúng
 var sig_shock := 0.0          # làm chậm khi trúng (giây)
 var sig_explode_on_kill := false  # quái chết phát nổ (đọc bởi game.gd)
+var sig_lifedrain_on_kill := false  # hồi HP khi giết quái
 var sig_lifesteal := 0.0      # Katana hồi máu mỗi đòn trúng
 var sig_blade_wave := false   # Katana phóng kiếm khí bay xa
 

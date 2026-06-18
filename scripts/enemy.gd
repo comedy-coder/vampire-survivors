@@ -342,9 +342,7 @@ func take_hit(damage: float, show_dmg := false, kb := Vector2.ZERO, col := Color
 				# Crit hạ gục → khựng khung hình rất ngắn cho cảm giác va đập
 				if crit and g.has_method("request_hit_stop"):
 					g.request_hit_stop(0.05)
-				# Phản Ứng Dây Chuyền: crit/overkill có 20% gây nổ nhẹ
-				if player.chain_react and (crit or overkill) and randf() < 0.2 and g.has_method("chain_react"):
-					g.chain_react(global_position)
+
 		died.emit.call_deferred(global_position, gems)
 		queue_free()
 

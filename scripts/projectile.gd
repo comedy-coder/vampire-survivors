@@ -117,8 +117,8 @@ func _chain_blast(pos: Vector2) -> void:
 	var parent := get_parent()
 	if parent == null:
 		return
-	var radius := 70.0
-	var splash := damage * 0.5
+	var radius := 50.0
+	var splash := damage * 0.25
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if pos.distance_to(e.global_position) < radius:
 			e.take_hit(splash, true, (e.global_position - pos).normalized() * 180.0, Color(1.0, 0.6, 0.85))
