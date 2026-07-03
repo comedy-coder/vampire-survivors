@@ -20,7 +20,10 @@ var tex: Texture2D = null
 var freeze_dur := 0.0
 var frost_dot_dmg := 0.0  # custom sprite (overrides CIRCLE if set)
 var hit_shake := 0.0      # rung màn hình nhẹ khi viên đạn trúng (shotgun)
-var chain_explode := false  # quái bị giết có tỉ lệ nổ lan (pháo)
+var execute_threshold := 0.0  # Lõi Xử Tử: hạ gục ngay quái thường có máu dưới ngưỡng này (% máu tối đa)
+var aoe_splash_mult := 1.0  # hệ số sát thương nổ lan tới quái KHÔNG bị bắn trúng trực tiếp (1.0 = bằng đòn chính)
+var blackhole := 0.0        # Lõi Hố Đen: bán kính hút quái khi đạn pháo chạm (0 = tắt)
+var _bh_t := 0.0            # thời gian hố đen còn lại trước khi phát nổ
 var no_shake := false       # không rung màn hình khi nổ (pháo)
 var burn := 0.0           # signature: đốt cháy (DoT) khi trúng
 var shock := 0.0          # signature: làm chậm (giây) khi trúng
@@ -49,6 +52,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _bh_t > 0.0:
+		_blackhole_tick(delta)
+		return
 	global_position += dir * speed * delta
 	life -= delta
 	if life <= 0.0:
@@ -97,45 +103,109 @@ func _spawn_shards() -> void:
 
 
 func _hit_damage(e: Node) -> float:
-	# Khai Thác Điểm Yếu: +dmg nếu mục tiêu đang bị đốt cháy hoặc làm chậm
-	if exploit > 0.0 and (("slow_timer" in e and e.slow_timer > 0.0) or ("frost_dot_timer" in e and e.frost_dot_timer > 0.0)):
+	# Khai Thác Điểm Yếu: +dmg nếu mục tiêu đang dính hiệu ứng (chậm/đốt/đóng băng/độc)
+	if exploit > 0.0 and (("slow_timer" in e and e.slow_timer > 0.0)
+			or ("frost_dot_timer" in e and e.frost_dot_timer > 0.0)
+			or ("burn_timer" in e and e.burn_timer > 0.0)
+			or ("freeze_timer" in e and e.freeze_timer > 0.0)
+			or ("poison_timer" in e and e.poison_timer > 0.0)):
 		return damage * (1.0 + exploit)
 	return damage
 
 
 func _apply_dot(e: Node) -> void:
-	# Signature: đốt cháy (DoT) + làm chậm khi trúng
-	if burn > 0.0 and "frost_dot" in e:
-		e.frost_dot = burn
-		e.frost_dot_timer = 3.0
+	# Signature: đốt cháy (DoT, biến riêng — cộng dồn với băng) + làm chậm khi trúng
+	if burn > 0.0 and "burn_dot" in e:
+		e.burn_dot = burn
+		e.burn_timer = 3.0
 	if shock > 0.0 and "slow_timer" in e:
 		e.slow_timer = maxf(e.slow_timer, shock)
 
 
-func _chain_blast(pos: Vector2) -> void:
-	# Nổ phụ nhỏ tại xác quái bị pháo giết — dọn thêm quái xung quanh
+func _start_blackhole() -> void:
+	# Lõi Hố Đen: dừng lại, biến thành xoáy hút quái rồi mới phát nổ
+	_bh_t = 1.4  # hút lâu hơn để gom được nhiều quái
+	speed = 0.0
+	set_deferred("monitoring", false)
+	set_deferred("monitorable", false)
+	for c in get_children():
+		if c is Sprite2D:
+			c.modulate = Color(0.45, 0.15, 0.6, 0.95)
+			c.scale *= 2.4
 	var parent := get_parent()
-	if parent == null:
-		return
-	var radius := 50.0
-	var splash := damage * 0.25
+	if parent != null and parent.has_method("spawn_explosion"):
+		parent.spawn_explosion(global_position, blackhole * 0.5, 0.2)
+
+
+func _blackhole_tick(delta: float) -> void:
+	# Hút mọi quái trong bán kính dồn về tâm; hết giờ thì phát nổ gom
+	var center := global_position
+	for c in get_children():
+		if c is Sprite2D:
+			c.rotation += 12.0 * delta
 	for e in get_tree().get_nodes_in_group("enemies"):
-		if pos.distance_to(e.global_position) < radius:
-			e.take_hit(splash, true, (e.global_position - pos).normalized() * 180.0, Color(1.0, 0.6, 0.85))
-	if parent.has_method("spawn_explosion"):
-		parent.spawn_explosion(pos, radius * 2.0, 0.35)
+		if is_instance_valid(e):
+			var d: float = center.distance_to(e.global_position)
+			if d < blackhole and d > 4.0:
+				# Boss chỉ bị hút 25% lực (nhất quán với kháng knockback ×0.25),
+				# tránh CC vô hạn lên boss trâu
+				var pull := 260.0
+				if "kind" in e and e.kind == 2:  # Kind.BOSS
+					pull = 65.0
+				e.global_position = e.global_position.move_toward(center, pull * delta)
+	_bh_t -= delta
+	if _bh_t <= 0.0:
+		_blackhole_detonate()
+
+
+func _blackhole_detonate() -> void:
+	var parent := get_parent()
+	# Sát thương nổ gom giảm còn 55% (đánh đổi cho thời gian hút lâu hơn)
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(e) and global_position.distance_to(e.global_position) < aoe:
+			e.take_hit(_hit_damage(e) * 0.55, true, (e.global_position - global_position).normalized() * kb, color, crit)
+			_apply_dot(e)
+	if parent != null and parent.has_method("spawn_explosion"):
+		parent.spawn_explosion(global_position, aoe * 2.0, 0.5)
+	if parent != null and parent.has_method("boom_shake"):
+		parent.boom_shake(clampf(aoe / 30.0, 2.0, 5.0))
+	queue_free()
+
+
+func _try_execute(e) -> void:
+	# Lõi Xử Tử: quái thường còn ít máu bị hạ gục ngay; boss nhận thêm sát thương lớn
+	if execute_threshold <= 0.0:
+		return
+	if not is_instance_valid(e) or not e.is_in_group("enemies"):
+		return
+	if not ("hp" in e and "hp_max" in e and "kind" in e):
+		return
+	if e.kind == 2:  # Kind.BOSS: không xử tử, gây thêm sát thương
+		e.take_hit(damage * 1.5, true, Vector2.ZERO, Color(1.0, 0.3, 0.2), true)
+		return
+	if e.hp > 0.0 and e.hp_max > 0.0 and e.hp <= e.hp_max * execute_threshold:
+		e.take_hit(e.hp + 9999.0, true, dir * kb, Color(1.0, 0.2, 0.2), true)
 
 
 func _on_area_entered(area: Area2D) -> void:
+	if _bh_t > 0.0:
+		return  # đang là hố đen, không xử lý va chạm nữa
 	if not area.has_method("take_hit"):
 		return
 	if aoe > 0.0:
 		var parent := get_parent()
+		# Lõi Hố Đen: chạm thì biến thành xoáy hút quái thay vì nổ ngay
+		if blackhole > 0.0:
+			_start_blackhole()
+			return
 		if not area.is_in_group("enemies"):
 			area.take_hit(damage, true, dir * kb, color, crit)
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if global_position.distance_to(e.global_position) < aoe:
-				e.take_hit(_hit_damage(e), true, (e.global_position - global_position).normalized() * kb, color, crit)
+				var dmg_e := _hit_damage(e)
+				if e != area:
+					dmg_e *= aoe_splash_mult  # quái xung quanh (nổ lan) ăn ít hơn quái trúng trực tiếp
+				e.take_hit(dmg_e, true, (e.global_position - global_position).normalized() * kb, color, crit)
 				_apply_dot(e)
 				if slow > 0.0:
 					e.slow_timer = slow
@@ -144,9 +214,6 @@ func _on_area_entered(area: Area2D) -> void:
 					if frost_dot_dmg > 0.0:
 						e.frost_dot = frost_dot_dmg
 						e.frost_dot_timer = freeze_dur
-				# Pháo: quái bị giết có tỉ lệ nổ lan gây sát thương phụ quanh xác
-				if chain_explode and is_instance_valid(e) and e.hp <= 0.0 and randf() < 0.35:
-					_chain_blast(e.global_position)
 		if slow > 0.0 or freeze_dur > 0.0:
 			_spawn_shards()
 		if parent != null and parent.has_method("spawn_explosion"):
@@ -158,6 +225,7 @@ func _on_area_entered(area: Area2D) -> void:
 		return
 	area.take_hit(_hit_damage(area), true, dir * kb, color, crit)
 	_apply_dot(area)
+	_try_execute(area)
 	if hit_shake > 0.0:
 		var p := get_parent()
 		if p != null and p.has_method("boom_shake"):

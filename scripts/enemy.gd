@@ -56,6 +56,8 @@ var poison_timer := 0.0
 var freeze_timer := 0.0
 var frost_dot := 0.0
 var frost_dot_timer := 0.0
+var burn_dot := 0.0    # đốt cháy (lõi Đạn Lửa) — tách khỏi frost_dot để cháy + băng cộng dồn
+var burn_timer := 0.0
 var walk_t := randf() * TAU
 var strafe := 0.0
 var poison_parts: CPUParticles2D
@@ -153,9 +155,16 @@ func _physics_process(delta: float) -> void:
 		freeze_was_active = false
 		if freeze_gfx.animation != "end":
 			freeze_gfx.play("end")
+	# Sát thương theo thời gian: băng và cháy là hai hiệu ứng riêng, cộng dồn được
+	var dot := 0.0
 	if frost_dot_timer > 0.0:
 		frost_dot_timer -= delta
-		hp -= frost_dot * delta
+		dot += frost_dot
+	if burn_timer > 0.0:
+		burn_timer -= delta
+		dot += burn_dot
+	if dot > 0.0:
+		hp -= dot * delta
 		if hp <= 0.0:
 			if can_revive and not revived:
 				_revive()
@@ -176,6 +185,8 @@ func _physics_process(delta: float) -> void:
 	elif poison_timer > 0.0:
 		var pt := minf(poison_timer, 0.5) / 0.5
 		sprite.modulate = tint * Color(0.55 + 0.45 * (1.0 - pt), 1.2, 0.55 + 0.45 * (1.0 - pt))
+	elif burn_timer > 0.0:
+		sprite.modulate = tint * Color(1.4, 0.75, 0.5)
 	elif slow_timer > 0.0:
 		sprite.modulate = tint * Color(0.55, 0.8, 1.45)
 	else:

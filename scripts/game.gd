@@ -14,9 +14,7 @@ const ICON_PICK_HEAL := preload("res://assets/icons/up_hp.svg")
 const ICON_PICK_MAGNET := preload("res://assets/icons/art_magnet.svg")
 const ICON_PICK_BOMB := preload("res://assets/icons/w_grenade.svg")
 
-const TEX_FOG_CLOUD := preload("res://assets/vfx/fog_cloud.png")
-const TEX_FOG_PUFF  := preload("res://assets/vfx/fog_puff.png")
-const TEX_FOG_TILE  := preload("res://assets/vfx/fog_tile.png")
+const TEX_STRIKE := preload("res://assets/vfx/lightning_strike.png")
 const TEX_ZOMBIE := preload("res://assets/characters/zombie.png")
 const TEX_HITMAN := preload("res://assets/characters/hitman.png")
 const TEX_ROBOT := preload("res://assets/characters/robot.png")
@@ -26,6 +24,13 @@ const MUSIC_GAME   := preload("res://assets/audio/music_game.wav")
 const MUSIC_DESERT := preload("res://assets/audio/music_desert.mp3")
 const MUSIC_DEAD   := preload("res://assets/audio/music_dead.mp3")
 const SND_DIE := preload("res://assets/audio/enemy_die.ogg")
+const SND_GEM     := preload("res://assets/audio/gem.wav")
+const SND_COIN    := preload("res://assets/audio/coin.wav")
+const SND_UI      := preload("res://assets/audio/ui_click.wav")
+const SND_LEVELUP := preload("res://assets/audio/levelup.wav")
+const SND_CHEST   := preload("res://assets/audio/chest.wav")
+const SND_EXTRACT := preload("res://assets/audio/extract.wav")
+const SND_BOSS    := preload("res://assets/audio/boss.wav")
 const FONT_ANNOUNCE := preload("res://assets/fonts/Baloo2.ttf")
 const CIRCLE := preload("res://assets/circle.svg")
 const TEX_UI_PANEL := preload("res://assets/ui/ui_panel.png")
@@ -47,10 +52,10 @@ const TOPDOWN_BOSSES := [
 
 const I18N := {
 	"levelup_title": ["LEVEL UP! Chọn nâng cấp  (WASD + Space)", "LEVEL UP! Choose an upgrade  (WASD + Space)"],
-	"sig_core_title": ["CẤP 5 — CHỌN LÕI (đổi lối đánh)", "LV 5 — CHOOSE CORE"],
-	"sig_enhance_title": ["CẤP 10 — CƯỜNG HÓA LÕI", "LV 10 — CORE ENHANCED"],
-	"sig_form_title": ["CẤP 15 — CHỌN HÌNH THÁI", "LV 15 — CHOOSE FORM"],
-	"sig_ultimate_title": ["CẤP 20 — THỨC TỈNH TỐI THƯỢNG", "LV 20 — ULTIMATE AWAKENING"],
+	"sig_core_title": ["CẤP 10 — CHỌN LÕI (đổi lối đánh)", "LV 10 — CHOOSE CORE"],
+	"sig_enhance_title": ["CẤP 15 — CƯỜNG HÓA LÕI", "LV 15 — CORE ENHANCED"],
+	"sig_form_title": ["CẤP 20 — CHỌN HÌNH THÁI", "LV 20 — CHOOSE FORM"],
+	"sig_ultimate_title": ["CẤP 25 — THỨC TỈNH TỐI THƯỢNG", "LV 25 — ULTIMATE AWAKENING"],
 	"sig_enhance_label": ["⚡ CƯỜNG HÓA LÕI\nLõi của bạn mạnh hơn nữa — Nhận!", "⚡ CORE ENHANCED\nYour core grows stronger — Take!"],
 	"sig_ultimate_label": ["☆ THỨC TỈNH!\nLõi + Hình thái tối đa & dọn màn — Nhận!", "☆ AWAKENING!\nCore + Form maxed & screen clear — Take!"],
 	"char_title": ["CHỌN NHÂN VẬT  (WASD + Space)", "CHOOSE YOUR CHARACTER  (WASD + Space)"],
@@ -81,12 +86,7 @@ const I18N := {
 	"boss_dead":  ["CHÚA TỂ XƯƠNG!", "BONE LORD!"],
 	"core_frenzy_on":  ["⚡ CUỒNG NỘ! Mọi chỉ số ×2!", "⚡ FRENZY! All stats ×2!"],
 	"core_frenzy_off": ["Cuồng nộ tan dần...", "Frenzy fades..."],
-	"wx_fog": ["🌫 SƯƠNG MÙ PHỦ KHẮP!", "🌫 FOG ROLLS IN!"],
-	"wx_fog_end": ["Sương mù tan dần...", "The fog clears..."],
-	"wx_rain": ["🌧 MƯA LỚN! Vùng mưa làm chậm di chuyển", "🌧 HEAVY RAIN! Rain zone slows movement"],
-	"wx_rain_end": ["Mưa tạnh.", "Rain stopped."],
-	"wx_rain_enter": ["Mưa — chậm lại!", "Rain — slowed!"],
-	"wx_rain_exit": ["Thoát khỏi vùng mưa", "Left the rain"],
+	"wx_storm": ["⛈ DÔNG SÉT! Né các vòng cảnh báo!", "⛈ THUNDERSTORM! Dodge the warning circles!"],
 	"ev_ring": ["BẦY QUÁI VÂY QUANH!", "SURROUNDED!"],
 	"ev_flood": ["QUÁI TRÀN TỚI!", "MONSTER FLOOD!"],
 	"ev_frenzy": ["PHÚT CUỒNG NỘ!", "FRENZY!"],
@@ -109,7 +109,7 @@ const I18N := {
 	"shop_buy": ["%s  (Cấp %d/%d)\n%s — Giá %d %s", "%s  (Lv %d/%d)\n%s — Cost %d %s"],
 	"shop_max": ["%s  (TỐI ĐA)\n%s", "%s  (MAX)\n%s"],
 	"reward_fmt": ["\nVàng: +%d 💰     Linh Hồn: +%d 🔮", "\nGold: +%d 💰     Souls: +%d 🔮"],
-	"death_penalty": ["\n(Chết: chỉ giữ 50% Vàng — Linh Hồn không mất)", "\n(Died: kept 50% gold — souls safe)"],
+	"death_penalty": ["\n(Chết: chỉ giữ 25% Vàng, 50% Linh Hồn — Rút lui để giữ trọn!)", "\n(Died: kept 25% gold, 50% souls — extract to keep it all!)"],
 }
 
 # Phase 4: tinh gọn còn 4 nhân vật chuyên biệt. "locked" = cần mở khóa (Kiếm khách).
@@ -127,7 +127,7 @@ const CHARACTERS := [
 		"name": ["Ông già gân", "Tough Grandpa"],
 		"desc": ["Pháo — bắn chậm, nổ lan rộng", "Cannon — slow, wide explosive blasts"],
 		"weapon_short": ["Pháo • nổ diện rộng", "Cannon • wide blast"],
-		"hp": 165.0, "speed": 170.0, "fire": 0.8, "dmg": 6.5, "count": 1, "pierce": 0,
+		"hp": 165.0, "speed": 200.0, "fire": 0.8, "dmg": 6.5, "count": 1, "pierce": 0,
 		"weapon": "cannon",
 	},
 	{
@@ -148,11 +148,10 @@ const CHARACTERS := [
 	},
 ]
 
-const BOSS_INTERVAL := 45.0  # (không còn dùng cho nhịp boss; giữ để tương thích)
-
-# --- Phase 1: nhịp độ 15 phút/ván, boss theo mốc thời gian ---
-const RUN_LEN := 900.0              # 15 phút mỗi ván
-const MINIBOSS_TIMES := [120.0, 240.0]  # Mini-boss ở phút 2 và 4
+# --- Phase 1: boss theo mốc thời gian ---
+# Ván NGẮN (7 phút) nhưng dồn dập: nhịp boss 2' / 4' / 5.5' / 7' dày dần về cuối,
+# lấp khoảng trống giữa ván và cho điểm quyết định Rút Lui cuối ở phút 5.5
+const MINIBOSS_TIMES := [120.0, 240.0, 330.0]
 const FINAL_TIME := 420.0           # Final boss ở phút 7
 
 const DECOR := [
@@ -262,13 +261,12 @@ const WEAPON_MAX := 4
 const STAT_UPGRADES := [
 	{"label": ["Sức Mạnh Giao Tranh: +20% sát thương", "Combat Power: +20% damage"], "fn": "_up_damage", "icon": preload("res://assets/icons/up_damage.svg")},
 	{"label": ["Nhịp Độ Tử Thần: -15% hồi đòn", "Deadly Tempo: -15% cooldown"], "fn": "_up_fire_rate", "icon": preload("res://assets/icons/up_fire_rate.svg")},
-	{"label": ["Nhân Bản / Liên Kích: +1 đạn (Kiếm: chém bồi)", "Multishot / Combo: +1 shot (Katana: combo)"], "fn": "_up_projectile", "icon": preload("res://assets/icons/up_projectile.svg")},
+	{"label": ["Nhân Bản / Liên Kích: +1 đạn (Shotgun: +2, Kiếm: chém bồi)", "Multishot / Combo: +1 shot (Shotgun: +2, Katana: combo)"], "fn": "_up_projectile", "icon": preload("res://assets/icons/up_projectile.svg")},
 	{"label": ["Xuyên Thấu / Khuếch Đại: +1 xuyên (Nổ/Kiếm: +15% tầm)", "Pierce / Amplify: +1 pierce (AoE/Melee: +15% reach)"], "fn": "_up_pierce", "icon": preload("res://assets/icons/up_pierce.svg")},
 	{"label": ["+25 Tốc độ chạy", "+25 Move speed"], "fn": "_up_speed", "icon": preload("res://assets/icons/up_speed.svg")},
 	{"label": ["+25 Máu tối đa (hồi đầy)", "+25 Max HP (full heal)"], "fn": "_up_max_hp", "icon": preload("res://assets/icons/up_hp.svg")},
 	{"label": ["Khai Thác Điểm Yếu: +40% dmg lên quái dính hiệu ứng", "Exploit: +40% dmg to afflicted enemies"], "fn": "_up_exploit", "icon": preload("res://assets/icons/up_exploit.svg")},
 	{"label": ["Kiên Cường: -20% sát thương nhận", "Fortitude: -20% damage taken"], "fn": "_up_armor", "icon": preload("res://assets/icons/up_hp.svg")},
-	{"label": ["Sức Mạnh Tối Thượng: +20% sát thương vĩnh viễn", "Brute Force: +20% damage permanently"], "fn": "_up_dmg_boost", "icon": preload("res://assets/icons/up_chainreact.svg")},
 ]
 
 const ICON_ORBITAL := preload("res://assets/icons/w_orbital.svg")
@@ -282,7 +280,7 @@ const ARTIFACTS := [
 	{"name": ["Nam châm cổ", "Ancient Magnet"], "desc": ["Hút gem từ xa gấp 3 lần", "Triple gem pickup range"], "fn": "_art_magnet", "icon": preload("res://assets/icons/art_magnet.svg")},
 	{"name": ["Tim phượng hoàng", "Phoenix Heart"], "desc": ["Hồi sinh 1 lần với nửa máu, nổ đẩy lùi quái", "Revive once at half HP with a knockback blast"], "fn": "_art_phoenix", "icon": preload("res://assets/icons/art_phoenix.svg")},
 	{"name": ["Linh thú bay", "Spirit Familiar"], "desc": ["Triệu hồi linh thú bay quanh người, tự bắn quái gần nhất", "Summon a familiar that orbits you and auto-fires at the nearest enemy"], "fn": "_art_familiar", "icon": preload("res://assets/icons/art_familiar.svg")},
-	{"name": ["Bùa tái sinh", "Regen Charm"], "desc": ["Hồi 0.5 máu mỗi giây", "Heal 0.5 HP per second"], "fn": "_art_regen", "icon": preload("res://assets/icons/art_regen.svg")},
+	{"name": ["Bùa gai", "Thorn Charm"], "desc": ["Trúng đòn phát nổ gai: đẩy lùi + gây sát thương quái xung quanh (hồi 6s)", "When hit, erupt in thorns: knock back and damage nearby enemies (6s cooldown)"], "fn": "_art_thorns", "icon": preload("res://assets/icons/art_thorns.svg")},
 	{"name": ["Kính ngắm cổ", "Ancient Scope"], "desc": ["20% đạn chí mạng, sát thương x2", "20% crit chance for x2 damage"], "fn": "_art_crit", "icon": preload("res://assets/icons/art_crit.svg")},
 	{"name": ["Ngọc kinh nghiệm", "XP Gem"], "desc": ["Mỗi gem cho gấp đôi XP", "Gems give double XP"], "fn": "_art_xp", "icon": preload("res://assets/icons/art_xp.svg")},
 ]
@@ -300,27 +298,27 @@ const META_UPGRADES := [
 ]
 
 # --- Phase 4b: Nâng cấp Độc bản ---
-# LÕI (cấp 5): riêng theo vũ khí, đổi hẳn lối đánh. HÌNH THÁI (cấp 15): chung.
+# LÕI (cấp 10): riêng theo vũ khí, đổi hẳn lối đánh. HÌNH THÁI (cấp 20): chung.
 const SIG_CORES := {
 	"shotgun": [
 		{"id": "burn",   "name": ["LÕI: Đạn Lửa", "CORE: Fire Shells"],   "desc": ["Đạn gây bỏng (sát thương theo thời gian)", "Pellets ignite enemies (burn DoT)"],   "icon": preload("res://assets/icons/core_fire.svg")},
 		{"id": "pierce", "name": ["LÕI: Đạn Xuyên", "CORE: Slug Rounds"], "desc": ["Đạn xuyên +3 mục tiêu & mạnh hơn", "Pierce +3 and stronger"],                      "icon": preload("res://assets/icons/core_pierce.svg")},
 	],
 	"cannon": [
-		{"id": "aoe",   "name": ["LÕI: Đại Pháo", "CORE: Heavy Shells"],     "desc": ["Bán kính nổ lớn hơn nhiều", "Much bigger blast radius"],          "icon": preload("res://assets/icons/core_aoe.svg")},
-		{"id": "frenzy", "name": ["LÕI: CUỒNG NỘ", "CORE: FRENZY"], "desc": ["Mỗi 30s: 6 giây tất cả chỉ số ×2", "Every 30s: 6 sec all stats ×2"], "icon": preload("res://assets/icons/core_chain.svg")},
+		{"id": "blackhole", "name": ["LÕI: Hố Đen", "CORE: Black Hole"], "desc": ["Đạn pháo tạo xoáy hút quái dồn về tâm rồi phát nổ gom", "Shells form a vortex that pulls enemies in, then detonate"], "icon": preload("res://assets/icons/core_aoe.svg")},
+		{"id": "frenzy", "name": ["LÕI: CUỒNG NỘ", "CORE: FRENZY"], "desc": ["Mỗi 17s: 6 giây tất cả chỉ số ×2", "Every 17s: 6 sec all stats ×2"], "icon": preload("res://assets/icons/core_chain.svg")},
 	],
 	"sniper": [
 		{"id": "pierce",    "name": ["LÕI: Xuyên Giáp", "CORE: Armor Pierce"],    "desc": ["Xuyên +3 mục tiêu, sát thương lớn", "Pierce +3, big damage"],              "icon": preload("res://assets/icons/core_pierce.svg")},
-		{"id": "explosive", "name": ["LÕI: Đạn Nổ", "CORE: Explosive Rounds"],   "desc": ["Đạn bắn tỉa nổ diện rộng khi trúng", "Sniper rounds explode on hit"],       "icon": preload("res://assets/icons/core_explosive.svg")},
+		{"id": "execute", "name": ["LÕI: Xử Tử", "CORE: Execute"], "desc": ["Hạ gục ngay quái thường còn ít máu; trúng boss gây thêm sát thương lớn", "Instantly kills low-HP enemies; bonus damage to bosses"], "icon": preload("res://assets/icons/core_explosive.svg")},
 	],
 	"katana": [
 		{"id": "wave",      "name": ["LÕI: Kiếm Khí", "CORE: Blade Wave"], "desc": ["Mỗi nhát chém phóng làn kiếm khí bay xa", "Each slash fires a flying blade wave"], "icon": preload("res://assets/icons/core_wave.svg")},
-		{"id": "lifesteal", "name": ["LÕI: Hút Máu", "CORE: Lifesteal"],   "desc": ["Hồi máu mỗi đòn chém trúng", "Heal on each slash hit"],                           "icon": preload("res://assets/icons/core_lifesteal.svg")},
+		{"id": "berserk", "name": ["LÕI: Cuồng Đao", "CORE: Berserker"], "desc": ["Chém +15%; máu càng thấp càng đau (tối đa ~×2 khi cạn máu)", "Slash +15%; the lower your HP, the harder you hit (up to ~2× near death)"], "icon": preload("res://assets/icons/core_lifesteal.svg")},
 	],
 }
 const SIG_FORMS := [
-	{"id": "lifedrain",    "name": ["HÌNH THÁI: Hút Hồn", "FORM: Soul Drain"],   "desc": ["Mỗi lần giết quái hồi 0.5 HP", "Killing enemies restores 0.5 HP"], "icon": preload("res://assets/icons/form_explode.svg")},
+	{"id": "soulburst",    "name": ["HÌNH THÁI: Nổ Hồn", "FORM: Soul Burst"],   "desc": ["Quái chết phát nổ, lan sát thương sang quái xung quanh", "Slain enemies explode, damaging nearby foes"], "icon": preload("res://assets/icons/form_explode.svg")},
 	{"id": "shock",        "name": ["HÌNH THÁI: Tê Liệt", "FORM: Shock"],        "desc": ["Đòn đánh làm chậm quái trúng", "Hits slow enemies"],        "icon": preload("res://assets/icons/form_shock.svg")},
 ]
 
@@ -331,7 +329,6 @@ var xp := 0
 var level := 1
 var xp_needed := 5
 var spawn_timer := 0.0
-var boss_timer := BOSS_INTERVAL
 var game_over := false
 var choosing := false
 var pending: Array = []
@@ -340,13 +337,13 @@ var _sel := 0  # thẻ nâng cấp đang được chọn bằng bàn phím (0..2
 var _char_sel := 0  # nhân vật đang được chọn bằng bàn phím (0..5, lưới 2 cột)
 var _map_sel := 0  # map đang được chọn bằng bàn phím (0..2)
 var _card_count := 3  # số thẻ đang hiện ở màn lên cấp (1..3)
-var chosen_core := ""  # id Lõi đã chọn ở cấp 5 (Phase 4b)
+var chosen_core := ""  # id Lõi đã chọn ở cấp 10 (Phase 4b)
 var _frenzy_cd := 0.0          # đếm ngược đến lần cuồng nộ tiếp theo
 var _frenzy_dur := 0.0         # thời gian còn lại của đợt cuồng nộ
 var _frenzy_on := false        # đang trong trạng thái cuồng nộ
-var _frenzy_backup := {}       # lưu chỉ số gốc để khôi phục sau cuồng nộ
+var _frenzy_len := 6.0         # thời lượng mỗi đợt cuồng nộ (8s sau Cường hóa cấp 15)
+var _frenzy_add := {}          # phần chỉ số đã cộng thêm, trừ lại khi tắt cuồng nộ
 var chosen_form := ""  # id Hình thái đã chọn ở cấp 15
-var _kill_blast_budget := 0  # giới hạn số vụ nổ "Nổ Chùm" mỗi khung hình
 # --- Phase 1: chọn map + mở khóa + nhịp boss ---
 var selected_stage := 0     # map đã chọn cho ván hiện tại (cố định cả ván)
 var unlocked_maps := 1      # số map đã mở (1=Đồng cỏ, 2=+Sa mạc, 3=+Đất chết)
@@ -377,7 +374,7 @@ var owned_artifacts: Array = []
 var xp_gain := 1
 var lang := 0  # 0 = Tiếng Việt, 1 = English
 var gold := 0          # Vàng tích lũy (mua chỉ số Sinh tồn)
-var souls := 0         # Mảnh Linh Hồn tích lũy (mua chỉ số Tấn công); KHÔNG mất khi chết
+var souls := 0         # Mảnh Linh Hồn tích lũy (mua chỉ số Tấn công); chết giữ 50%
 var run_gold := 0      # Vàng kiếm trong ván hiện tại (chưa gửi vào kho)
 var run_souls := 0     # Mảnh Linh Hồn kiếm trong ván hiện tại
 var meta_levels := {}  # id nâng cấp -> cấp đã mua
@@ -386,14 +383,11 @@ var enemy_dmg_mult := 1.0  # nhân sát thương quái theo số nâng cấp đ�
 var _hitstop_cd := 0.0     # hồi chiêu hit-stop để không khựng liên tục
 var _boom_shake_cd := 0.0  # hồi chiêu rung màn hình để tránh rung liên tục
 var _deaths_this_frame := 0  # đếm quái chết trong khung hình để bắt "AoE diệt 3+"
-var _rain_active := false
-var _rain_fading := false
-var _rain_cd := 40.0
-var _rain_dur := 0.0
-var _rain_slowing := false
-var _rain_speed_backup := 0.0
-var _rain_fog_sprs: Array = []
-var _rain_prev_pos := Vector2.ZERO
+# Mối nguy môi trường theo map (thay hệ thống mưa cũ — thử thách chủ động, né được)
+var storm_timer := 60.0          # Đồng cỏ: đếm ngược tới cơn dông kế tiếp (cơn đầu phút 1)
+var storm_dur := 0.0             # thời gian còn lại của cơn dông đang diễn ra
+var _storm_strike_t := 0.0       # nhịp giáng sét trong cơn dông
+var desert_hazard_timer := 90.0  # Sa mạc: lốc cát / cát lún tự nhiên từ phút 1.5
 var shop_panel: PanelContainer
 var shop_title: Label
 var shop_gold_label: Label
@@ -414,6 +408,15 @@ var lang_btns: Array = []
 var ground := Sprite2D.new()
 var music := AudioStreamPlayer.new()
 var die_sfx := AudioStreamPlayer.new()
+var gem_sfx := AudioStreamPlayer.new()
+var coin_sfx := AudioStreamPlayer.new()
+var ui_sfx := AudioStreamPlayer.new()
+var levelup_sfx := AudioStreamPlayer.new()
+var chest_sfx := AudioStreamPlayer.new()
+var extract_sfx := AudioStreamPlayer.new()
+var boss_sfx := AudioStreamPlayer.new()
+var _gem_combo := 0      # số gem nhặt liên tiếp — pitch tăng dần "tính tính tính"
+var _gem_combo_t := 0.0
 var announce_font: FontVariation
 
 @onready var player: CharacterBody2D = $Player
@@ -447,6 +450,15 @@ func _ready() -> void:
 	music.play()
 	die_sfx.stream = SND_DIE
 	add_child(die_sfx)
+	# SFX phần thưởng + UI: PROCESS_MODE_ALWAYS để kêu được cả khi game pause (menu, lên cấp)
+	for cfg: Array in [[gem_sfx, SND_GEM, 4], [coin_sfx, SND_COIN, 3], [ui_sfx, SND_UI, 2],
+			[levelup_sfx, SND_LEVELUP, 1], [chest_sfx, SND_CHEST, 1],
+			[extract_sfx, SND_EXTRACT, 1], [boss_sfx, SND_BOSS, 1]]:
+		var sp: AudioStreamPlayer = cfg[0]
+		sp.stream = cfg[1]
+		sp.max_polyphony = cfg[2]
+		sp.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(sp)
 	sound_btn.pressed.connect(_toggle_settings)
 	settings_panel.get_node("VBox/CloseBtn").pressed.connect(_toggle_settings)
 	music_slider.value_changed.connect(_set_music_vol)
@@ -555,7 +567,9 @@ func _apply_meta_upgrades() -> void:
 	var total := 0
 	for u in META_UPGRADES:
 		var lvl := int(meta_levels.get(u["id"], 0))
-		total += lvl
+		# Nâng cấp thuần tiện ích (nam châm) không bị tính "thuế" làm quái mạnh lên
+		if u["id"] != "magnet":
+			total += lvl
 		if lvl <= 0:
 			continue
 		player.set(u["prop"], player.get(u["prop"]) + float(u["amount"]) * lvl)
@@ -695,6 +709,8 @@ func _buy_upgrade(id: String) -> void:
 			return
 		gold -= cost
 	meta_levels[id] = lvl + 1
+	ui_sfx.play()
+	coin_sfx.play()
 	_save_meta()
 	_refresh_shop()
 
@@ -814,13 +830,22 @@ func _set_sfx_vol(v: float) -> void:
 	player.shoot_sfx.volume_db = db
 	player.boom_sfx.volume_db = db
 	player.zap_sfx.volume_db = db
+	player.hurt_sfx.volume_db = db - 4.0
 	die_sfx.volume_db = db
+	gem_sfx.volume_db = db - 8.0    # nhặt liên tục nên để nhỏ hơn hẳn
+	coin_sfx.volume_db = db - 8.0
+	ui_sfx.volume_db = db - 6.0
+	levelup_sfx.volume_db = db
+	chest_sfx.volume_db = db
+	extract_sfx.volume_db = db
+	boss_sfx.volume_db = db
 
 
 func _pick_char(i: int) -> void:
 	var c: Dictionary = CHARACTERS[i]
 	if c.get("locked", false) and not ronin_unlocked:
 		return  # Kiếm khách chưa mở khóa
+	ui_sfx.play()
 	player.get_node("Sprite2D").texture = c["tex"]
 	player.max_hp = c["hp"]
 	player.hp = c["hp"]
@@ -833,16 +858,6 @@ func _pick_char(i: int) -> void:
 	_apply_meta_upgrades()
 	char_panel.visible = false
 	get_tree().paused = false
-	_rain_active = false
-	_rain_fading = false
-	_rain_cd = 40.0
-	if _rain_slowing and is_instance_valid(player):
-		player.speed = _rain_speed_backup
-	_rain_slowing = false
-	for spr in _rain_fog_sprs:
-		if is_instance_valid(spr):
-			spr.queue_free()
-	_rain_fog_sprs.clear()
 	_setup_stage()  # áp dụng map đã chọn: nền, nhạc, hiệu ứng vùng
 
 
@@ -856,9 +871,13 @@ func _process(delta: float) -> void:
 	if _deaths_this_frame >= 3:
 		request_hit_stop(0.06)
 	_deaths_this_frame = 0
-	_kill_blast_budget = 3  # giới hạn nổ "Nổ Chùm" mỗi khung hình
 	if _hitstop_cd > 0.0:
 		_hitstop_cd = maxf(0.0, _hitstop_cd - delta)
+
+	if _gem_combo_t > 0.0:
+		_gem_combo_t -= delta
+		if _gem_combo_t <= 0.0:
+			_gem_combo = 0
 
 	ground.global_position = player.global_position.snapped(Vector2(64.0, 64.0))
 	_update_decor()
@@ -877,11 +896,15 @@ func _process(delta: float) -> void:
 		final_spawned = true
 		_spawn_boss(true)
 
-	# Vùng đất chết: định kỳ tạo vũng độc quanh người chơi
-	if selected_stage == 2:
-		_dead_pool_tick(delta)
-
-	_rain_tick(delta)
+	# Mối nguy môi trường theo map: dông sét / lốc cát / vũng độc
+	match selected_stage:
+		0:
+			if time > 60.0:
+				_storm_tick(delta)
+		1:
+			_desert_hazard_tick(delta)
+		2:
+			_dead_pool_tick(delta)
 
 	# Lõi Cuồng nộ: chu kỳ x2 chỉ số
 	if chosen_core == "frenzy":
@@ -929,8 +952,8 @@ func _setup_stage() -> void:
 	decor_cells.clear()
 	_update_decor()
 	_announce(T("stage_fmt") % cfg["name"][lang], Color(0.55, 1.0, 0.75))
-	# Sa mạc: đi trên cát chậm hơn
-	player.stage_speed_mult = 0.82 if stage == 1 else 1.0
+	# Sa mạc: đi trên cát chậm hơn (0.88 — đủ cảm nhận nhưng không bị melee bắt kịp)
+	player.stage_speed_mult = 0.88 if stage == 1 else 1.0
 	match stage:
 		0: _change_music(MUSIC_GAME)
 		1: _change_music(MUSIC_DESERT)
@@ -1034,11 +1057,16 @@ func _spawn_enemy() -> void:
 	elif time > 18.0 and r < 0.45:
 		e.tex = TEX_HITMAN
 		e.hp = (2.5 + time * 0.05) * 1.2
-		e.speed = minf(145.0 + time * 0.5, 250.0)
+		# Cap 230: runner nhanh nhưng không vượt quá xa tốc chạy nhân vật
+		e.speed = minf(145.0 + time * 0.5, 230.0)
 		e.gems = 1
 	else:
 		e.hp = (2.5 + time * 0.05) * 2.0
-		e.speed = minf(90.0 + time * 0.6, 190.0)
+		# Cap 170: quái thường không được bắt kịp nhân vật chậm nhất (kiting là cốt lõi)
+		e.speed = minf(90.0 + time * 0.6, 170.0)
+	# Sau phút 3.5: mọi quái rơi thêm 1 gem — dồn tốc lên cấp để mốc 20 kịp về trước final
+	if time > 210.0:
+		e.gems += 1
 	if time > 45.0 and e.kind == ENEMY.Kind.MELEE and randf() < 0.06:
 		_make_elite(e)
 	# Vùng đất chết (hardcore): quái cận chiến hồi sinh 1 lần
@@ -1057,9 +1085,10 @@ func _spawn_boss(is_final: bool) -> void:
 	var e := _make_enemy()
 	e.kind = ENEMY.Kind.BOSS
 	e.sprite_scale = 1.5
-	e.hp = 40.0 + time * 1.2
+	# Boss phải "trâu" hơn hẳn đám đông: mini phút 2 ≈ 520 HP, final phút 7 ≈ 2000+ HP
+	e.hp = 220.0 + time * 2.5
 	e.dps = 30.0
-	e.gems = 8
+	e.gems = 10
 	var announce := T("miniboss_announce")
 	# Final boss luôn là boss đặc trưng của map; Mini-boss thì ngẫu nhiên như cũ
 	var themed := stage != 0 and (is_final or randf() < 0.5)
@@ -1090,7 +1119,8 @@ func _spawn_boss(is_final: bool) -> void:
 		announce = T("final_announce")
 		e.sprite_scale *= 1.35
 		e.vis_scale *= 1.35 if e.vis_scale > 0.0 else 1.0
-		e.hp *= (2.0 if stage == 2 else 1.6)
+		# ×2.0/2.4: bù việc người chơi lên cấp nhanh hơn (đường cong 1.10) và build đã hoàn thiện
+		e.hp *= (2.4 if stage == 2 else 2.0)
 		e.dps *= (2.0 if stage == 2 else 1.4)
 		e.gems = 20
 	_apply_stage(e)
@@ -1098,20 +1128,23 @@ func _spawn_boss(is_final: bool) -> void:
 	e.global_position = player.global_position + Vector2.from_angle(randf() * TAU) * 600.0
 	bosses.append(e)
 	e.died.connect(func(pos: Vector2, _g: int) -> void: _spawn_chest(pos))
-	# Mảnh Linh Hồn chỉ rớt từ boss: Mini-boss 1, Final boss 3-5
-	var soul_drop := randi_range(3, 5) if is_final else 1
+	# Mảnh Linh Hồn chỉ rớt từ boss: Mini-boss 2, Final boss 8-12
+	# (tăng để nhánh Linh Hồn max trong ~12 ván thắng, ngang nhánh Vàng)
+	var soul_drop := randi_range(8, 12) if is_final else 2
 	e.died.connect(func(_pos: Vector2, _g: int) -> void: run_souls += soul_drop)
 	if is_final:
 		e.died.connect(func(_pos: Vector2, _g: int) -> void: _win_run())
 	else:
 		# Giết Mini-boss → mở Cổng thoát hiểm (rút lui an toàn hoặc tất tay đánh tiếp)
 		e.died.connect(func(_pos: Vector2, _g: int) -> void: _spawn_extraction_gate())
+	boss_sfx.play()
 	_announce(announce, Color(1.0, 0.2, 0.2), 8.0)
 
 
 func _win_run() -> void:
 	if won:
 		return
+	extract_sfx.play()
 	won = true
 	game_over = true
 	Engine.time_scale = 1.0
@@ -1158,6 +1191,7 @@ func _on_gate_expired() -> void:
 func _extract() -> void:
 	if game_over:
 		return
+	extract_sfx.play()
 	game_over = true
 	Engine.time_scale = 1.0
 	gate = null
@@ -1270,9 +1304,30 @@ func _on_enemy_died(pos: Vector2, gem_count: int) -> void:
 		_spawn_gem(pos)
 	if randf() < 0.008:
 		_spawn_pickup(pos)
-	# Hình thái "Hút Hồn": mỗi lần giết hồi 0.5 HP
-	if player.sig_lifedrain_on_kill and is_instance_valid(player):
-		player.heal(0.5)
+	# Hình thái "Nổ Hồn": quái chết phát nổ lan sát thương (có thể dây chuyền)
+	if player.sig_soulburst > 0.0 and is_instance_valid(player):
+		_soulburst(pos)
+
+
+func _soulburst(pos: Vector2) -> void:
+	const RADIUS := 100.0
+	var dmg: float = player.sig_soulburst * player.sig_dmg_mul
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if pos.distance_to(e.global_position) < RADIUS:
+			# Không hiện số sát thương để tránh spam label khi nổ dây chuyền
+			e.take_hit(dmg, false, (e.global_position - pos).normalized() * 60.0)
+	# Vòng tím lan nhanh — rẻ hơn spawn_explosion, đủ nhận diện hiệu ứng
+	var ring := Sprite2D.new()
+	ring.texture = CIRCLE
+	ring.modulate = Color(0.75, 0.5, 1.0, 0.5)
+	ring.scale = Vector2.ONE * (40.0 / CIRCLE.get_size().x)
+	add_child(ring)
+	ring.global_position = pos
+	var tw := ring.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(ring, "scale", Vector2.ONE * (RADIUS * 2.0 / CIRCLE.get_size().x), 0.25)
+	tw.tween_property(ring, "modulate:a", 0.0, 0.25)
+	tw.chain().tween_callback(ring.queue_free)
 
 
 func _spawn_gem(pos: Vector2, value := 1) -> void:
@@ -1298,6 +1353,8 @@ func _spawn_coin(pos: Vector2, value: int) -> void:
 
 
 func _on_coin_collected(value: int) -> void:
+	coin_sfx.pitch_scale = randf_range(0.95, 1.08)
+	coin_sfx.play()
 	run_gold += value
 
 
@@ -1439,6 +1496,11 @@ func spawn_explosion(pos: Vector2, diameter: float, duration := 0.55) -> void:
 
 
 func _on_gem_collected(value: int) -> void:
+	# Nhặt liên tiếp thì pitch cao dần — combo reset sau 0.6s không nhặt gì
+	gem_sfx.pitch_scale = minf(1.0 + _gem_combo * 0.05, 1.7)
+	gem_sfx.play()
+	_gem_combo += 1
+	_gem_combo_t = 0.6
 	xp += value * xp_gain
 	if xp >= xp_needed and not choosing:
 		_show_level_up()
@@ -1581,14 +1643,16 @@ func _skin_char_select() -> void:
 
 
 func _show_level_up() -> void:
+	levelup_sfx.play()
 	choosing = true
 	xp -= xp_needed
 	# Đường cong XP mềm hơn: lên cấp liên tục, "ting ting" đều đặn cả late game
-	xp_needed = int(xp_needed * 1.15) + 5
+	# (1.10+4: Hình thái cấp 20 về tay ở phút ~5 → có ~2 phút tận hưởng build trước final)
+	xp_needed = int(xp_needed * 1.10) + 4
 	level += 1
 	player.heal(20.0)
 
-	# Mốc Đan Chéo 5/10/15/20 chèn Nâng cấp Độc bản; còn lại là 3 thẻ ngẫu nhiên
+	# Mốc Đan Chéo 10/15/20/25 chèn Nâng cấp Độc bản; còn lại là 3 thẻ ngẫu nhiên
 	var cards := _milestone_cards(level)
 	var is_milestone := not cards.is_empty()
 	if not is_milestone:
@@ -1609,10 +1673,10 @@ func _populate_level_panel(is_milestone: bool) -> void:
 	var title := T("levelup_title")
 	if is_milestone:
 		match level:
-			5:  title = T("sig_core_title")
-			10: title = T("sig_enhance_title")
-			15: title = T("sig_form_title")
-			20: title = T("sig_ultimate_title")
+			10: title = T("sig_core_title")
+			15: title = T("sig_enhance_title")
+			20: title = T("sig_form_title")
+			25: title = T("sig_ultimate_title")
 	level_panel.get_node("VBox/Title").text = title
 
 	# Thu hẹp panel theo số thẻ để viền ôm sát nội dung
@@ -1742,6 +1806,7 @@ func _update_char_highlight() -> void:
 func _choose(i: int) -> void:
 	if i >= pending.size():
 		return
+	ui_sfx.play()
 	var fn = pending[i]["fn"]
 	if fn is Callable:
 		fn.call()
@@ -1763,7 +1828,7 @@ func _choose(i: int) -> void:
 func _milestone_cards(lvl: int) -> Array:
 	var cards := []
 	match lvl:
-		5:
+		10:
 			var cores: Array = SIG_CORES.get(player.weapon, [])
 			for cdef in cores:
 				var cid := String(cdef["id"])
@@ -1773,14 +1838,14 @@ func _milestone_cards(lvl: int) -> Array:
 					"col": Color(1.0, 0.78, 0.27),
 					"icon": cdef.get("icon", null),
 				})
-		10:
+		15:
 			cards.append({
 				"label": T("sig_enhance_label"),
 				"fn": func() -> void: _sig_enhance(),
 				"col": Color(1.0, 0.55, 0.3),
 				"icon": preload("res://assets/icons/sig_enhance.svg"),
 			})
-		15:
+		20:
 			for fdef in SIG_FORMS:
 				var fid := String(fdef["id"])
 				cards.append({
@@ -1789,7 +1854,7 @@ func _milestone_cards(lvl: int) -> Array:
 					"col": Color(0.6, 0.45, 0.95),
 					"icon": fdef.get("icon", null),
 				})
-		20:
+		25:
 			cards.append({
 				"label": T("sig_ultimate_label"),
 				"fn": func() -> void: _sig_ultimate(),
@@ -1804,32 +1869,30 @@ func _sig_apply_core(id: String) -> void:
 	match id:
 		"burn":      player.sig_burn = 6.0
 		"pierce":    player.sig_pierce_bonus += 3; player.sig_dmg_mul *= 1.12
-		"aoe":       player.sig_aoe_bonus += 35.0
-		"chain":     player.sig_chain = true
+		"blackhole": player.sig_blackhole = 180.0; player.sig_aoe_bonus += 10.0  # Hố Đen
 		"frenzy":    _frenzy_cd = 5.0  # kích hoạt lần đầu nhanh để thấy ngay
-		"explosive": player.sig_aoe_bonus += 20.0
+		"execute":   player.sig_execute = 0.25; player.sig_dmg_mul *= 1.1  # Xử Tử: <25% máu
 		"wave":      player.sig_blade_wave = true
-		"lifesteal": player.sig_lifesteal = 1.5
+		"berserk":   player.sig_berserk = 1.0; player.sig_dmg_mul *= 1.15  # +15% nền + tối đa +100% khi cạn máu
 
 
 func _sig_enhance() -> void:
-	# Cấp 10: cường hóa chính Lõi đã chọn ở cấp 5
+	# Cấp 15: cường hóa chính Lõi đã chọn ở cấp 10
 	match chosen_core:
 		"burn":      player.sig_burn *= 2.2
 		"pierce":    player.sig_pierce_bonus += 3; player.sig_dmg_mul *= 1.15
-		"aoe":       player.sig_aoe_bonus += 30.0
-		"chain":     player.sig_chain = true; player.sig_aoe_bonus += 30.0
-		"frenzy":    _frenzy_cd = maxf(_frenzy_cd, 1.0); _frenzy_dur = 8.0  # tăng thời lượng lên 8s
-		"explosive": player.sig_aoe_bonus += 15.0; player.sig_dmg_mul *= 1.08
+		"blackhole": player.sig_blackhole += 80.0; player.sig_aoe_bonus += 10.0  # Hố Đen: hút rộng hơn
+		"frenzy":    _frenzy_len = 8.0; _frenzy_cd = minf(_frenzy_cd, 1.0)  # kéo dài 8s + kích hoạt lại ngay
+		"execute":   player.sig_execute = 0.40; player.sig_dmg_mul *= 1.1  # Xử Tử: nâng ngưỡng lên 40%
 		"wave":      player.sig_dmg_mul *= 1.2
-		"lifesteal": player.sig_lifesteal += 1.5; player.sig_dmg_mul *= 1.1
+		"berserk":   player.sig_berserk += 0.6; player.sig_dmg_mul *= 1.1  # Cuồng Đao mạnh hơn
 		_:           player.sig_dmg_mul *= 1.2
 
 
 func _sig_apply_form(id: String) -> void:
 	chosen_form = id
 	match id:
-		"lifedrain":    player.sig_lifedrain_on_kill = true
+		"soulburst":    player.sig_soulburst = 18.0
 		"shock":        player.sig_shock = 1.2
 
 
@@ -1838,8 +1901,8 @@ func _sig_ultimate() -> void:
 	player.sig_dmg_mul *= 1.6
 	player.fire_rate += 0.8
 	_sig_enhance()  # cường hóa Lõi thêm lần nữa
-	if chosen_form == "lifedrain":
-		player.sig_lifedrain_on_kill = true
+	if chosen_form == "soulburst":
+		player.sig_soulburst *= 1.6
 	elif chosen_form == "shock":
 		player.sig_shock = maxf(player.sig_shock, 2.0)
 	_signature_nuke()
@@ -1855,22 +1918,11 @@ func _signature_nuke() -> void:
 	player.shake_amt = 11.0
 
 
-func _signature_kill_blast(pos: Vector2) -> void:
-	# Hình thái "Nổ Chùm": quái chết phát nổ nhỏ (có giới hạn theo khung hình)
-	var dmg: float = 2.0 + player.projectile_damage * 0.2
-	for e in get_tree().get_nodes_in_group("enemies"):
-		if pos.distance_to(e.global_position) < 40.0:
-			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 80.0, Color(1.0, 0.6, 0.3))
-	spawn_explosion(pos, 65.0, 0.25)
-
-
 func _build_pool() -> Array:
 	var pool := []
 	for s in STAT_UPGRADES:
 		if s["fn"] == "_up_max_hp" and randf() > 0.10:
 			continue
-		if s["fn"] == "_up_dmg_boost" and player.sig_dmg_mul >= 1.8:
-			continue  # đã buff đủ mạnh thì ẩn đi
 		pool.append({"label": s["label"][lang], "fn": s["fn"], "icon": s["icon"]})
 	_add_weapon(pool, player.orbital_count, player.orbital_evolved,
 		["Kiếm xoay", "Spinning swords"], "_up_orbital",
@@ -1933,9 +1985,9 @@ func _spawn_familiar() -> void:
 	f.global_position = player.global_position
 
 
-func _art_regen() -> void:
-	owned_artifacts.append("_art_regen")
-	player.regen = 0.5
+func _art_thorns() -> void:
+	owned_artifacts.append("_art_thorns")
+	player.thorns = true
 
 
 func _art_crit() -> void:
@@ -1983,9 +2035,12 @@ func _up_fire_rate() -> void:
 
 
 func _up_projectile() -> void:
-	# "Nhân Bản / Liên Kích": Katana chém bồi; còn lại +1 đạn
+	# "Nhân Bản / Liên Kích": Katana chém bồi; Shotgun +2 viên (đã có sẵn 7 viên,
+	# +1 chỉ là +14% trong khi súng đơn được ×2 — cân lại giá trị thẻ); còn lại +1 đạn
 	if player.weapon == "katana":
 		player.katana_combo += 1
+	elif player.weapon == "shotgun":
+		player.projectile_count += 2
 	else:
 		player.projectile_count += 1
 
@@ -2018,18 +2073,6 @@ func _up_exploit() -> void:
 func _up_armor() -> void:
 	# "Kiên Cường": giảm 20% sát thương nhận (tối đa 75%)
 	player.damage_reduction = minf(player.damage_reduction + 0.2, 0.75)
-
-
-func _up_dmg_boost() -> void:
-	player.sig_dmg_mul *= 1.2
-
-
-func chain_react(pos: Vector2) -> void:
-	# Gọi từ enemy khi crit/overkill hạ gục — nổ nhẹ, có giới hạn theo khung hình
-	if _kill_blast_budget <= 0:
-		return
-	_kill_blast_budget -= 1
-	_signature_kill_blast(pos)
 
 
 func _up_orbital() -> void:
@@ -2114,30 +2157,31 @@ func _frenzy_core_tick(delta: float) -> void:
 	if _frenzy_on:
 		_frenzy_dur -= delta
 		if _frenzy_dur <= 0.0:
-			# Tắt cuồng nộ — khôi phục chỉ số gốc
+			# Tắt cuồng nộ — trừ đúng phần đã cộng thêm, để giữ nguyên
+			# các nâng cấp người chơi mua trong lúc đang cuồng nộ
 			_frenzy_on = false
-			if not _frenzy_backup.is_empty() and is_instance_valid(player):
-				player.speed              = _frenzy_backup["speed"]
-				player.fire_rate          = _frenzy_backup["fire_rate"]
-				player.projectile_damage  = _frenzy_backup["dmg"]
-			_frenzy_backup = {}
-			_frenzy_cd = 30.0
+			_frenzy_dur = 0.0
+			if not _frenzy_add.is_empty() and is_instance_valid(player):
+				player.speed             -= _frenzy_add["speed"]
+				player.fire_rate         -= _frenzy_add["fire_rate"]
+				player.projectile_damage -= _frenzy_add["dmg"]
+			_frenzy_add = {}
+			_frenzy_cd = 17.0
 			_announce(T("core_frenzy_off"), Color(1.0, 0.5, 0.2))
 	else:
 		_frenzy_cd -= delta
 		if _frenzy_cd <= 0.0 and is_instance_valid(player) and player.alive:
-			# Bật cuồng nộ — nhân đôi tất cả chỉ số
+			# Bật cuồng nộ — nhân đôi chỉ số bằng cách cộng thêm đúng giá trị hiện tại
 			_frenzy_on = true
-			var dur := 6.0 if _frenzy_dur == 0.0 else _frenzy_dur
-			_frenzy_dur = dur
-			_frenzy_backup = {
+			_frenzy_dur = _frenzy_len
+			_frenzy_add = {
 				"speed":     player.speed,
 				"fire_rate": player.fire_rate,
 				"dmg":       player.projectile_damage,
 			}
-			player.speed             *= 2.0
-			player.fire_rate         *= 2.0
-			player.projectile_damage *= 2.0
+			player.speed             += _frenzy_add["speed"]
+			player.fire_rate         += _frenzy_add["fire_rate"]
+			player.projectile_damage += _frenzy_add["dmg"]
 			_announce(T("core_frenzy_on"), Color(1.0, 0.25, 0.1), 3.0)
 
 
@@ -2313,6 +2357,7 @@ func _update_map_highlight() -> void:
 func _pick_map(i: int) -> void:
 	if i >= unlocked_maps:
 		return
+	ui_sfx.play()
 	selected_stage = i
 	map_panel.visible = false
 	char_panel.visible = true
@@ -2354,119 +2399,93 @@ func _spawn_dead_pool() -> void:
 
 
 
-const TEX_RAIN_SHEET  := preload("res://assets/vfx/rain_sheet.png")
-const TEX_PUDDLE      := preload("res://assets/vfx/puddle_sheet.png")
-const TEX_RAIN_SPLASH := preload("res://assets/vfx/rain_splash.png")
-const TEX_RAIN_CLOUD1 := preload("res://assets/vfx/rain_cloud1.png")
-const TEX_RAIN_CLOUD2 := preload("res://assets/vfx/rain_cloud2.png")
-const TEX_RAIN_CLOUD3 := preload("res://assets/vfx/rain_cloud3.png")
+# ---------- Mối nguy môi trường: dông sét (Đồng cỏ) & lốc/cát lún (Sa mạc) ----------
 
-func _rain_tick(delta: float) -> void:
-	# Di chuyển và scroll từng patch sương mù nhỏ
-	if (_rain_active or _rain_fading) and not _rain_fog_sprs.is_empty():
-		var vp := get_viewport().get_visible_rect().size
-		for spr in _rain_fog_sprs:
-			if not is_instance_valid(spr):
-				continue
-			# Drift position
-			spr.position += spr.get_meta("vel") * delta
-			# Wrap khi ra ngoài màn hình
-			var hw: float = spr.texture.get_width() * spr.scale.x * 0.5
-			var hh: float = spr.texture.get_height() * spr.scale.y * 0.5
-			if spr.position.x - hw > vp.x:
-				spr.position.x = -hw
-			if spr.position.x + hw < 0.0:
-				spr.position.x = vp.x + hw
-			if spr.position.y - hh > vp.y:
-				spr.position.y = -hh
-			if spr.position.y + hh < 0.0:
-				spr.position.y = vp.y + hh
-			# Scroll texture bên trong patch
-			if spr.modulate.a <= 0.0:
-				continue
-			var scroll: Vector2 = spr.get_meta("scroll", Vector2.ZERO) + spr.get_meta("spd") * delta
-			spr.set_meta("scroll", scroll)
-			(spr.material as ShaderMaterial).set_shader_parameter("u_scroll", scroll)
+const STORM_RADIUS := 90.0  # bán kính vùng sét đánh
 
-	if _rain_active:
-		_rain_dur -= delta
-		if _rain_dur <= 0.0:
-			_stop_rain()
-	elif not _rain_fading:
-		_rain_cd -= delta
-		if _rain_cd <= 0.0:
-			_start_rain()
+func _storm_tick(delta: float) -> void:
+	# Đang trong cơn dông: sét giáng liên tục theo nhịp cho tới khi tan
+	if storm_dur > 0.0:
+		storm_dur -= delta
+		_storm_strike_t -= delta
+		if _storm_strike_t <= 0.0:
+			_storm_strike_t = randf_range(0.7, 1.1)
+			for i in randi_range(2, 3):
+				var pos := player.global_position \
+					+ Vector2.from_angle(randf() * TAU) * randf_range(60.0, 320.0)
+				# Không đánh vào vùng cổng Rút Lui đang mở (đứng channel mà bị ép ra thì ức chế)
+				if is_instance_valid(gate) and gate.global_position.distance_to(pos) < 140.0:
+					continue
+				_lightning_strike(pos)
+		return
+	# Trời quang: đếm ngược tới cơn dông kế tiếp
+	storm_timer -= delta
+	if storm_timer > 0.0:
+		return
+	# Cơn dông mới kéo dài 12-18s; khoảng nghỉ giữa hai cơn ngắn dần về cuối ván
+	storm_dur = randf_range(12.0, 18.0)
+	_storm_strike_t = 0.5
+	storm_timer = randf_range(40.0, 55.0) - minf(time * 0.04, 18.0)
+	_announce(T("wx_storm"), Color(1.0, 0.9, 0.4))
 
 
-func _start_rain() -> void:
-	_rain_active = true
-	_rain_fading = false
-	_rain_dur = randf_range(14.0, 22.0)
-	_rain_cd = randf_range(35.0, 55.0)
+func _lightning_strike(pos: Vector2, warn := 0.9) -> void:
+	# Vòng cảnh báo vàng hiện dần rồi sét giáng — cùng pattern với _elite_blast
+	var ring := Sprite2D.new()
+	ring.texture = CIRCLE
+	ring.modulate = Color(1.0, 0.9, 0.3, 0.0)
+	ring.scale = Vector2.ONE * (STORM_RADIUS * 2.0 / CIRCLE.get_size().x)
+	ring.z_index = -2
+	add_child(ring)
+	ring.global_position = pos
+	var tw := ring.create_tween()
+	tw.tween_property(ring, "modulate:a", 0.4, warn)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(player) and player.alive \
+				and player.global_position.distance_to(pos) < STORM_RADIUS:
+			player.take_damage(25.0)
+		# Sét giật cả quái trong vùng — có thể dụ quái vào vòng sét
+		for e in get_tree().get_nodes_in_group("enemies"):
+			if pos.distance_to(e.global_position) < STORM_RADIUS:
+				e.take_hit(30.0, true, Vector2.ZERO, Color(1.0, 0.95, 0.5))
+		_spawn_strike_fx(pos)
+		ring.queue_free())
+
+
+func _spawn_strike_fx(pos: Vector2) -> void:
+	var f := Sprite2D.new()
+	f.texture = TEX_STRIKE
+	f.hframes = 7
+	f.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	f.z_index = 15
+	f.scale = Vector2.ONE * 1.6
+	add_child(f)
+	f.global_position = pos + Vector2(0, -40.0)
+	var tw := f.create_tween()
+	tw.tween_property(f, "frame", 6, 0.32)
+	tw.tween_callback(f.queue_free)
 	if is_instance_valid(player):
-		_rain_speed_backup = player.speed
-		player.speed *= 0.55
-		_rain_slowing = true
-		_rain_prev_pos = player.global_position
-	var vp := get_viewport().get_visible_rect().size
-	var sh := Shader.new()
-	# Tiling fog + radial soft edge (elip ngang như đám mây)
-	sh.code = ("shader_type canvas_item;\n"
-		+ "uniform vec2 u_scroll = vec2(0.0);\n"
-		+ "uniform float u_tiles = 2.0;\n"
-		+ "void fragment() {\n"
-		+ "\tvec2 tuv = fract(UV * u_tiles + u_scroll);\n"
-		+ "\tvec4 fog = texture(TEXTURE, tuv);\n"
-		+ "\tvec2 d = (UV - vec2(0.5)) * vec2(1.0, 1.9);\n"
-		+ "\tfloat mask = 1.0 - smoothstep(0.32, 0.50, length(d));\n"
-		+ "\tCOLOR = vec4(fog.rgb, fog.a * mask);\n"
-		+ "}")
-	for i in 6:
-		var spr := Sprite2D.new()
-		spr.texture = TEX_FOG_TILE
-		spr.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-		# Kích thước lớn hơn, dẹt ngang như đám mây
-		var sw := randf_range(0.50, 0.85)
-		spr.scale = Vector2(sw * vp.x / 640.0, sw * 0.40 * vp.y / 480.0)
-		spr.position = Vector2(randf() * vp.x, randf() * vp.y)
-		# Tint xám xanh nhẹ
-		spr.modulate = Color(0.78, 0.83, 0.92, 0.0)
-		var sm := ShaderMaterial.new()
-		sm.shader = sh
-		sm.set_shader_parameter("u_tiles", randf_range(1.2, 2.2))
-		spr.material = sm
-		spr.set_meta("spd", Vector2(randf_range(0.02, 0.06), randf_range(-0.01, 0.01)))
-		spr.set_meta("scroll", Vector2.ZERO)
-		spr.set_meta("vel", Vector2(randf_range(15.0, 35.0), randf_range(-6.0, 6.0)))
-		$UI.add_child(spr)
-		$UI.move_child(spr, 0)
-		var tw: Tween = create_tween()
-		tw.tween_interval(float(i) * 0.6)
-		tw.tween_property(spr, "modulate:a", randf_range(0.55, 0.75), randf_range(3.0, 5.0))
-		_rain_fog_sprs.append(spr)
+		player.shake_amt = maxf(player.shake_amt, 2.0)
 
 
-func _stop_rain() -> void:
-	_rain_active = false
-	_rain_fading = true
-	if _rain_slowing and is_instance_valid(player):
-		player.speed = _rain_speed_backup
-		_rain_slowing = false
-	var snap := _rain_fog_sprs.duplicate()
-	for spr in snap:
-		if not is_instance_valid(spr):
-			continue
-		var tw: Tween = create_tween()
-		tw.tween_property(spr, "modulate:a", 0.0, 4.0)
-	var cleanup := create_tween()
-	cleanup.tween_interval(5.0)
-	cleanup.tween_callback(func():
-		_rain_fading = false
-		for spr in snap:
-			if is_instance_valid(spr):
-				spr.queue_free()
-		_rain_fog_sprs.clear()
-	)
+func _desert_hazard_tick(delta: float) -> void:
+	desert_hazard_timer -= delta
+	if desert_hazard_timer > 0.0:
+		return
+	desert_hazard_timer = randf_range(35.0, 50.0)
+	if randf() < 0.5:
+		# Lốc cát tự nhiên: sinh từ xa và đuổi theo (tornado.gd — trước chỉ boss dùng)
+		_on_boss_tornado(player.global_position
+			+ Vector2.from_angle(randf() * TAU) * randf_range(350.0, 500.0))
+	else:
+		# Cụm cát lún chặn đường chạy
+		for i in 2:
+			var q := Node2D.new()
+			q.set_script(QUICKSAND)
+			q.player = player
+			add_child(q)
+			q.global_position = player.global_position \
+				+ Vector2.from_angle(randf() * TAU) * randf_range(120.0, 300.0)
 
 
 func _spawn_chest(pos: Vector2) -> void:
@@ -2492,6 +2511,7 @@ func _spawn_chest(pos: Vector2) -> void:
 
 
 func _open_chest(chest: Area2D) -> void:
+	chest_sfx.play()
 	chest.queue_free()
 	var r := randf()
 	var count := 1
@@ -2545,6 +2565,10 @@ func _build_pause_panel() -> void:
 func _toggle_pause() -> void:
 	if game_over or choosing or char_panel.visible or chest_panel.visible:
 		return
+	# Đang ở menu chọn map / shop: không cho ESC mở pause (tránh unpause khi chưa vào trận)
+	if (map_panel != null and map_panel.visible) or (shop_panel != null and shop_panel.visible):
+		return
+	ui_sfx.play()
 	pause_panel.visible = not pause_panel.visible
 	get_tree().paused = pause_panel.visible
 
@@ -2590,13 +2614,15 @@ func _on_player_died() -> void:
 	if is_instance_valid(gate):
 		gate.queue_free()
 	gate = null
-	# Chết = chỉ giữ 50% Vàng kiếm trong ván; Mảnh Linh Hồn không bao giờ mất
-	var kept_gold := int(run_gold * 0.5)
+	# Chết = chỉ giữ 25% Vàng + 50% Linh Hồn — Rút lui / phá đảo mới giữ trọn 100%
+	# (trước đây souls không mất nên cổng Rút Lui gần như vô nghĩa)
+	var kept_gold := int(run_gold * 0.25)
+	var kept_souls := int(run_souls * 0.5)
 	gold += kept_gold
-	souls += run_souls
+	souls += kept_souls
 	_save_meta()
 	over_label.text = (T("gameover_fmt") % [int(time) / 60, int(time) % 60, kills]) \
-		+ (T("reward_fmt") % [kept_gold, run_souls]) + T("death_penalty")
+		+ (T("reward_fmt") % [kept_gold, kept_souls]) + T("death_penalty")
 	over_label.visible = true
 	get_tree().paused = true  # dừng toàn bộ thế giới khi hiện menu kết thúc
 

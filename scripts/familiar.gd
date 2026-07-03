@@ -188,9 +188,10 @@ func _fire_nova() -> void:
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if boom_pos.distance_to(e.global_position) <= NOVA_RADIUS:
 				var is_crit: bool = randf() < player.crit_chance
-				e.take_hit(NOVA_DAMAGE * (2.0 if is_crit else 1.0), is_crit,
+				# take_hit(dmg, show_dmg, kb, col, crit) — luôn hiện số, cờ crit đúng vị trí
+				e.take_hit(NOVA_DAMAGE * (2.0 if is_crit else 1.0), true,
 					(e.global_position - boom_pos).normalized() * 380.0,
-					COL)
+					COL, is_crit)
 		_spawn_nova_burst(boom_pos)
 	)
 

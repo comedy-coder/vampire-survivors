@@ -17,6 +17,7 @@ const TEX_STRIKE := preload("res://assets/vfx/lightning_strike.png")
 const TEX_STRIKE_VIOLET := preload("res://assets/vfx/lightning_strike_violet.png")
 const SND_BOOM := preload("res://assets/audio/explosion.ogg")
 const SND_ZAP := preload("res://assets/audio/zap.ogg")
+const SND_HURT := preload("res://assets/audio/hurt.wav")
 
 const WEAPONS := {
 	"pistol": {"color": Color(1.0, 0.95, 0.6), "pierce": 1},
@@ -24,8 +25,8 @@ const WEAPONS := {
 		"pierce": 1, "trail": Color(0.5, 1.0, 1.0, 0.45)},
 	"shotgun": {"color": Color(1.0, 0.7, 0.25), "size": 0.13, "speed": 540.0, "life": 0.5,
 		"extra_shots": 6, "scatter": true, "dmg_mul": 0.7, "kb": 350.0, "hit_shake": 1.4},
-	"cannon": {"color": Color(0.85, 0.55, 1.0), "size": 0.3, "speed": 320.0, "aoe": 120.0,
-		"kb": 260.0, "chain": true, "trail": Color(0.85, 0.55, 1.0, 0.35)},
+	"cannon": {"color": Color(0.85, 0.55, 1.0), "size": 0.3, "speed": 320.0, "aoe": 70.0,
+		"kb": 260.0, "dmg_mul": 0.9, "splash_mult": 0.6, "trail": Color(0.85, 0.55, 1.0, 0.35)},
 	"laser": {"color": Color(0.4, 1.0, 0.5), "size": 0.15, "speed": 700.0, "stretch": 3.0,
 		"pierce": 1, "trail": Color(0.4, 1.0, 0.5, 0.4)},
 	"sniper": {"color": Color(1.0, 0.35, 0.3), "size": 0.17, "speed": 780.0, "kb": 320.0,
@@ -40,20 +41,22 @@ var stage_speed_mult := 1.0  # hệ số tốc độ theo vùng (Sa mạc đi tr
 var sig_dmg_mul := 1.0        # nhân sát thương vũ khí chính
 var sig_pierce_bonus := 0     # cộng xuyên
 var sig_aoe_bonus := 0.0      # cộng bán kính nổ
-var sig_chain := false        # đạn nổ dây chuyền
+var sig_blackhole := 0.0      # bán kính hút quái của Lõi Hố Đen (Cannon)
+var sig_blackhole_cd := 5.0   # thời gian hồi chiêu giữa hai lần tạo hố đen (giây)
+var _blackhole_cd := 0.0      # đếm ngược hồi chiêu hố đen
 var sig_burn := 0.0           # đốt cháy (DoT) khi trúng
 var sig_shock := 0.0          # làm chậm khi trúng (giây)
-var sig_explode_on_kill := false  # quái chết phát nổ (đọc bởi game.gd)
-var sig_lifedrain_on_kill := false  # hồi HP khi giết quái
-var sig_lifesteal := 0.0      # Katana hồi máu mỗi đòn trúng
+var sig_soulburst := 0.0      # Hình thái Nổ Hồn: sát thương nổ lan khi quái chết (0 = tắt)
+var sig_execute := 0.0        # Lõi Xử Tử: ngưỡng % máu để hạ gục ngay quái thường (Sniper)
+var sig_berserk := 0.0        # Lõi Cuồng Đao: +% sát thương chém tối đa khi máu cạn (Katana)
 var sig_blade_wave := false   # Katana phóng kiếm khí bay xa
 
 # --- Thẻ Thích Ứng & Cộng Hưởng ---
 var katana_combo := 0         # số nhát "chém bồi" (50% dmg) sau nhát chính
+var katana_held_pivot: Node2D = null  # katana cầm trên tay (chỉ hiện khi weapon == "katana")
 var aoe_mult := 1.0           # nhân bán kính nổ (thẻ Khuếch Đại cho vũ khí nổ)
 var exploit_dmg := 0.0        # +% dmg lên quái đang dính hiệu ứng (Khai Thác Điểm Yếu)
 var damage_reduction := 0.0   # giảm % sát thương nhận vào (Kiên Cường), tối đa 0.75
-var chain_react := false      # Crit/overkill có thể gây nổ dây chuyền (Phản Ứng Dây Chuyền)
 var max_hp := 100.0
 var hp := max_hp
 var fire_rate := 1.5
@@ -61,7 +64,8 @@ var projectile_count := 1
 var projectile_damage := 2.0
 var pierce := 0
 var magnet_range := 80.0
-var regen := 0.0
+var thorns := false       # Bùa gai: trúng đòn phát nổ đẩy lùi quái (hồi 6s)
+var _thorns_cd := 0.0
 var crit_chance := 0.0
 var revive := false
 var fire_timer := 0.0
@@ -101,6 +105,7 @@ var poison_evolved := false
 @onready var shoot_sfx := AudioStreamPlayer.new()
 @onready var boom_sfx := AudioStreamPlayer.new()
 @onready var zap_sfx := AudioStreamPlayer.new()
+@onready var hurt_sfx := AudioStreamPlayer.new()
 
 
 func _ready() -> void:
@@ -115,6 +120,9 @@ func _ready() -> void:
 	zap_sfx.stream = SND_ZAP
 	zap_sfx.volume_db = -8.0
 	add_child(zap_sfx)
+	hurt_sfx.stream = SND_HURT
+	hurt_sfx.volume_db = -6.0
+	add_child(hurt_sfx)
 	poison_ring.texture = TEX_GLOW
 	poison_ring.modulate = Color(0.3, 1.0, 0.3, 0.4)
 	poison_ring.z_index = -5
@@ -148,12 +156,27 @@ func _ready() -> void:
 	hurt_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hurt_layer.add_child(hurt_rect)
 
+	# Katana cầm trên tay: pivot xoay theo hướng nhân vật (sprite.rotation),
+	# lưỡi chĩa về phía trước che khẩu súng có sẵn trong texture.
+	katana_held_pivot = Node2D.new()
+	katana_held_pivot.z_index = 1
+	katana_held_pivot.visible = false
+	add_child(katana_held_pivot)
+	var katana_spr := Sprite2D.new()
+	katana_spr.texture = TEX_SWORD
+	katana_spr.modulate = Color(0.82, 0.88, 0.98)  # ánh thép
+	katana_spr.rotation = PI / 4.0                 # xoay lưỡi (gốc chĩa lên-phải) thành chĩa về trước (+X)
+	katana_spr.scale = Vector2.ONE * (44.0 / TEX_SWORD.get_size().x)
+	katana_spr.position = Vector2(26.0, 5.0)       # đặt vào tay phải, lưỡi thò về trước
+	katana_held_pivot.add_child(katana_spr)
+
 
 func _physics_process(delta: float) -> void:
 	if not alive:
 		return
 
 	slow_timer = maxf(0.0, slow_timer - delta)
+	_blackhole_cd = maxf(0.0, _blackhole_cd - delta)
 	var spd := speed * stage_speed_mult * (0.55 if slow_timer > 0.0 else 1.0)
 	velocity = Input.get_vector("move_left", "move_right", "move_up", "move_down") * spd
 	move_and_slide()
@@ -169,6 +192,14 @@ func _physics_process(delta: float) -> void:
 		sprite.rotation = (aim.global_position - global_position).angle()
 	elif velocity.length_squared() > 0.0:
 		sprite.rotation = velocity.angle()
+
+	# Katana cầm tay: chỉ hiện cho Kiếm khách, xoay theo hướng nhìn
+	if katana_held_pivot != null:
+		var want := weapon == "katana"
+		if katana_held_pivot.visible != want:
+			katana_held_pivot.visible = want
+		if want:
+			katana_held_pivot.rotation = sprite.rotation
 
 	fire_timer -= delta
 	if fire_timer <= 0.0:
@@ -226,8 +257,7 @@ func _physics_process(delta: float) -> void:
 				# Làm chậm nhẹ ở mọi cấp; tiến hóa thì chậm mạnh hơn (kiểm soát đám đông)
 				e.slow_timer = maxf(e.slow_timer, 0.35 if poison_evolved else 0.18)
 
-	if regen > 0.0:
-		heal(regen * delta)
+	_thorns_cd = maxf(0.0, _thorns_cd - delta)
 
 	if shake_amt > 0.0:
 		cam.offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * shake_amt
@@ -282,7 +312,14 @@ func _fire() -> void:
 		p.trail_color = cfg.get("trail", Color(0, 0, 0, 0))
 		p.life = float(cfg.get("life", 2.0))
 		p.hit_shake = float(cfg.get("hit_shake", 0.0))
-		p.chain_explode = bool(cfg.get("chain", false)) or sig_chain
+		p.execute_threshold = sig_execute
+		p.aoe_splash_mult = float(cfg.get("splash_mult", 1.0))
+		# Hố Đen có hồi chiêu: chỉ 1 viên tạo xoáy mỗi chu kỳ, các phát khác nổ thường
+		if sig_blackhole > 0.0 and _blackhole_cd <= 0.0:
+			p.blackhole = sig_blackhole
+			_blackhole_cd = sig_blackhole_cd
+		else:
+			p.blackhole = 0.0
 		p.no_shake = weapon == "cannon"
 		p.burn = sig_burn
 		p.shock = sig_shock
@@ -299,23 +336,25 @@ var katana_dmg_mul := 3.2  # bù cho tầm gần
 func _slash_hit(power: float) -> void:
 	var facing := sprite.rotation  # sprite đã tự xoay về quái gần nhất
 	var base := projectile_damage * katana_dmg_mul * sig_dmg_mul * power
+	# Lõi Cuồng Đao: máu càng thấp, sát thương chém càng cao (tối đa +sig_berserk khi cạn máu)
+	if sig_berserk > 0.0 and max_hp > 0.0:
+		base *= 1.0 + sig_berserk * (1.0 - hp / max_hp)
 	var hit_any := false
 	for e in get_tree().get_nodes_in_group("enemies"):
 		var to_e: Vector2 = e.global_position - global_position
 		if to_e.length() <= katana_reach and absf(angle_difference(facing, to_e.angle())) <= katana_arc:
 			var is_crit: bool = randf() < crit_chance
 			var dmg := base * (2.0 if is_crit else 1.0)
-			# Khai Thác Điểm Yếu: +dmg lên quái đang bị đốt/làm chậm
-			if exploit_dmg > 0.0 and (e.slow_timer > 0.0 or e.frost_dot_timer > 0.0):
+			# Khai Thác Điểm Yếu: +dmg lên quái dính hiệu ứng (chậm/đốt/đóng băng/độc)
+			if exploit_dmg > 0.0 and (e.slow_timer > 0.0 or e.frost_dot_timer > 0.0
+					or e.burn_timer > 0.0 or e.freeze_timer > 0.0 or e.poison_timer > 0.0):
 				dmg *= (1.0 + exploit_dmg)
 			e.take_hit(dmg, true, to_e.normalized() * 260.0, Color(0.8, 1.0, 1.0), is_crit)
 			if sig_burn > 0.0:
-				e.frost_dot = sig_burn
-				e.frost_dot_timer = 3.0
+				e.burn_dot = sig_burn
+				e.burn_timer = 3.0
 			if sig_shock > 0.0:
 				e.slow_timer = maxf(e.slow_timer, sig_shock)
-			if sig_lifesteal > 0.0:
-				heal(sig_lifesteal)
 			hit_any = true
 	if hit_any:
 		shake_amt = maxf(shake_amt, 2.5)
@@ -654,6 +693,9 @@ func take_damage(amount: float) -> void:
 		return
 	amount *= (1.0 - damage_reduction)  # thẻ Kiên Cường
 	hp -= amount
+	if thorns and _thorns_cd <= 0.0:
+		_thorns_cd = 6.0
+		_thorns_burst()
 	if hurt_fx_t <= 0.0:
 		hurt_fx_t = 0.35
 		_hurt_fx()
@@ -675,6 +717,9 @@ func take_damage(amount: float) -> void:
 
 
 func _hurt_fx() -> void:
+	# hurt_fx_t (0.35s) sẵn có làm cooldown chống spam tiếng trúng đòn
+	hurt_sfx.pitch_scale = randf_range(0.9, 1.1)
+	hurt_sfx.play()
 	shake_amt = maxf(shake_amt, 5.0)
 	sprite.modulate = Color(1.0, 0.3, 0.3)
 	var tw := sprite.create_tween()
@@ -686,6 +731,20 @@ func _hurt_fx() -> void:
 
 func heal(amount: float) -> void:
 	hp = minf(hp + amount, max_hp)
+
+
+func _thorns_burst() -> void:
+	# Bùa gai: nổ gai quanh người — đẩy lùi mạnh + sát thương (ăn theo buff % sát thương)
+	for e in get_tree().get_nodes_in_group("enemies"):
+		var away: Vector2 = e.global_position - global_position
+		if away.length() < 200.0:
+			e.take_hit(20.0 * sig_dmg_mul, true, away.normalized() * 420.0, Color(0.55, 1.0, 0.55))
+	var g := get_parent()
+	if g != null and g.has_method("spawn_explosion"):
+		g.spawn_explosion(global_position, 400.0, 0.45)
+	boom_sfx.pitch_scale = 0.85
+	boom_sfx.play()
+	shake_amt = maxf(shake_amt, 5.0)
 
 
 func add_orbital() -> void:
