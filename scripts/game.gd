@@ -136,7 +136,6 @@ const DMG_NAMES := {
 	"boomerang": ["Boomerang", "Boomerang"],
 	"frost": ["Tia băng", "Frost bolt"],
 	"familiar": ["Linh thú", "Familiar"],
-	"soulburst": ["Nổ Hồn", "Soul Burst"],
 	"lava": ["Dung nham", "Magma"],
 	"thorns": ["Bùa gai", "Thorn charm"],
 	"bomb": ["Bom nhặt", "Bomb pickup"],
@@ -360,7 +359,7 @@ const SIG_CORES := {
 	],
 }
 const SIG_FORMS := [
-	{"id": "soulburst",    "name": ["HÌNH THÁI: Nổ Hồn", "FORM: Soul Burst"],   "desc": ["Quái chết phát nổ, lan sát thương sang quái xung quanh", "Slain enemies explode, damaging nearby foes"], "icon": preload("res://assets/icons/form_explode.svg")},
+	{"id": "tempest",      "name": ["HÌNH THÁI: Cuồng Phong", "FORM: Tempest"], "desc": ["Mỗi kill: +4% tốc & sát thương (dồn 5 lần, rơi sau 3s không giết)", "Each kill: +4% speed & damage (stacks 5, fades after 3s)"], "icon": preload("res://assets/icons/up_speed.svg")},
 	{"id": "shock",        "name": ["HÌNH THÁI: Tê Liệt", "FORM: Shock"],        "desc": ["Đòn đánh làm chậm quái trúng", "Hits slow enemies"],        "icon": preload("res://assets/icons/form_shock.svg")},
 ]
 
@@ -1506,31 +1505,9 @@ func _on_enemy_died(pos: Vector2, gem_count: int) -> void:
 		_spawn_gem(pos)
 	if randf() < 0.008:
 		_spawn_pickup(pos)
-	# Hình thái "Nổ Hồn": quái chết phát nổ lan sát thương (có thể dây chuyền)
-	if player.sig_soulburst > 0.0 and is_instance_valid(player):
-		_soulburst(pos)
-
-
-func _soulburst(pos: Vector2) -> void:
-	const RADIUS := 100.0
-	var dmg: float = player.sig_soulburst * player.sig_dmg_mul
-	for e in get_tree().get_nodes_in_group("enemies"):
-		if pos.distance_to(e.global_position) < RADIUS:
-			# Không hiện số sát thương để tránh spam label khi nổ dây chuyền
-			e.take_hit(dmg, false, (e.global_position - pos).normalized() * 60.0)
-			report_damage("soulburst", dmg)
-	# Vòng tím lan nhanh — rẻ hơn spawn_explosion, đủ nhận diện hiệu ứng
-	var ring := Sprite2D.new()
-	ring.texture = CIRCLE
-	ring.modulate = Color(0.75, 0.5, 1.0, 0.5)
-	ring.scale = Vector2.ONE * (40.0 / CIRCLE.get_size().x)
-	add_child(ring)
-	ring.global_position = pos
-	var tw := ring.create_tween()
-	tw.set_parallel(true)
-	tw.tween_property(ring, "scale", Vector2.ONE * (RADIUS * 2.0 / CIRCLE.get_size().x), 0.25)
-	tw.tween_property(ring, "modulate:a", 0.0, 0.25)
-	tw.chain().tween_callback(ring.queue_free)
+	# Hình thái "Cuồng Phong": mỗi kill cộng dồn tốc chạy + sát thương
+	if player.sig_tempest and is_instance_valid(player):
+		player.add_tempest()
 
 
 func _spawn_gem(pos: Vector2, value := 1) -> void:
@@ -2112,7 +2089,7 @@ func _sig_enhance() -> void:
 func _sig_apply_form(id: String) -> void:
 	chosen_form = id
 	match id:
-		"soulburst":    player.sig_soulburst = 18.0
+		"tempest":      player.sig_tempest = true
 		"shock":        player.sig_shock = 1.2
 
 
@@ -2121,8 +2098,8 @@ func _sig_ultimate() -> void:
 	player.sig_dmg_mul *= 1.6
 	player.fire_rate += 0.8
 	_sig_enhance()  # cường hóa Lõi thêm lần nữa
-	if chosen_form == "soulburst":
-		player.sig_soulburst *= 1.6
+	if chosen_form == "tempest":
+		player.tempest_max = 8  # Thức tỉnh: dồn tới 8 lần = +32% tốc & sát thương
 	elif chosen_form == "shock":
 		player.sig_shock = maxf(player.sig_shock, 2.0)
 	_signature_nuke()

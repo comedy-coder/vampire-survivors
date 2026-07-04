@@ -49,7 +49,11 @@ var sig_lava := 0.0           # Lõi Dung Nham: sát thương/giây của vũng 
 var sig_lava_dur := 3.0       # thời gian vũng nham tồn tại (4s sau Cường hóa)
 var sig_burn := 0.0           # đốt cháy (DoT) khi trúng
 var sig_shock := 0.0          # làm chậm khi trúng (giây)
-var sig_soulburst := 0.0      # Hình thái Nổ Hồn: sát thương nổ lan khi quái chết (0 = tắt)
+var sig_tempest := false      # Hình thái Cuồng Phong: giết cộng dồn tốc + sát thương
+var tempest_stacks := 0       # số stack hiện tại (mỗi stack +4% tốc & sát thương)
+var tempest_max := 5          # trần stack (8 sau Thức tỉnh)
+var tempest_t := 0.0          # rơi toàn bộ stack sau 3s không giết
+var tempest_aura: Sprite2D
 var sig_execute := 0.0        # Lõi Xử Tử: ngưỡng % máu để hạ gục ngay quái thường (Sniper)
 var sig_berserk := 0.0        # Lõi Cuồng Đao: +% sát thương chém tối đa khi máu cạn (Katana)
 var sig_blade_wave := false   # Katana phóng kiếm khí bay xa
@@ -127,6 +131,13 @@ func _ready() -> void:
 	hurt_sfx.stream = SND_HURT
 	hurt_sfx.volume_db = -6.0
 	add_child(hurt_sfx)
+	# Aura Cuồng Phong: sáng dần theo số stack đang giữ
+	tempest_aura = Sprite2D.new()
+	tempest_aura.texture = TEX_GLOW
+	tempest_aura.modulate = Color(0.5, 0.95, 1.0, 0.0)
+	tempest_aura.scale = Vector2.ONE * (72.0 / TEX_GLOW.get_size().x)
+	tempest_aura.z_index = -1
+	add_child(tempest_aura)
 	poison_ring.texture = TEX_GLOW
 	poison_ring.modulate = Color(0.3, 1.0, 0.3, 0.4)
 	poison_ring.z_index = -5
@@ -182,7 +193,14 @@ func _physics_process(delta: float) -> void:
 	slow_timer = maxf(0.0, slow_timer - delta)
 	root_timer = maxf(0.0, root_timer - delta)
 	_blackhole_cd = maxf(0.0, _blackhole_cd - delta)
-	var spd := speed * stage_speed_mult * (0.55 if slow_timer > 0.0 else 1.0)
+	# Cuồng Phong: đếm lùi thời hạn stack + cập nhật aura
+	if sig_tempest:
+		if tempest_stacks > 0:
+			tempest_t -= delta
+			if tempest_t <= 0.0:
+				tempest_stacks = 0
+		tempest_aura.modulate.a = 0.11 * tempest_stacks
+	var spd := speed * stage_speed_mult * (0.55 if slow_timer > 0.0 else 1.0) * tempest_mul()
 	if root_timer > 0.0:
 		spd = 0.0  # bị trói chân: đứng im hoàn toàn, chỉ còn xoay người bắn
 	var iv := Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -314,7 +332,7 @@ func _fire() -> void:
 		p.dir = d
 		var is_crit := randf() < crit_chance
 		p.crit = is_crit
-		p.damage = projectile_damage * float(cfg.get("dmg_mul", 1.0)) * (2.0 if is_crit else 1.0) * sig_dmg_mul
+		p.damage = projectile_damage * float(cfg.get("dmg_mul", 1.0)) * (2.0 if is_crit else 1.0) * sig_dmg_mul * tempest_mul()
 		p.pierce = pierce + int(cfg.get("pierce", 0)) + sig_pierce_bonus
 		p.speed = float(cfg.get("speed", 420.0)) * randf_range(0.95, 1.05)
 		p.color = wcolor
@@ -350,7 +368,7 @@ var katana_dmg_mul := 3.2  # bù cho tầm gần
 
 func _slash_hit(power: float) -> void:
 	var facing := sprite.rotation  # sprite đã tự xoay về quái gần nhất
-	var base := projectile_damage * katana_dmg_mul * sig_dmg_mul * power
+	var base := projectile_damage * katana_dmg_mul * sig_dmg_mul * tempest_mul() * power
 	# Lõi Cuồng Đao: máu càng thấp, sát thương chém càng cao (tối đa +sig_berserk khi cạn máu)
 	if sig_berserk > 0.0 and max_hp > 0.0:
 		base *= 1.0 + sig_berserk * (1.0 - hp / max_hp)
@@ -393,7 +411,7 @@ func _slash() -> void:
 		var p := Area2D.new()
 		p.set_script(PROJECTILE)
 		p.dir = Vector2.from_angle(facing)
-		p.damage = projectile_damage * 2.0 * sig_dmg_mul
+		p.damage = projectile_damage * 2.0 * sig_dmg_mul * tempest_mul()
 		p.speed = 560.0
 		p.pierce = 4
 		p.color = Color(0.7, 1.0, 1.0)
@@ -751,6 +769,16 @@ func _hurt_fx() -> void:
 
 func heal(amount: float) -> void:
 	hp = minf(hp + amount, max_hp)
+
+
+func tempest_mul() -> float:
+	# Hệ số Cuồng Phong: +4% tốc & sát thương mỗi stack
+	return 1.0 + 0.04 * tempest_stacks
+
+
+func add_tempest() -> void:
+	tempest_stacks = mini(tempest_stacks + 1, tempest_max)
+	tempest_t = 3.0
 
 
 func report_dmg(src: String, amount: float) -> void:

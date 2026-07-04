@@ -103,7 +103,7 @@ paused (UI panels, music, SFX players for menu sounds, ESC/nav listeners) set
   (`virtual_joystick.gd`) is instantiated in `_ready` and read by `player.gd` when
   touched; keyboard/mouse unaffected.
 - **Leveling**: `xp_needed = int(xp_needed * 1.10) + 4`. Milestones: **10** = weapon
-  Core, **15** = Core enhance, **20** = Form (`soulburst` / `shock`), **25** =
+  Core, **15** = Core enhance, **20** = Form (`tempest` / `shock`), **25** =
   Ultimate. Expected timing: core ~1:00, enhance ~2:45, form ~5:00, ultimate ~8:00
   (pre-final only with the XP artifact).
 - **Cores** (`SIG_CORES`): shotgun `burn`/`pierce`, cannon `blackhole`/`lava`,
@@ -111,9 +111,10 @@ paused (UI panels, music, SFX players for menu sounds, ESC/nav listeners) set
   core (`lava`) makes every cannon blast leave a burning pool — 12 dmg/s (×1.6 and
   4s after enhance), radius = blast AoE, ticked by `game._lava_tick` over the
   `lava_pools` array; pools damage enemies without damage labels.
-- **Forms**: `soulburst` — kills explode (18 dmg × `sig_dmg_mul`, 100 px, chains, no
-  damage numbers to avoid label spam); `shock` — hits slow enemies (and thus enable
-  the Exploit card).
+- **Forms**: `tempest` — each kill grants a stack of +4% speed & damage (max 5,
+  8 after Ultimate; all stacks drop after 3s without a kill; cyan aura scales with
+  stacks; `player.tempest_mul()` applied to main-weapon/slash/blade-wave damage and
+  move speed); `shock` — hits slow enemies (and thus enable the Exploit card).
 
 ## Map hazards (replaces the removed rain system)
 
@@ -227,7 +228,7 @@ confirm).
 | Death penalty | keep 25% gold, 50% souls | `game.gd _on_player_died` |
 | Souls per boss | mini 2, final 8–12 | `game.gd _spawn_boss` |
 | Magma core | 12 dmg/s pool, 3s (×1.6, 4s enhanced) | `game.gd spawn_lava_pool` |
-| Soul Burst form | 18 dmg × dmg-mult, 100 px | `game.gd _soulburst` |
+| Tempest form | +4%/stack, max 5 (8 ult.), 3s decay | `player.gd tempest_mul` |
 | Thorn Charm | 20 dmg × dmg-mult, 200 px, 6s CD | `player.gd _thorns_burst` |
 | Storm strike | 90 px, 25 dmg player / 30 enemy | `game.gd _lightning_strike` |
 | Familiar nova | 38 dmg, 100 px, 8s charge | `familiar.gd` |
