@@ -25,6 +25,7 @@ const MUSIC_MENU   := preload("res://assets/audio/music_menu.wav")
 const MUSIC_GAME   := preload("res://assets/audio/music_game.wav")
 const MUSIC_DESERT := preload("res://assets/audio/music_desert.mp3")
 const MUSIC_DEAD   := preload("res://assets/audio/music_dead.mp3")
+const MUSIC_BOSS   := preload("res://assets/audio/music_boss.wav")
 const SND_DIE := preload("res://assets/audio/enemy_die.ogg")
 const SND_GEM     := preload("res://assets/audio/gem.wav")
 const SND_COIN    := preload("res://assets/audio/coin.wav")
@@ -402,6 +403,7 @@ var lang_btns: Array = []
 
 var ground := Sprite2D.new()
 var music := AudioStreamPlayer.new()
+var _music_lp: AudioEffectLowPassFilter  # filter trên bus Music — nhạc động theo pha trận
 var die_sfx := AudioStreamPlayer.new()
 var gem_sfx := AudioStreamPlayer.new()
 var coin_sfx := AudioStreamPlayer.new()
@@ -437,9 +439,21 @@ func _ready() -> void:
 	announce_font = FontVariation.new()
 	announce_font.base_font = FONT_ANNOUNCE
 	announce_font.variation_opentype = {"wght": 800}
-	for st: AudioStreamWAV in [MUSIC_MENU, MUSIC_GAME]:
+	for st: AudioStreamWAV in [MUSIC_MENU, MUSIC_GAME, MUSIC_BOSS]:
 		st.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		st.loop_end = st.data.size() / 4
+	# Bus "Music" riêng + low-pass filter: nhạc "bí" lúc mở màn rồi bung dần theo pha trận.
+	# Bus tồn tại xuyên các lần reload scene nên chỉ tạo một lần.
+	var bidx := AudioServer.get_bus_index("Music")
+	if bidx == -1:
+		bidx = AudioServer.bus_count
+		AudioServer.add_bus(bidx)
+		AudioServer.set_bus_name(bidx, "Music")
+		AudioServer.set_bus_send(bidx, "Master")
+		AudioServer.add_bus_effect(bidx, AudioEffectLowPassFilter.new())
+	_music_lp = AudioServer.get_bus_effect(bidx, 0) as AudioEffectLowPassFilter
+	_music_lp.cutoff_hz = 20500.0  # menu: nhạc mở hoàn toàn
+	music.bus = "Music"
 	music.stream = MUSIC_MENU
 	music.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(music)
@@ -924,6 +938,7 @@ func _process(delta: float) -> void:
 
 	_update_arrows()
 	_update_gate_arrow()
+	_music_tick(delta)
 
 	hp_bar.max_value = player.max_hp
 	hp_bar.value = player.hp
@@ -948,10 +963,22 @@ func _setup_stage() -> void:
 	_announce(T("stage_fmt") % cfg["name"][lang], Color(0.55, 1.0, 0.75))
 	# Sa mạc: đi trên cát chậm hơn (0.88 — đủ cảm nhận nhưng không bị melee bắt kịp)
 	player.stage_speed_mult = 0.88 if stage == 1 else 1.0
+	# Vào trận: nhạc bắt đầu ở trạng thái "bí" rồi _music_tick mở dần theo thời gian
+	_music_lp.cutoff_hz = 1400.0
+	music.pitch_scale = 1.0
 	match stage:
 		0: _change_music(MUSIC_GAME)
 		1: _change_music(MUSIC_DESERT)
 		2: _change_music(MUSIC_DEAD)
+
+
+func _music_tick(delta: float) -> void:
+	# Pha mở màn: nhạc bị "bí" qua low-pass, mở dần và bung full ở phút ~2.5
+	var target_cut: float = remap(clampf(time, 0.0, 150.0), 0.0, 150.0, 1400.0, 20500.0)
+	_music_lp.cutoff_hz = move_toward(_music_lp.cutoff_hz, target_cut, 9000.0 * delta)
+	# Mini-boss còn sống (trên track thường) → dồn nhịp bằng pitch +6%
+	var target_pitch := 1.06 if (not bosses.is_empty() and music.stream != MUSIC_BOSS) else 1.0
+	music.pitch_scale = move_toward(music.pitch_scale, target_pitch, 0.15 * delta)
 
 
 func _change_music(new_stream: AudioStream) -> void:
@@ -1111,6 +1138,7 @@ func _spawn_boss(is_final: bool) -> void:
 	if is_final:
 		# Boss cuối to và mạnh hơn hẳn; Vùng đất chết nhân đôi thông số (Zombie Chúa)
 		announce = T("final_announce")
+		_change_music(MUSIC_BOSS)  # nhạc riêng cho 90 giây cao trào cuối
 		e.sprite_scale *= 1.35
 		e.vis_scale *= 1.35 if e.vis_scale > 0.0 else 1.0
 		# ×2.0/2.4: bù việc người chơi lên cấp nhanh hơn (đường cong 1.10) và build đã hoàn thiện
@@ -1142,6 +1170,8 @@ func _win_run() -> void:
 	won = true
 	game_over = true
 	Engine.time_scale = 1.0
+	music.pitch_scale = 1.0
+	_music_lp.cutoff_hz = 20500.0
 	# Phá đảo = giữ 100% Vàng và Mảnh Linh Hồn kiếm được
 	gold += run_gold
 	souls += run_souls
@@ -1188,6 +1218,8 @@ func _extract() -> void:
 	extract_sfx.play()
 	game_over = true
 	Engine.time_scale = 1.0
+	music.pitch_scale = 1.0
+	_music_lp.cutoff_hz = 20500.0
 	gate = null
 	# Rút lui an toàn = giữ 100% Vàng + Mảnh Linh Hồn (không mở khóa map)
 	gold += run_gold
@@ -2704,6 +2736,8 @@ func _update_arrows() -> void:
 func _on_player_died() -> void:
 	game_over = true
 	Engine.time_scale = 1.0  # đảm bảo không kẹt khựng khung hình khi chết
+	music.pitch_scale = 1.0
+	_music_lp.cutoff_hz = 20500.0
 	if is_instance_valid(gate):
 		gate.queue_free()
 	gate = null
