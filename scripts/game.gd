@@ -174,7 +174,7 @@ const CHARACTERS := [
 		"name": ["Kiếm khách", "Ronin"],
 		"desc": ["Katana — chém góc rộng cận chiến, mạo hiểm cao", "Katana — wide melee arc, high risk"],
 		"weapon_short": ["Katana • cận chiến rủi ro", "Katana • risky melee"],
-		"hp": 115.0, "speed": 255.0, "fire": 1.7, "dmg": 3.6, "count": 1, "pierce": 0,
+		"hp": 115.0, "speed": 255.0, "fire": 1.55, "dmg": 3.6, "count": 1, "pierce": 0,
 		"weapon": "katana", "unlock": "ronin",
 	},
 	{
@@ -182,7 +182,7 @@ const CHARACTERS := [
 		"name": ["Đặc vụ", "Agent"],
 		"desc": ["SMG — bắn cực nhanh, mỏng manh", "SMG — blazing fire rate, fragile"],
 		"weapon_short": ["SMG • tốc độ bắn", "SMG • fire rate"],
-		"hp": 85.0, "speed": 240.0, "fire": 3.4, "dmg": 1.4, "count": 1, "pierce": 0,
+		"hp": 85.0, "speed": 240.0, "fire": 3.0, "dmg": 1.2, "count": 1, "pierce": 0,
 		"weapon": "smg", "unlock": "agent",
 	},
 ]

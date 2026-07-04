@@ -364,7 +364,7 @@ func _fire() -> void:
 # Katana: chém một cung rộng trước mặt (cận chiến, mạo hiểm cao vì phải áp sát)
 var katana_arc := 1.25     # nửa góc cung (~72° → tổng ~144°)
 var katana_reach := 135.0  # tầm với của nhát chém
-var katana_dmg_mul := 3.2  # bù cho tầm gần
+var katana_dmg_mul := 2.8  # bù cho tầm gần (hạ từ 3.2 — chém cả đám không giới hạn mục tiêu nên scale rất mạnh)
 
 func _slash_hit(power: float) -> void:
 	var facing := sprite.rotation  # sprite đã tự xoay về quái gần nhất
