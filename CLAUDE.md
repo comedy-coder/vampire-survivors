@@ -42,7 +42,7 @@ The scene tree is **deliberately minimal**. `scenes/main.tscn` contains only:
 Main (Node2D, game.gd)
 ├── Player (CharacterBody2D, player.gd) — Sprite2D, Camera2D, CollisionShape2D
 └── UI (CanvasLayer) — HP/XP bars, labels, level-up panel, character-select panel,
-                       settings panel, buttons (built-in nodes only)
+					   settings panel, buttons (built-in nodes only)
 ```
 
 **Almost every other game object is created in code, not as a `.tscn`.** Enemies,
@@ -110,10 +110,12 @@ paused (UI panels, music, SFX players for menu sounds, ESC/nav listeners) set
 
 ## Map hazards (replaces the removed rain system)
 
-- **Meadow — thunderstorms** (`_storm_tick`): first storm at 1:00; each storm lasts
-  12–18s with 2–3 telegraphed strikes every 0.7–1.1s (0.9s warning ring, 90 px
-  radius, 25 dmg to player, **30 dmg to enemies** — strikes can be baited). Storms
-  avoid the extraction gate. Calm period 40–55s shrinks toward the end of the run.
+- **Meadow — thunderstorms** (`_storm_tick`): lone random strikes every 4–8s from the
+  very start of the run; full storms (12–18s, 2–3 strikes every 0.7–1.1s) from ~1:00
+  with 40–55s calm between them (shrinking late). Each strike: 0.9s warning ring,
+  90 px radius, 25 dmg to player, **30 dmg to enemies** — strikes can be baited.
+  The extraction gate area is never targeted. No banner announcements — weather just
+  happens.
 - **Desert**: `stage_speed_mult = 0.88` on sand + every 35–50s an ambient tornado
   (chases, escapable) or a pair of quicksand pools (`_desert_hazard_tick`).
 - **Dead Zone**: poison pools every 4.5–7s (12 dps), enemies +40% HP, melee enemies

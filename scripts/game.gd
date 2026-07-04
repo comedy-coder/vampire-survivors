@@ -86,7 +86,6 @@ const I18N := {
 	"boss_dead":  ["CHÚA TỂ XƯƠNG!", "BONE LORD!"],
 	"core_frenzy_on":  ["⚡ CUỒNG NỘ! Mọi chỉ số ×2!", "⚡ FRENZY! All stats ×2!"],
 	"core_frenzy_off": ["Cuồng nộ tan dần...", "Frenzy fades..."],
-	"wx_storm": ["⛈ DÔNG SÉT! Né các vòng cảnh báo!", "⛈ THUNDERSTORM! Dodge the warning circles!"],
 	"ev_ring": ["BẦY QUÁI VÂY QUANH!", "SURROUNDED!"],
 	"ev_flood": ["QUÁI TRÀN TỚI!", "MONSTER FLOOD!"],
 	"ev_frenzy": ["PHÚT CUỒNG NỘ!", "FRENZY!"],
@@ -385,6 +384,7 @@ var _deaths_this_frame := 0  # đếm quái chết trong khung hình để bắt
 var storm_timer := 60.0          # Đồng cỏ: đếm ngược tới cơn dông kế tiếp (cơn đầu phút 1)
 var storm_dur := 0.0             # thời gian còn lại của cơn dông đang diễn ra
 var _storm_strike_t := 0.0       # nhịp giáng sét trong cơn dông
+var _calm_strike_t := 3.0        # sét lẻ đánh random ngoài cơn dông — có từ đầu ván
 var desert_hazard_timer := 90.0  # Sa mạc: lốc cát / cát lún tự nhiên từ phút 1.5
 var shop_panel: PanelContainer
 var shop_title: Label
@@ -898,8 +898,7 @@ func _process(delta: float) -> void:
 	# Mối nguy môi trường theo map: dông sét / lốc cát / vũng độc
 	match selected_stage:
 		0:
-			if time > 60.0:
-				_storm_tick(delta)
+			_storm_tick(delta)
 		1:
 			_desert_hazard_tick(delta)
 		2:
@@ -2417,7 +2416,15 @@ func _storm_tick(delta: float) -> void:
 					continue
 				_lightning_strike(pos)
 		return
-	# Trời quang: đếm ngược tới cơn dông kế tiếp
+	# Trời quang: vẫn có sét lẻ đánh random từ đầu ván, thưa hơn nhiều so với trong cơn
+	_calm_strike_t -= delta
+	if _calm_strike_t <= 0.0:
+		_calm_strike_t = randf_range(4.0, 8.0)
+		var pos := player.global_position \
+			+ Vector2.from_angle(randf() * TAU) * randf_range(80.0, 340.0)
+		if not (is_instance_valid(gate) and gate.global_position.distance_to(pos) < 140.0):
+			_lightning_strike(pos)
+	# Đếm ngược tới cơn dông kế tiếp (không banner — thời tiết tự diễn ra)
 	storm_timer -= delta
 	if storm_timer > 0.0:
 		return
@@ -2425,7 +2432,6 @@ func _storm_tick(delta: float) -> void:
 	storm_dur = randf_range(12.0, 18.0)
 	_storm_strike_t = 0.5
 	storm_timer = randf_range(40.0, 55.0) - minf(time * 0.04, 18.0)
-	_announce(T("wx_storm"), Color(1.0, 0.9, 0.4))
 
 
 func _lightning_strike(pos: Vector2, warn := 0.9) -> void:
