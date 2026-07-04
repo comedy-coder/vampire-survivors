@@ -2707,6 +2707,18 @@ func _build_debug_panel() -> void:
 	btn_familiar.add_theme_font_size_override("font_size", 18)
 	btn_familiar.pressed.connect(_spawn_familiar)
 
+	var btn_unlock := Button.new()
+	btn_unlock.text = "Mở hết"
+	btn_unlock.add_theme_font_size_override("font_size", 18)
+	btn_unlock.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6))
+	btn_unlock.pressed.connect(func() -> void:
+		# Mở cả 3 map + Kiếm khách để test, lưu ngay vào save
+		unlocked_maps = 3
+		ronin_unlocked = true
+		_save_meta()
+		_apply_lang()  # làm mới nhãn map + thẻ nhân vật (bỏ chữ 🔒)
+	)
+
 	var btn_reset := Button.new()
 	btn_reset.text = "Reset NV"
 	btn_reset.add_theme_font_size_override("font_size", 18)
@@ -2730,6 +2742,7 @@ func _build_debug_panel() -> void:
 		_refresh_shop())
 
 	hbox.add_child(btn_familiar)
+	hbox.add_child(btn_unlock)
 	hbox.add_child(btn_reset)
 	panel.add_child(hbox)
 	$UI.add_child(panel)
