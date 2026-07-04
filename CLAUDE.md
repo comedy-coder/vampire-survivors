@@ -99,11 +99,11 @@ paused (UI panels, music, SFX players for menu sounds, ESC/nav listeners) set
   Core, **15** = Core enhance, **20** = Form (`soulburst` / `shock`), **25** =
   Ultimate. Expected timing: core ~1:00, enhance ~2:45, form ~5:00, ultimate ~8:00
   (pre-final only with the XP artifact).
-- **Cores** (`SIG_CORES`): shotgun `burn`/`pierce`, cannon `blackhole`/`frenzy`,
-  sniper `pierce`/`execute`, katana `wave`/`berserk` (+15% base damage). The Frenzy
-  core is **additive**: it adds the current stat values on activation and subtracts
-  the same amounts on expiry (so upgrades bought mid-frenzy survive); 6s (8s enhanced)
-  every 17s, driven by `_frenzy_len`/`_frenzy_add`.
+- **Cores** (`SIG_CORES`): shotgun `burn`/`pierce`, cannon `blackhole`/`lava`,
+  sniper `pierce`/`execute`, katana `wave`/`berserk` (+15% base damage). The Magma
+  core (`lava`) makes every cannon blast leave a burning pool — 12 dmg/s (×1.6 and
+  4s after enhance), radius = blast AoE, ticked by `game._lava_tick` over the
+  `lava_pools` array; pools damage enemies without damage labels.
 - **Forms**: `soulburst` — kills explode (18 dmg × `sig_dmg_mul`, 100 px, chains, no
   damage numbers to avoid label spam); `shock` — hits slow enemies (and thus enable
   the Exploit card).
@@ -193,7 +193,7 @@ confirm).
 | Pickup drop rate | 0.8%; heal/magnet/bomb 10/45/45 | `game.gd` |
 | Death penalty | keep 25% gold, 50% souls | `game.gd _on_player_died` |
 | Souls per boss | mini 2, final 8–12 | `game.gd _spawn_boss` |
-| Frenzy core | ×2 stats, 6s (8s enhanced) / 17s CD | `game.gd _frenzy_core_tick` |
+| Magma core | 12 dmg/s pool, 3s (×1.6, 4s enhanced) | `game.gd spawn_lava_pool` |
 | Soul Burst form | 18 dmg × dmg-mult, 100 px | `game.gd _soulburst` |
 | Thorn Charm | 20 dmg × dmg-mult, 200 px, 6s CD | `player.gd _thorns_burst` |
 | Storm strike | 90 px, 25 dmg player / 30 enemy | `game.gd _lightning_strike` |

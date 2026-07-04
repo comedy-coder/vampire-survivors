@@ -44,6 +44,8 @@ var sig_aoe_bonus := 0.0      # cộng bán kính nổ
 var sig_blackhole := 0.0      # bán kính hút quái của Lõi Hố Đen (Cannon)
 var sig_blackhole_cd := 5.0   # thời gian hồi chiêu giữa hai lần tạo hố đen (giây)
 var _blackhole_cd := 0.0      # đếm ngược hồi chiêu hố đen
+var sig_lava := 0.0           # Lõi Dung Nham: sát thương/giây của vũng nham (0 = tắt)
+var sig_lava_dur := 3.0       # thời gian vũng nham tồn tại (4s sau Cường hóa)
 var sig_burn := 0.0           # đốt cháy (DoT) khi trúng
 var sig_shock := 0.0          # làm chậm khi trúng (giây)
 var sig_soulburst := 0.0      # Hình thái Nổ Hồn: sát thương nổ lan khi quái chết (0 = tắt)
@@ -321,6 +323,8 @@ func _fire() -> void:
 		else:
 			p.blackhole = 0.0
 		p.no_shake = weapon == "cannon"
+		p.lava = sig_lava
+		p.lava_dur = sig_lava_dur
 		p.burn = sig_burn
 		p.shock = sig_shock
 		p.exploit = exploit_dmg

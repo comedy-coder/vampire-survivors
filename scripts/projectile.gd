@@ -25,6 +25,8 @@ var aoe_splash_mult := 1.0  # hệ số sát thương nổ lan tới quái KHÔN
 var blackhole := 0.0        # Lõi Hố Đen: bán kính hút quái khi đạn pháo chạm (0 = tắt)
 var _bh_t := 0.0            # thời gian hố đen còn lại trước khi phát nổ
 var no_shake := false       # không rung màn hình khi nổ (pháo)
+var lava := 0.0           # Lõi Dung Nham: dmg/s của vũng nham để lại sau vụ nổ (0 = tắt)
+var lava_dur := 3.0       # thời gian vũng nham tồn tại
 var burn := 0.0           # signature: đốt cháy (DoT) khi trúng
 var shock := 0.0          # signature: làm chậm (giây) khi trúng
 var exploit := 0.0        # Khai Thác Điểm Yếu: +% dmg lên quái đang dính hiệu ứng
@@ -219,6 +221,9 @@ func _on_area_entered(area: Area2D) -> void:
 		if parent != null and parent.has_method("spawn_explosion"):
 			var expl_diam := aoe * (1.0 if no_shake else 2.0)
 			parent.spawn_explosion(global_position, expl_diam, 0.4)
+		# Lõi Dung Nham: vụ nổ để lại vũng nham thiêu đốt tại chỗ
+		if lava > 0.0 and parent != null and parent.has_method("spawn_lava_pool"):
+			parent.spawn_lava_pool(global_position, lava, maxf(aoe, 60.0), lava_dur)
 		if not no_shake and parent != null and parent.has_method("boom_shake"):
 			parent.boom_shake(clampf(aoe / 36.0, 1.5, 4.5))
 		queue_free()

@@ -87,8 +87,6 @@ const I18N := {
 	"win_unlock": ["\nĐã mở khóa: %s", "\nUnlocked: %s"],
 	"boss_desert": ["HUNG THẦN SA MẠC!", "DESERT FIEND!"],
 	"boss_dead":  ["CHÚA TỂ XƯƠNG!", "BONE LORD!"],
-	"core_frenzy_on":  ["⚡ CUỒNG NỘ! Mọi chỉ số ×2!", "⚡ FRENZY! All stats ×2!"],
-	"core_frenzy_off": ["Cuồng nộ tan dần...", "Frenzy fades..."],
 	"ev_ring": ["BẦY QUÁI VÂY QUANH!", "SURROUNDED!"],
 	"ev_flood": ["QUÁI TRÀN TỚI!", "MONSTER FLOOD!"],
 	"ev_frenzy": ["PHÚT CUỒNG NỘ!", "FRENZY!"],
@@ -306,7 +304,7 @@ const SIG_CORES := {
 	],
 	"cannon": [
 		{"id": "blackhole", "name": ["LÕI: Hố Đen", "CORE: Black Hole"], "desc": ["Đạn pháo tạo xoáy hút quái dồn về tâm rồi phát nổ gom", "Shells form a vortex that pulls enemies in, then detonate"], "icon": preload("res://assets/icons/core_aoe.svg")},
-		{"id": "frenzy", "name": ["LÕI: CUỒNG NỘ", "CORE: FRENZY"], "desc": ["Mỗi 17s: 6 giây tất cả chỉ số ×2", "Every 17s: 6 sec all stats ×2"], "icon": preload("res://assets/icons/core_chain.svg")},
+		{"id": "lava", "name": ["LÕI: Dung Nham", "CORE: Magma"], "desc": ["Mỗi vụ nổ để lại vũng dung nham thiêu đốt quái trong 3s", "Each blast leaves a magma pool that burns enemies for 3s"], "icon": preload("res://assets/icons/core_fire.svg")},
 	],
 	"sniper": [
 		{"id": "pierce",    "name": ["LÕI: Xuyên Giáp", "CORE: Armor Pierce"],    "desc": ["Xuyên +3 mục tiêu, sát thương lớn", "Pierce +3, big damage"],              "icon": preload("res://assets/icons/core_pierce.svg")},
@@ -338,11 +336,7 @@ var _char_sel := 0  # nhân vật đang được chọn bằng bàn phím (0..5,
 var _map_sel := 0  # map đang được chọn bằng bàn phím (0..2)
 var _card_count := 3  # số thẻ đang hiện ở màn lên cấp (1..3)
 var chosen_core := ""  # id Lõi đã chọn ở cấp 10 (Phase 4b)
-var _frenzy_cd := 0.0          # đếm ngược đến lần cuồng nộ tiếp theo
-var _frenzy_dur := 0.0         # thời gian còn lại của đợt cuồng nộ
-var _frenzy_on := false        # đang trong trạng thái cuồng nộ
-var _frenzy_len := 6.0         # thời lượng mỗi đợt cuồng nộ (8s sau Cường hóa cấp 15)
-var _frenzy_add := {}          # phần chỉ số đã cộng thêm, trừ lại khi tắt cuồng nộ
+var lava_pools: Array = []  # Lõi Dung Nham: mỗi phần tử {node, pos, radius, dps, t}
 var chosen_form := ""  # id Hình thái đã chọn ở cấp 15
 # --- Phase 1: chọn map + mở khóa + nhịp boss ---
 var selected_stage := 0     # map đã chọn cho ván hiện tại (cố định cả ván)
@@ -910,9 +904,9 @@ func _process(delta: float) -> void:
 		2:
 			_dead_pool_tick(delta)
 
-	# Lõi Cuồng nộ: chu kỳ x2 chỉ số
-	if chosen_core == "frenzy":
-		_frenzy_core_tick(delta)
+	# Lõi Dung Nham: tick các vũng nham đang cháy
+	if not lava_pools.is_empty():
+		_lava_tick(delta)
 
 	event_timer -= delta
 	if event_timer <= 0.0:
@@ -1874,7 +1868,7 @@ func _sig_apply_core(id: String) -> void:
 		"burn":      player.sig_burn = 6.0
 		"pierce":    player.sig_pierce_bonus += 3; player.sig_dmg_mul *= 1.12
 		"blackhole": player.sig_blackhole = 180.0; player.sig_aoe_bonus += 10.0  # Hố Đen
-		"frenzy":    _frenzy_cd = 5.0  # kích hoạt lần đầu nhanh để thấy ngay
+		"lava":      player.sig_lava = 12.0  # Dung Nham: sát thương/giây trong vũng
 		"execute":   player.sig_execute = 0.25; player.sig_dmg_mul *= 1.1  # Xử Tử: <25% máu
 		"wave":      player.sig_blade_wave = true
 		"berserk":   player.sig_berserk = 1.0; player.sig_dmg_mul *= 1.15  # +15% nền + tối đa +100% khi cạn máu
@@ -1886,7 +1880,7 @@ func _sig_enhance() -> void:
 		"burn":      player.sig_burn *= 2.2
 		"pierce":    player.sig_pierce_bonus += 3; player.sig_dmg_mul *= 1.15
 		"blackhole": player.sig_blackhole += 80.0; player.sig_aoe_bonus += 10.0  # Hố Đen: hút rộng hơn
-		"frenzy":    _frenzy_len = 8.0; _frenzy_cd = minf(_frenzy_cd, 1.0)  # kéo dài 8s + kích hoạt lại ngay
+		"lava":      player.sig_lava *= 1.6; player.sig_lava_dur = 4.0  # nham nóng hơn, cháy lâu hơn
 		"execute":   player.sig_execute = 0.40; player.sig_dmg_mul *= 1.1  # Xử Tử: nâng ngưỡng lên 40%
 		"wave":      player.sig_dmg_mul *= 1.2
 		"berserk":   player.sig_berserk += 0.6; player.sig_dmg_mul *= 1.1  # Cuồng Đao mạnh hơn
@@ -2157,36 +2151,54 @@ func _event_frenzy() -> void:
 			e.set_meta("fz", true)
 
 
-func _frenzy_core_tick(delta: float) -> void:
-	if _frenzy_on:
-		_frenzy_dur -= delta
-		if _frenzy_dur <= 0.0:
-			# Tắt cuồng nộ — trừ đúng phần đã cộng thêm, để giữ nguyên
-			# các nâng cấp người chơi mua trong lúc đang cuồng nộ
-			_frenzy_on = false
-			_frenzy_dur = 0.0
-			if not _frenzy_add.is_empty() and is_instance_valid(player):
-				player.speed             -= _frenzy_add["speed"]
-				player.fire_rate         -= _frenzy_add["fire_rate"]
-				player.projectile_damage -= _frenzy_add["dmg"]
-			_frenzy_add = {}
-			_frenzy_cd = 17.0
-			_announce(T("core_frenzy_off"), Color(1.0, 0.5, 0.2))
-	else:
-		_frenzy_cd -= delta
-		if _frenzy_cd <= 0.0 and is_instance_valid(player) and player.alive:
-			# Bật cuồng nộ — nhân đôi chỉ số bằng cách cộng thêm đúng giá trị hiện tại
-			_frenzy_on = true
-			_frenzy_dur = _frenzy_len
-			_frenzy_add = {
-				"speed":     player.speed,
-				"fire_rate": player.fire_rate,
-				"dmg":       player.projectile_damage,
-			}
-			player.speed             += _frenzy_add["speed"]
-			player.fire_rate         += _frenzy_add["fire_rate"]
-			player.projectile_damage += _frenzy_add["dmg"]
-			_announce(T("core_frenzy_on"), Color(1.0, 0.25, 0.1), 3.0)
+# ---------- Lõi Dung Nham: vũng nham thiêu đốt quái ----------
+
+func spawn_lava_pool(pos: Vector2, dps: float, radius: float, dur: float) -> void:
+	# Đạn pháo (projectile.gd) gọi hàm này tại điểm nổ khi người chơi có Lõi Dung Nham
+	var holder := Node2D.new()
+	holder.z_index = -6
+	var glow := Sprite2D.new()
+	glow.texture = TEX_GLOW
+	glow.modulate = Color(1.0, 0.45, 0.1, 0.4)
+	glow.scale = Vector2.ONE * (radius * 2.6 / TEX_GLOW.get_size().x)
+	holder.add_child(glow)
+	var base := Sprite2D.new()
+	base.texture = CIRCLE
+	base.modulate = Color(0.9, 0.28, 0.05, 0.55)
+	base.scale = Vector2.ONE * (radius * 2.0 / CIRCLE.get_size().x)
+	holder.add_child(base)
+	var core_spr := Sprite2D.new()
+	core_spr.texture = CIRCLE
+	core_spr.modulate = Color(1.0, 0.72, 0.18, 0.6)
+	core_spr.scale = Vector2.ONE * (radius * 1.2 / CIRCLE.get_size().x)
+	holder.add_child(core_spr)
+	add_child(holder)
+	holder.global_position = pos
+	holder.modulate.a = 0.0
+	holder.create_tween().tween_property(holder, "modulate:a", 1.0, 0.15)
+	lava_pools.append({"node": holder, "pos": pos, "radius": radius, "dps": dps, "t": dur})
+
+
+func _lava_tick(delta: float) -> void:
+	for idx in range(lava_pools.size() - 1, -1, -1):
+		var p: Dictionary = lava_pools[idx]
+		p["t"] -= delta
+		var holder: Node2D = p["node"]
+		if p["t"] <= 0.0:
+			if is_instance_valid(holder):
+				var tw := holder.create_tween()
+				tw.tween_property(holder, "modulate:a", 0.0, 0.3)
+				tw.tween_callback(holder.queue_free)
+			lava_pools.remove_at(idx)
+			continue
+		if is_instance_valid(holder):
+			# Lõi giữa phập phồng như nham đang sôi
+			holder.get_child(2).scale = Vector2.ONE \
+				* (p["radius"] * (1.2 + 0.15 * sin(p["t"] * 7.0)) / CIRCLE.get_size().x)
+		# Thiêu đốt quái đứng trong vũng (không hiện số để tránh spam label)
+		for e in get_tree().get_nodes_in_group("enemies"):
+			if p["pos"].distance_to(e.global_position) < p["radius"]:
+				e.take_hit(p["dps"] * delta)
 
 
 func _announce(text: String, color := Color(1.0, 0.9, 0.3), shake := 0.0) -> void:
