@@ -110,16 +110,20 @@ paused (UI panels, music, SFX players for menu sounds, ESC/nav listeners) set
 
 ## Map hazards (replaces the removed rain system)
 
-- **Meadow — thunderstorms** (`_storm_tick`): lone random strikes every 4–8s from the
-  very start of the run; full storms (12–18s, 2–3 strikes every 0.7–1.1s) from ~1:00
-  with 40–55s calm between them (shrinking late). Each strike: 0.9s warning ring,
-  90 px radius, 25 dmg to player, **30 dmg to enemies** — strikes can be baited.
-  The extraction gate area is never targeted. No banner announcements — weather just
-  happens.
-- **Desert**: `stage_speed_mult = 0.88` on sand + every 35–50s an ambient tornado
-  (chases, escapable) or a pair of quicksand pools (`_desert_hazard_tick`).
-- **Dead Zone**: poison pools every 4.5–7s (12 dps), enemies +40% HP, melee enemies
-  **revive once** at 45% HP.
+All three maps share ONE cadence (`_hazard_tick`): a lone hazard every **4–8s** from
+the very start of the run, plus full storms (**12–18s**, one burst every **0.7–1.1s**)
+from ~1:00 with 40–55s calm between them (shrinking late). Payloads differ per map
+(`_hazard_single` / `_hazard_burst`); the extraction gate area is never targeted and
+there are no banner announcements — weather just happens.
+
+- **Meadow — thunderstorms**: single strike (calm) / 2–3 staggered strikes (storm).
+  Each strike: 0.9s warning ring, 90 px, 25 dmg to player, **30 dmg to enemies** —
+  strikes can be baited. Distinct thunder SFX + golden bolt/spark/scorch VFX.
+- **Desert — sandstorms**: quicksand pool (calm) / quicksand per burst with 15%
+  tornado instead (storm). Plus `stage_speed_mult = 0.88` on sand.
+- **Dead Zone — toxic eruptions**: poison pool 8s (calm) / pool with shortened 4–6s
+  life per burst (storm), 12 dps to the player (`_dead_pool_damage_tick`). Enemies
+  +40% HP and melee enemies **revive once** at 45% HP.
 
 ## Artifacts (`ARTIFACTS`, one-time)
 

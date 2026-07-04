@@ -348,8 +348,7 @@ var won := false            # đã phá đảo (giết Final boss) chưa
 var map_panel: PanelContainer
 var map_title: Label
 var map_btns: Array = []
-var dead_pool_timer := 5.0   # đếm giờ sinh vũng độc ở Vùng đất chết
-var dead_pools: Array = []   # mỗi phần tử: {node, pos, radius, t}
+var dead_pools: Array = []   # vũng độc Vùng đất chết: {node, pos, radius, t}
 var gate: Node2D = null      # Cổng thoát hiểm đang mở (nếu có)
 var gate_arrow: Polygon2D = null  # mũi tên chỉ hướng tới cổng khi ngoài màn hình
 var decor_cells := {}
@@ -378,11 +377,12 @@ var _hitstop_cd := 0.0     # hồi chiêu hit-stop để không khựng liên t�
 var _boom_shake_cd := 0.0  # hồi chiêu rung màn hình để tránh rung liên tục
 var _deaths_this_frame := 0  # đếm quái chết trong khung hình để bắt "AoE diệt 3+"
 # Mối nguy môi trường theo map (thay hệ thống mưa cũ — thử thách chủ động, né được)
-var storm_timer := 60.0          # Đồng cỏ: đếm ngược tới cơn dông kế tiếp (cơn đầu phút 1)
-var storm_dur := 0.0             # thời gian còn lại của cơn dông đang diễn ra
-var _storm_strike_t := 0.0       # nhịp giáng sét trong cơn dông
-var _calm_strike_t := 3.0        # sét lẻ đánh random ngoài cơn dông — có từ đầu ván
-var desert_hazard_timer := 90.0  # Sa mạc: lốc cát / cát lún tự nhiên từ phút 1.5
+# Nhịp mối-nguy chung cho CẢ 3 map (dông sét / bão cát / phun độc):
+# hiệu ứng lẻ mỗi 4-8s từ đầu ván; cơn bão 12-18s mỗi 40-55s (ngắn dần cuối ván)
+var storm_timer := 60.0          # đếm ngược tới cơn bão kế tiếp (cơn đầu phút 1)
+var storm_dur := 0.0             # thời gian còn lại của cơn bão đang diễn ra
+var _storm_strike_t := 0.0       # nhịp sinh hiệu ứng trong cơn bão (0.7-1.1s)
+var _calm_strike_t := 3.0        # hiệu ứng lẻ ngoài cơn bão — có từ đầu ván
 var shop_panel: PanelContainer
 var shop_title: Label
 var shop_gold_label: Label
@@ -895,14 +895,10 @@ func _process(delta: float) -> void:
 		final_spawned = true
 		_spawn_boss(true)
 
-	# Mối nguy môi trường theo map: dông sét / lốc cát / vũng độc
-	match selected_stage:
-		0:
-			_storm_tick(delta)
-		1:
-			_desert_hazard_tick(delta)
-		2:
-			_dead_pool_tick(delta)
+	# Mối nguy môi trường: cả 3 map chung nhịp "lẻ tẻ + cơn bão" (payload khác nhau)
+	_hazard_tick(delta)
+	if not dead_pools.is_empty():
+		_dead_pool_damage_tick(delta)
 
 	# Lõi Dung Nham: tick các vũng nham đang cháy
 	if not lava_pools.is_empty():
@@ -2381,11 +2377,8 @@ func _pick_map(i: int) -> void:
 	_update_char_highlight()
 
 
-func _dead_pool_tick(delta: float) -> void:
-	dead_pool_timer -= delta
-	if dead_pool_timer <= 0.0:
-		dead_pool_timer = randf_range(4.5, 7.0)
-		_spawn_dead_pool()
+func _dead_pool_damage_tick(delta: float) -> void:
+	# Chỉ xử lý sát thương + vòng đời vũng độc; việc SINH vũng do _hazard_single/_burst
 	for idx in range(dead_pools.size() - 1, -1, -1):
 		var p: Dictionary = dead_pools[idx]
 		p["t"] -= delta
@@ -2398,9 +2391,11 @@ func _dead_pool_tick(delta: float) -> void:
 			player.take_damage(12.0 * delta)
 
 
-func _spawn_dead_pool() -> void:
+func _spawn_dead_pool(dur := 8.0) -> void:
 	var radius := randf_range(70.0, 110.0)
-	var pos := player.global_position + Vector2.from_angle(randf() * TAU) * randf_range(140.0, 340.0)
+	var pos := _hazard_pos(140.0, 340.0)
+	if _near_gate(pos):
+		return
 	var spr := Sprite2D.new()
 	spr.texture = CIRCLE
 	spr.modulate = Color(0.35, 0.9, 0.4, 0.0)
@@ -2410,7 +2405,7 @@ func _spawn_dead_pool() -> void:
 	spr.global_position = pos
 	var tw := spr.create_tween()
 	tw.tween_property(spr, "modulate:a", 0.45, 0.5)
-	dead_pools.append({"node": spr, "pos": pos, "radius": radius, "t": 8.0})
+	dead_pools.append({"node": spr, "pos": pos, "radius": radius, "t": dur})
 
 
 
@@ -2419,38 +2414,83 @@ func _spawn_dead_pool() -> void:
 
 const STORM_RADIUS := 90.0  # bán kính vùng sét đánh
 
-func _storm_tick(delta: float) -> void:
-	# Đang trong cơn dông: sét giáng liên tục theo nhịp cho tới khi tan
+func _hazard_tick(delta: float) -> void:
+	# Nhịp chung cho cả 3 map — chỉ payload khác nhau (_hazard_single/_hazard_burst)
 	if storm_dur > 0.0:
+		# Đang trong cơn bão: sinh hiệu ứng liên tục theo nhịp cho tới khi tan
 		storm_dur -= delta
 		_storm_strike_t -= delta
 		if _storm_strike_t <= 0.0:
 			_storm_strike_t = randf_range(0.7, 1.1)
-			for i in randi_range(2, 3):
-				var pos := player.global_position \
-					+ Vector2.from_angle(randf() * TAU) * randf_range(60.0, 320.0)
-				# Không đánh vào vùng cổng Rút Lui đang mở (đứng channel mà bị ép ra thì ức chế)
-				if is_instance_valid(gate) and gate.global_position.distance_to(pos) < 140.0:
-					continue
-				# Lệch nhịp nhẹ để các tia (và tiếng sấm) không giáng cùng một khung hình
-				_lightning_strike(pos, 0.9 + 0.08 * i)
+			_hazard_burst()
 		return
-	# Trời quang: vẫn có sét lẻ đánh random từ đầu ván, thưa hơn nhiều so với trong cơn
+	# Ngoài cơn: vẫn có hiệu ứng lẻ random từ đầu ván, thưa hơn nhiều
 	_calm_strike_t -= delta
 	if _calm_strike_t <= 0.0:
 		_calm_strike_t = randf_range(4.0, 8.0)
-		var pos := player.global_position \
-			+ Vector2.from_angle(randf() * TAU) * randf_range(80.0, 340.0)
-		if not (is_instance_valid(gate) and gate.global_position.distance_to(pos) < 140.0):
-			_lightning_strike(pos)
-	# Đếm ngược tới cơn dông kế tiếp (không banner — thời tiết tự diễn ra)
+		_hazard_single()
+	# Đếm ngược tới cơn bão kế tiếp (không banner — thời tiết tự diễn ra)
 	storm_timer -= delta
 	if storm_timer > 0.0:
 		return
-	# Cơn dông mới kéo dài 12-18s; khoảng nghỉ giữa hai cơn ngắn dần về cuối ván
+	# Cơn bão mới kéo dài 12-18s; khoảng nghỉ giữa hai cơn ngắn dần về cuối ván
 	storm_dur = randf_range(12.0, 18.0)
 	_storm_strike_t = 0.5
 	storm_timer = randf_range(40.0, 55.0) - minf(time * 0.04, 18.0)
+
+
+func _hazard_single() -> void:
+	# Hiệu ứng lẻ ngoài cơn bão — mỗi map một kiểu
+	match selected_stage:
+		0:
+			var pos := _hazard_pos(80.0, 340.0)
+			if not _near_gate(pos):
+				_lightning_strike(pos)
+		1:
+			_spawn_quicksand(_hazard_pos(120.0, 320.0))
+		2:
+			_spawn_dead_pool()
+
+
+func _hazard_burst() -> void:
+	# Một nhịp trong cơn bão — mỗi map một kiểu
+	match selected_stage:
+		0:
+			# Dông sét: 2-3 tia, lệch nhịp để không giáng cùng khung hình
+			for i in randi_range(2, 3):
+				var pos := _hazard_pos(60.0, 320.0)
+				if _near_gate(pos):
+					continue
+				_lightning_strike(pos, 0.9 + 0.08 * i)
+		1:
+			# Bão cát: cát lún rải liên tục, thi thoảng cuộn thành lốc
+			if randf() < 0.15:
+				_on_boss_tornado(player.global_position
+					+ Vector2.from_angle(randf() * TAU) * randf_range(350.0, 500.0))
+			else:
+				_spawn_quicksand(_hazard_pos(90.0, 320.0))
+		2:
+			# Đất chết "phun độc": vũng sinh trong cơn tan nhanh hơn để không bít kín màn
+			_spawn_dead_pool(randf_range(4.0, 6.0))
+
+
+func _hazard_pos(dmin: float, dmax: float) -> Vector2:
+	return player.global_position + Vector2.from_angle(randf() * TAU) * randf_range(dmin, dmax)
+
+
+func _near_gate(pos: Vector2) -> bool:
+	# Không đặt mối nguy vào vùng cổng Rút Lui đang mở (đứng channel mà bị ép ra thì ức chế)
+	return is_instance_valid(gate) and gate.global_position.distance_to(pos) < 140.0
+
+
+func _spawn_quicksand(pos: Vector2) -> void:
+	if _near_gate(pos):
+		return
+	var q := Node2D.new()
+	q.set_script(QUICKSAND)
+	q.player = player
+	add_child(q)
+	q.global_position = pos
 
 
 func _lightning_strike(pos: Vector2, warn := 0.9) -> void:
@@ -2539,26 +2579,6 @@ func _spawn_strike_fx(pos: Vector2) -> void:
 	ctw.tween_callback(scorch.queue_free)
 	if is_instance_valid(player):
 		player.shake_amt = maxf(player.shake_amt, 2.0)
-
-
-func _desert_hazard_tick(delta: float) -> void:
-	desert_hazard_timer -= delta
-	if desert_hazard_timer > 0.0:
-		return
-	desert_hazard_timer = randf_range(35.0, 50.0)
-	if randf() < 0.5:
-		# Lốc cát tự nhiên: sinh từ xa và đuổi theo (tornado.gd — trước chỉ boss dùng)
-		_on_boss_tornado(player.global_position
-			+ Vector2.from_angle(randf() * TAU) * randf_range(350.0, 500.0))
-	else:
-		# Cụm cát lún chặn đường chạy
-		for i in 2:
-			var q := Node2D.new()
-			q.set_script(QUICKSAND)
-			q.player = player
-			add_child(q)
-			q.global_position = player.global_position \
-				+ Vector2.from_angle(randf() * TAU) * randf_range(120.0, 300.0)
 
 
 func _spawn_chest(pos: Vector2) -> void:
