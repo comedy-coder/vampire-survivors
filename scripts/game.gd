@@ -31,6 +31,7 @@ const SND_LEVELUP := preload("res://assets/audio/levelup.wav")
 const SND_CHEST   := preload("res://assets/audio/chest.wav")
 const SND_EXTRACT := preload("res://assets/audio/extract.wav")
 const SND_BOSS    := preload("res://assets/audio/boss.wav")
+const SND_THUNDER := preload("res://assets/audio/thunder.wav")
 const FONT_ANNOUNCE := preload("res://assets/fonts/Baloo2.ttf")
 const CIRCLE := preload("res://assets/circle.svg")
 const TEX_UI_PANEL := preload("res://assets/ui/ui_panel.png")
@@ -413,6 +414,7 @@ var levelup_sfx := AudioStreamPlayer.new()
 var chest_sfx := AudioStreamPlayer.new()
 var extract_sfx := AudioStreamPlayer.new()
 var boss_sfx := AudioStreamPlayer.new()
+var thunder_sfx := AudioStreamPlayer.new()  # sấm cho sét thời tiết — khác tiếng zap của skill
 var _gem_combo := 0      # số gem nhặt liên tiếp — pitch tăng dần "tính tính tính"
 var _gem_combo_t := 0.0
 var announce_font: FontVariation
@@ -451,7 +453,8 @@ func _ready() -> void:
 	# SFX phần thưởng + UI: PROCESS_MODE_ALWAYS để kêu được cả khi game pause (menu, lên cấp)
 	for cfg: Array in [[gem_sfx, SND_GEM, 4], [coin_sfx, SND_COIN, 3], [ui_sfx, SND_UI, 2],
 			[levelup_sfx, SND_LEVELUP, 1], [chest_sfx, SND_CHEST, 1],
-			[extract_sfx, SND_EXTRACT, 1], [boss_sfx, SND_BOSS, 1]]:
+			[extract_sfx, SND_EXTRACT, 1], [boss_sfx, SND_BOSS, 1],
+			[thunder_sfx, SND_THUNDER, 3]]:
 		var sp: AudioStreamPlayer = cfg[0]
 		sp.stream = cfg[1]
 		sp.max_polyphony = cfg[2]
@@ -838,6 +841,7 @@ func _set_sfx_vol(v: float) -> void:
 	chest_sfx.volume_db = db
 	extract_sfx.volume_db = db
 	boss_sfx.volume_db = db
+	thunder_sfx.volume_db = db - 5.0  # sấm kêu dày trong cơn dông nên để nhỏ bớt
 
 
 func _pick_char(i: int) -> void:
@@ -2414,7 +2418,8 @@ func _storm_tick(delta: float) -> void:
 				# Không đánh vào vùng cổng Rút Lui đang mở (đứng channel mà bị ép ra thì ức chế)
 				if is_instance_valid(gate) and gate.global_position.distance_to(pos) < 140.0:
 					continue
-				_lightning_strike(pos)
+				# Lệch nhịp nhẹ để các tia (và tiếng sấm) không giáng cùng một khung hình
+				_lightning_strike(pos, 0.9 + 0.08 * i)
 		return
 	# Trời quang: vẫn có sét lẻ đánh random từ đầu ván, thưa hơn nhiều so với trong cơn
 	_calm_strike_t -= delta
@@ -2458,6 +2463,8 @@ func _lightning_strike(pos: Vector2, warn := 0.9) -> void:
 
 
 func _spawn_strike_fx(pos: Vector2) -> void:
+	thunder_sfx.pitch_scale = randf_range(0.85, 1.2)
+	thunder_sfx.play()
 	var f := Sprite2D.new()
 	f.texture = TEX_STRIKE
 	f.hframes = 7
