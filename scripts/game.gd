@@ -15,6 +15,8 @@ const ICON_PICK_MAGNET := preload("res://assets/icons/art_magnet.svg")
 const ICON_PICK_BOMB := preload("res://assets/icons/w_grenade.svg")
 
 const TEX_STRIKE := preload("res://assets/vfx/lightning_strike.png")
+const TEX_GLOW := preload("res://assets/vfx/glow.png")
+const TEX_SPARK := preload("res://assets/vfx/spark.png")
 const TEX_ZOMBIE := preload("res://assets/characters/zombie.png")
 const TEX_HITMAN := preload("res://assets/characters/hitman.png")
 const TEX_ROBOT := preload("res://assets/characters/robot.png")
@@ -2465,17 +2467,64 @@ func _lightning_strike(pos: Vector2, warn := 0.9) -> void:
 func _spawn_strike_fx(pos: Vector2) -> void:
 	thunder_sfx.pitch_scale = randf_range(0.85, 1.2)
 	thunder_sfx.play()
+	# Tia sét trời: cao hơn hẳn và ánh vàng ấm — phân biệt với sét trắng/tím của skill
 	var f := Sprite2D.new()
 	f.texture = TEX_STRIKE
 	f.hframes = 7
 	f.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	f.z_index = 15
-	f.scale = Vector2.ONE * 1.6
+	f.scale = Vector2(2.0, 2.6)
+	f.flip_h = randf() < 0.5
+	f.modulate = Color(1.35, 1.25, 0.75)
 	add_child(f)
-	f.global_position = pos + Vector2(0, -40.0)
+	f.global_position = pos + Vector2(0, -52.0)
 	var tw := f.create_tween()
 	tw.tween_property(f, "frame", 6, 0.32)
 	tw.tween_callback(f.queue_free)
+	# Lóe sáng bùng ra tại điểm chạm đất
+	var glow := Sprite2D.new()
+	glow.texture = TEX_GLOW
+	glow.modulate = Color(1.0, 0.95, 0.6, 0.9)
+	glow.scale = Vector2.ONE * (70.0 / TEX_GLOW.get_size().x)
+	glow.z_index = 14
+	add_child(glow)
+	glow.global_position = pos
+	var gtw := glow.create_tween()
+	gtw.set_parallel(true)
+	gtw.tween_property(glow, "scale", glow.scale * 3.2, 0.22) \
+		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	gtw.tween_property(glow, "modulate:a", 0.0, 0.22)
+	gtw.chain().tween_callback(glow.queue_free)
+	# Tia lửa vàng văng ra xung quanh
+	for i in 5:
+		var sp := Sprite2D.new()
+		sp.texture = TEX_SPARK
+		sp.modulate = Color(1.0, 0.9, 0.4)
+		sp.scale = Vector2.ONE * (22.0 / TEX_SPARK.get_size().x) * randf_range(0.8, 1.5)
+		sp.z_index = 15
+		add_child(sp)
+		sp.global_position = pos
+		var ang := randf() * TAU
+		sp.rotation = ang
+		var stw := sp.create_tween()
+		stw.set_parallel(true)
+		stw.tween_property(sp, "global_position",
+			pos + Vector2.from_angle(ang) * randf_range(26.0, 60.0), 0.28) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		stw.tween_property(sp, "modulate:a", 0.0, 0.3)
+		stw.chain().tween_callback(sp.queue_free)
+	# Vết cháy xém để lại trên mặt đất, phai dần
+	var scorch := Sprite2D.new()
+	scorch.texture = CIRCLE
+	scorch.modulate = Color(0.12, 0.1, 0.08, 0.45)
+	scorch.scale = Vector2.ONE * (56.0 / CIRCLE.get_size().x)
+	scorch.z_index = -7
+	add_child(scorch)
+	scorch.global_position = pos
+	var ctw := scorch.create_tween()
+	ctw.tween_interval(1.2)
+	ctw.tween_property(scorch, "modulate:a", 0.0, 1.5)
+	ctw.tween_callback(scorch.queue_free)
 	if is_instance_valid(player):
 		player.shake_amt = maxf(player.shake_amt, 2.0)
 
