@@ -18,6 +18,11 @@ const TEX_STRIKE := preload("res://assets/vfx/lightning_strike.png")
 const TEX_GLOW := preload("res://assets/vfx/glow.png")
 const TEX_SPARK := preload("res://assets/vfx/spark.png")
 const TEX_POISON_CLOUD := preload("res://assets/vfx/poison_cloud.png")
+const TEX_ARMS := [
+	preload("res://assets/decor/undead_dead_arm1.png"),
+	preload("res://assets/decor/undead_dead_arm2.png"),
+	preload("res://assets/decor/undead_dead_arm3.png"),
+]
 const TEX_ZOMBIE := preload("res://assets/characters/zombie.png")
 const TEX_HITMAN := preload("res://assets/characters/hitman.png")
 const TEX_ROBOT := preload("res://assets/characters/robot.png")
@@ -2519,7 +2524,13 @@ func _hazard_single() -> void:
 		1:
 			_spawn_quicksand(_hazard_pos(120.0, 320.0))
 		2:
-			_spawn_dead_pool()
+			# Đất chết: vũng độc hoặc bàn tay xương chộp sát chân người chơi
+			if randf() < 0.5:
+				_spawn_dead_pool()
+			else:
+				var pos := _hazard_pos(30.0, 180.0)
+				if not _near_gate(pos):
+					_grave_hand(pos)
 
 
 func _hazard_burst() -> void:
@@ -2540,8 +2551,13 @@ func _hazard_burst() -> void:
 			else:
 				_spawn_quicksand(_hazard_pos(90.0, 320.0))
 		2:
-			# Đất chết "phun độc": vũng sinh trong cơn tan nhanh hơn để không bít kín màn
-			_spawn_dead_pool(randf_range(4.0, 6.0))
+			# Đất chết "phun độc": vũng tan nhanh xen kẽ bàn tay xương chộp liên tục
+			if randf() < 0.35:
+				var pos := _hazard_pos(30.0, 200.0)
+				if not _near_gate(pos):
+					_grave_hand(pos)
+			else:
+				_spawn_dead_pool(randf_range(4.0, 6.0))
 
 
 func _hazard_pos(dmin: float, dmax: float) -> Vector2:
@@ -2579,6 +2595,64 @@ func _spawn_wind_streak() -> void:
 		s.global_position + Vector2(1440.0, randf_range(-50.0, 50.0)), life)
 	tw.tween_property(s, "modulate:a", 0.0, life)
 	tw.chain().tween_callback(s.queue_free)
+
+
+const GRAB_RADIUS := 70.0  # bán kính vùng bàn tay xương chộp
+
+func _grave_hand(pos: Vector2) -> void:
+	# Vòng nứt tím cảnh báo 0.8s rồi bàn tay xương chộp lên:
+	# trúng = 15 sát thương + TRÓI CHÂN 0.8s (vẫn bắn được, không chạy được)
+	var ring := Sprite2D.new()
+	ring.texture = CIRCLE
+	ring.modulate = Color(0.6, 0.3, 0.9, 0.0)
+	ring.scale = Vector2.ONE * (GRAB_RADIUS * 2.0 / CIRCLE.get_size().x)
+	ring.z_index = -2
+	add_child(ring)
+	ring.global_position = pos
+	var tw := ring.create_tween()
+	tw.tween_property(ring, "modulate:a", 0.45, 0.8)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(player) and player.alive \
+				and player.global_position.distance_to(pos) < GRAB_RADIUS:
+			player.take_damage(15.0)
+			player.root_timer = 0.8
+		_spawn_hand_fx(pos)
+		ring.queue_free())
+
+
+func _spawn_hand_fx(pos: Vector2) -> void:
+	# Bàn tay trồi vọt lên khỏi đất, giữ một nhịp rồi rút xuống
+	var hand := Sprite2D.new()
+	hand.texture = TEX_ARMS.pick_random()
+	hand.rotation = randf_range(-0.3, 0.3)
+	hand.z_index = 7
+	hand.scale = Vector2(0.9, 0.05)
+	add_child(hand)
+	hand.global_position = pos + Vector2(0, 6.0)
+	var tw := hand.create_tween()
+	tw.tween_property(hand, "scale", Vector2(0.9, 0.9), 0.12) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(0.5)
+	tw.tween_property(hand, "scale", Vector2(0.9, 0.15), 0.35)
+	tw.parallel().tween_property(hand, "modulate:a", 0.0, 0.35)
+	tw.tween_callback(hand.queue_free)
+	# Đất vụn bắn ra lúc tay trồi lên
+	for i in 4:
+		var d := Sprite2D.new()
+		d.texture = CIRCLE
+		d.modulate = Color(0.35, 0.28, 0.4, 0.8)
+		d.scale = Vector2.ONE * randf_range(0.05, 0.1)
+		d.z_index = 7
+		add_child(d)
+		d.global_position = pos
+		var ang := randf() * TAU
+		var dtw := d.create_tween()
+		dtw.set_parallel(true)
+		dtw.tween_property(d, "global_position",
+			pos + Vector2.from_angle(ang) * randf_range(18.0, 42.0), 0.3) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		dtw.tween_property(d, "modulate:a", 0.0, 0.32)
+		dtw.chain().tween_callback(d.queue_free)
 
 
 func _spawn_poison_puff(pos: Vector2) -> void:

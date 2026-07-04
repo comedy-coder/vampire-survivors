@@ -93,6 +93,7 @@ var poison_cloud_t := 0.0
 var shake_amt := 0.0
 var hurt_fx_t := 0.0
 var slow_timer := 0.0
+var root_timer := 0.0  # bị bàn tay xương trói chân (Đất chết) — đứng im nhưng vẫn bắn được
 var hurt_rect := ColorRect.new()
 var walk_t := 0.0
 var base_sprite_scale := Vector2.ONE
@@ -178,8 +179,11 @@ func _physics_process(delta: float) -> void:
 		return
 
 	slow_timer = maxf(0.0, slow_timer - delta)
+	root_timer = maxf(0.0, root_timer - delta)
 	_blackhole_cd = maxf(0.0, _blackhole_cd - delta)
 	var spd := speed * stage_speed_mult * (0.55 if slow_timer > 0.0 else 1.0)
+	if root_timer > 0.0:
+		spd = 0.0  # bị trói chân: đứng im hoàn toàn, chỉ còn xoay người bắn
 	velocity = Input.get_vector("move_left", "move_right", "move_up", "move_down") * spd
 	move_and_slide()
 
