@@ -122,6 +122,8 @@ const I18N := {
 	"pact1": ["Quái +30% máu, +15% dmg  →  Vàng ×1.5", "Enemies +30% HP, +15% dmg  →  Gold ×1.5"],
 	"pact2": ["Bão tố dày gấp đôi  →  Linh Hồn ×1.5", "Storms twice as often  →  Souls ×1.5"],
 	"pact3": ["Không bình máu, hồi cấp -50%  →  +20% sát thương", "No heal drops, half level heal  →  +20% damage"],
+	"pact4": ["TỬ TỐC: quái +25% tốc, spawn dày  →  Vàng & Hồn ×1.3", "DEATHLY SPEED: +25% enemy speed, denser spawns  →  Gold & Souls ×1.3"],
+	"death_announce": ["TỬ THẦN ĐUỔI THEO! KẾT THÚC NGAY!", "DEATH COMES! FINISH THE RUN!"],
 }
 
 # Tên hiển thị cho các nguồn sát thương ở màn tổng kết
@@ -383,7 +385,8 @@ var run_dmg := {}      # nguồn sát thương -> tổng đã gây trong ván (m
 var combo := 0         # số quái giết liên tục không ngắt quãng >1.5s
 var combo_t := 0.0
 var combo_label: Label
-var pacts := [false, false, false]  # Khế Ước bật cho ván này (chọn ở màn chọn map)
+var pacts := [false, false, false, false]  # Khế Ước bật cho ván này (chọn ở màn chọn map)
+var death_spawned := false  # Tử Thần đã xuất hiện (90s sau final boss mà chưa kết thúc ván)
 var pact_btns: Array = []
 var pact_label: Label
 var pause_build: Label  # dòng liệt kê build hiện tại trong menu tạm dừng
@@ -1003,7 +1006,8 @@ func _process(delta: float) -> void:
 	time += delta
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
-		spawn_timer = maxf(0.35, 1.1 - time * 0.015)
+		# Khế Ước 4 (Tử Tốc): spawn dày hơn 20%
+		spawn_timer = maxf(0.35, 1.1 - time * 0.015) * (0.8 if pacts[3] else 1.0)
 		_spawn_enemy()
 
 	# Nhịp boss theo mốc: Mini-boss phút 5 & 10, Final boss phút 15
@@ -1013,6 +1017,10 @@ func _process(delta: float) -> void:
 	if not final_spawned and time >= FINAL_TIME:
 		final_spawned = true
 		_spawn_boss(true)
+	# Né final boss để farm quá 90s → Tử Thần xuất hiện chấm dứt ván đấu
+	if final_spawned and not death_spawned and time >= FINAL_TIME + 90.0:
+		death_spawned = true
+		_spawn_death()
 
 	# Mối nguy môi trường: cả 3 map chung nhịp "lẻ tẻ + cơn bão" (payload khác nhau)
 	_hazard_tick(delta)
@@ -1106,6 +1114,8 @@ func _apply_stage(e: Area2D) -> void:
 	e.hp *= difficulty
 	e.dps *= enemy_dmg_mult
 	e.bullet_damage *= enemy_dmg_mult
+	if pacts[3]:
+		e.speed *= 1.25  # Khế Ước 4: TỬ TỐC — quái vượt tốc người chơi, không kite thuần được
 	match stage:
 		1:
 			e.hp *= 1.15
@@ -1263,6 +1273,8 @@ func _spawn_boss(is_final: bool) -> void:
 	var soul_drop := randi_range(8, 12) if is_final else 2
 	if pacts[1]:
 		soul_drop = int(ceil(soul_drop * 1.5))  # Khế Ước 2: Linh Hồn ×1.5
+	if pacts[3]:
+		soul_drop = int(ceil(soul_drop * 1.3))  # Khế Ước 4: ×1.3
 	e.died.connect(func(_pos: Vector2, _g: int) -> void: run_souls += soul_drop)
 	if is_final:
 		e.died.connect(func(_pos: Vector2, _g: int) -> void: _win_run())
@@ -1271,6 +1283,29 @@ func _spawn_boss(is_final: bool) -> void:
 		e.died.connect(func(_pos: Vector2, _g: int) -> void: _spawn_extraction_gate())
 	boss_sfx.play()
 	_announce(announce, Color(1.0, 0.2, 0.2), 8.0)
+
+
+func _spawn_death() -> void:
+	# Tử Thần: gần như bất tử, nhanh hơn mọi nhân vật, miễn khống chế —
+	# xuất hiện khi cố tình né final boss để farm, buộc ván đấu phải kết thúc
+	var e := _make_enemy()
+	e.kind = ENEMY.Kind.BOSS  # kháng knockback + hố đen; skills rỗng nên không dùng chiêu
+	e.tex = TEX_BOSS_BONE
+	e.upright = true
+	e.vis_scale = 0.62
+	e.sprite_scale = 1.8
+	e.tint = Color(0.3, 0.22, 0.42)  # bóng đen tím — phân biệt với Chúa Tể Xương
+	e.hp = 9999999.0
+	e.dps = 80.0     # chạm vào là gần như hết ván
+	e.speed = 250.0  # "deathly speed" — không nhân vật nào chạy thoát vĩnh viễn
+	e.unstoppable = true
+	e.gems = 0
+	add_child(e)
+	e.global_position = player.global_position + Vector2.from_angle(randf() * TAU) * 700.0
+	bosses.append(e)  # có mũi tên đỏ chỉ hướng như boss
+	boss_sfx.pitch_scale = 0.7
+	boss_sfx.play()
+	_announce(T("death_announce"), Color(0.75, 0.3, 1.0), 10.0)
 
 
 func _win_run() -> void:
@@ -1523,8 +1558,13 @@ func _spawn_coin(pos: Vector2, value: int) -> void:
 func _on_coin_collected(value: int) -> void:
 	coin_sfx.pitch_scale = randf_range(0.95, 1.08)
 	coin_sfx.play()
-	# Khế Ước 1: Vàng ×1.5
-	run_gold += int(ceil(value * 1.5)) if pacts[0] else value
+	# Khế Ước 1: Vàng ×1.5; Khế Ước 4: ×1.3 (cộng dồn nhân)
+	var gm := 1.0
+	if pacts[0]:
+		gm *= 1.5
+	if pacts[3]:
+		gm *= 1.3
+	run_gold += int(ceil(value * gm))
 
 
 func _make_elite(e: Area2D) -> void:
@@ -1926,7 +1966,7 @@ func _ui_nav(dx: int, dy: int) -> void:
 		_shop_sel = wrapi(_shop_sel + dx + dy, 0, shop_nav_btns.size())
 		_update_shop_highlight()
 	elif map_panel != null and map_panel.visible:
-		_map_sel = wrapi(_map_sel + dx + dy, 0, 6)  # 3 map + 3 khế ước
+		_map_sel = wrapi(_map_sel + dx + dy, 0, 7)  # 3 map + 4 khế ước
 		_update_map_highlight()
 	elif char_panel.visible:
 		_char_nav(dx, dy)
@@ -2526,7 +2566,7 @@ func _build_map_panel() -> void:
 	pact_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pact_label.add_theme_color_override("font_color", Color(0.9, 0.62, 0.95))
 	vbox.add_child(pact_label)
-	for i in 3:
+	for i in 4:
 		var pb := Button.new()
 		pb.toggle_mode = true
 		pb.focus_mode = Control.FOCUS_NONE
@@ -2554,7 +2594,7 @@ func _refresh_map_panel() -> void:
 		return
 	map_title.text = T("map_title")
 	pact_label.text = T("pact_title")
-	for i in 3:
+	for i in pact_btns.size():
 		pact_btns[i].text = T("pact%d" % (i + 1))
 	for i in 3:
 		var unlocked := i < unlocked_maps

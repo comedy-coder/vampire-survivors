@@ -154,9 +154,14 @@ Burning enemies are tinted orange, frozen blue, poisoned green. The Exploit card
 
 - **Pacts** (`pacts` array, toggled on the map-select panel, reset each run): (1)
   enemies +30% HP / +15% dmg → gold ×1.5, (2) storms twice as often → souls ×1.5,
-  (3) no heal drops + half level-heal → +20% damage. Effects are applied at
-  `_apply_meta_upgrades`, `_on_coin_collected`, `_spawn_boss`, `_hazard_tick`,
-  `_spawn_pickup`, `_show_level_up`.
+  (3) no heal drops + half level-heal → +20% damage, (4) **Deathly Speed** — enemy
+  speed ×1.25 (on top of caps) + 20% denser spawns → gold & souls ×1.3. Effects are
+  applied at `_apply_meta_upgrades`, `_on_coin_collected`, `_spawn_boss`,
+  `_hazard_tick`, `_spawn_pickup`, `_show_level_up`, `_apply_stage`.
+- **Death** (`_spawn_death`): 90s after the final boss spawns without the run
+  ending, an effectively unkillable reaper (9999999 HP, speed 250, 80 dps,
+  `unstoppable` = immune to slow/freeze movement) hunts the player — the
+  anti-infinite-farm mechanic.
 - **Damage stats**: every player damage source calls `game.report_damage(src, amt)`
   (helper `player.report_dmg`, `projectile._report` with its `src` field). The end
   screen shows a per-source breakdown panel (`_show_run_stats`, names in

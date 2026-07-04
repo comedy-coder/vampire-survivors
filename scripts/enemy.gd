@@ -31,6 +31,7 @@ var tint := Color.WHITE
 var gems := 1
 
 var elite_mod := ""  # "" / regen / split / explode / shield / vampire — quái tinh nhuệ
+var unstoppable := false  # Tử Thần: miễn làm chậm / đóng băng khi di chuyển
 var shield_hits := 0  # elite Khiên: số đòn mạnh còn chặn được (đòn tick DoT/aura xuyên khiên)
 var shield_spr: Sprite2D
 var hp_max := 0.0
@@ -250,6 +251,8 @@ func _chase(delta: float, to_player: Vector2) -> void:
 	rotation = to_player.angle()
 	var dist := to_player.length()
 	var spd := 0.0 if freeze_timer > 0.0 else speed * (0.6 if slow_timer > 0.0 else 1.0)
+	if unstoppable:
+		spd = speed  # Tử Thần không thể bị cản bước
 
 	walk_t += delta * spd * 0.12
 	sprite.rotation = 0.14 * sin(walk_t)
