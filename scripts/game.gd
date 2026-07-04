@@ -17,6 +17,7 @@ const ICON_PICK_BOMB := preload("res://assets/icons/w_grenade.svg")
 const TEX_STRIKE := preload("res://assets/vfx/lightning_strike.png")
 const TEX_GLOW := preload("res://assets/vfx/glow.png")
 const TEX_SPARK := preload("res://assets/vfx/spark.png")
+const TEX_POISON_CLOUD := preload("res://assets/vfx/poison_cloud.png")
 const TEX_ZOMBIE := preload("res://assets/characters/zombie.png")
 const TEX_HITMAN := preload("res://assets/characters/hitman.png")
 const TEX_ROBOT := preload("res://assets/characters/robot.png")
@@ -384,6 +385,8 @@ var storm_timer := 60.0          # đếm ngược tới cơn bão kế tiếp (
 var storm_dur := 0.0             # thời gian còn lại của cơn bão đang diễn ra
 var _storm_strike_t := 0.0       # nhịp sinh hiệu ứng trong cơn bão (0.7-1.1s)
 var _calm_strike_t := 3.0        # hiệu ứng lẻ ngoài cơn bão — có từ đầu ván
+var _storm_overlay := ColorRect.new()  # lớp phủ màu toàn màn hình báo "đang trong cơn bão"
+var _wind_t := 0.0               # nhịp sinh vệt gió cát trong bão cát (Sa mạc)
 var shop_panel: PanelContainer
 var shop_title: Label
 var shop_gold_label: Label
@@ -485,6 +488,12 @@ func _ready() -> void:
 	player.died.connect(_on_player_died)
 	_update_decor()
 	$UI.add_child(arrows_holder)
+	# Lớp phủ màu báo hiệu cơn bão (thay banner chữ) — đặt dưới cùng để không che HUD
+	_storm_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_storm_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_storm_overlay.color = Color(0.2, 0.25, 0.45, 0.0)
+	$UI.add_child(_storm_overlay)
+	$UI.move_child(_storm_overlay, 0)
 	_build_chest_panel()
 	_build_pause_panel()
 	$UI/PauseBtn.pressed.connect(_toggle_pause)
@@ -966,6 +975,9 @@ func _setup_stage() -> void:
 	# Vào trận: nhạc bắt đầu ở trạng thái "bí" rồi _music_tick mở dần theo thời gian
 	_music_lp.cutoff_hz = 1400.0
 	music.pitch_scale = 1.0
+	# Màu lớp phủ cơn bão theo map: dông xanh xám / bão cát vàng / phun độc xanh lục
+	var ov: Color = [Color(0.18, 0.22, 0.45), Color(0.8, 0.6, 0.2), Color(0.25, 0.75, 0.35)][stage]
+	_storm_overlay.color = Color(ov.r, ov.g, ov.b, 0.0)
 	match stage:
 		0: _change_music(MUSIC_GAME)
 		1: _change_music(MUSIC_DESERT)
@@ -1288,6 +1300,18 @@ func _on_boss_tornado(pos: Vector2) -> void:
 	t.player = player
 	add_child(t)
 	t.global_position = pos + Vector2.from_angle(randf() * TAU) * 50.0
+	# Bụi nâu tung lên lúc lốc thành hình — khỏi xuất hiện đột ngột
+	var dust := Sprite2D.new()
+	dust.texture = TEX_GLOW
+	dust.modulate = Color(0.85, 0.7, 0.45, 0.7)
+	dust.scale = Vector2.ONE * (60.0 / TEX_GLOW.get_size().x)
+	add_child(dust)
+	dust.global_position = t.global_position
+	var dtw := dust.create_tween()
+	dtw.set_parallel(true)
+	dtw.tween_property(dust, "scale", dust.scale * 3.0, 0.4)
+	dtw.tween_property(dust, "modulate:a", 0.0, 0.4)
+	dtw.chain().tween_callback(dust.queue_free)
 
 
 func _on_boss_quicksand(pos: Vector2) -> void:
@@ -2416,7 +2440,11 @@ func _dead_pool_damage_tick(delta: float) -> void:
 		p["t"] -= delta
 		if p["t"] <= 0.0:
 			if is_instance_valid(p["node"]):
-				p["node"].queue_free()
+				# Vũng độc tan dần thay vì biến mất khô khốc
+				var nd: Node = p["node"]
+				var tw := nd.create_tween()
+				tw.tween_property(nd, "modulate:a", 0.0, 0.4)
+				tw.tween_callback(nd.queue_free)
 			dead_pools.remove_at(idx)
 			continue
 		if is_instance_valid(player) and player.alive and player.global_position.distance_to(p["pos"]) < p["radius"]:
@@ -2437,6 +2465,7 @@ func _spawn_dead_pool(dur := 8.0) -> void:
 	spr.global_position = pos
 	var tw := spr.create_tween()
 	tw.tween_property(spr, "modulate:a", 0.45, 0.5)
+	_spawn_poison_puff(pos)
 	dead_pools.append({"node": spr, "pos": pos, "radius": radius, "t": dur})
 
 
@@ -2447,10 +2476,19 @@ func _spawn_dead_pool(dur := 8.0) -> void:
 const STORM_RADIUS := 90.0  # bán kính vùng sét đánh
 
 func _hazard_tick(delta: float) -> void:
+	# Lớp phủ màu hiện dần khi vào cơn bão, tan dần khi trời quang (fade ~1.3s)
+	_storm_overlay.color.a = move_toward(_storm_overlay.color.a,
+		0.13 if storm_dur > 0.0 else 0.0, 0.1 * delta)
 	# Nhịp chung cho cả 3 map — chỉ payload khác nhau (_hazard_single/_hazard_burst)
 	if storm_dur > 0.0:
 		# Đang trong cơn bão: sinh hiệu ứng liên tục theo nhịp cho tới khi tan
 		storm_dur -= delta
+		# Sa mạc: vệt gió cát bay ngang màn hình suốt cơn bão
+		if selected_stage == 1:
+			_wind_t -= delta
+			if _wind_t <= 0.0:
+				_wind_t = randf_range(0.08, 0.16)
+				_spawn_wind_streak()
 		_storm_strike_t -= delta
 		if _storm_strike_t <= 0.0:
 			_storm_strike_t = randf_range(0.7, 1.1)
@@ -2523,6 +2561,46 @@ func _spawn_quicksand(pos: Vector2) -> void:
 	q.player = player
 	add_child(q)
 	q.global_position = pos
+
+
+func _spawn_wind_streak() -> void:
+	# Vệt cát mảnh bay ngang từ trái sang phải — không khí bão cát
+	var s := Sprite2D.new()
+	s.texture = CIRCLE
+	s.modulate = Color(0.95, 0.8, 0.5, randf_range(0.25, 0.45))
+	s.scale = Vector2(randf_range(1.2, 2.4), randf_range(0.04, 0.08))
+	s.z_index = 12
+	add_child(s)
+	s.global_position = player.global_position + Vector2(-720.0, randf_range(-380.0, 380.0))
+	var life := randf_range(0.35, 0.6)
+	var tw := s.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(s, "global_position",
+		s.global_position + Vector2(1440.0, randf_range(-50.0, 50.0)), life)
+	tw.tween_property(s, "modulate:a", 0.0, life)
+	tw.chain().tween_callback(s.queue_free)
+
+
+func _spawn_poison_puff(pos: Vector2) -> void:
+	# Cú phụt khí độc lúc vũng sinh ra — tái dùng spritesheet aura độc (20 frame 144px)
+	var sf := SpriteFrames.new()
+	sf.set_animation_loop("default", false)
+	sf.set_animation_speed("default", 22.0)
+	var cols := TEX_POISON_CLOUD.get_width() / 144
+	for i in 20:
+		var at := AtlasTexture.new()
+		at.atlas = TEX_POISON_CLOUD
+		at.region = Rect2((i % cols) * 144, (i / cols) * 144, 144, 144)
+		sf.add_frame("default", at)
+	var a := AnimatedSprite2D.new()
+	a.sprite_frames = sf
+	a.modulate = Color(0.5, 1.0, 0.5, 0.85)
+	a.scale = Vector2.ONE * randf_range(0.85, 1.15)
+	a.z_index = 8
+	add_child(a)
+	a.global_position = pos
+	a.play("default")
+	a.animation_finished.connect(a.queue_free)
 
 
 func _lightning_strike(pos: Vector2, warn := 0.9) -> void:
