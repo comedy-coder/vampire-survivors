@@ -143,6 +143,20 @@ Burning enemies are tinted orange, frozen blue, poisoned green. The Exploit card
 (+40%) counts *any* of slow / frost / burn / freeze / poison, in both
 `projectile._hit_damage` and the katana `_slash_hit`.
 
+## Pacts, run stats & pause build display
+
+- **Pacts** (`pacts` array, toggled on the map-select panel, reset each run): (1)
+  enemies +30% HP / +15% dmg → gold ×1.5, (2) storms twice as often → souls ×1.5,
+  (3) no heal drops + half level-heal → +20% damage. Effects are applied at
+  `_apply_meta_upgrades`, `_on_coin_collected`, `_spawn_boss`, `_hazard_tick`,
+  `_spawn_pickup`, `_show_level_up`.
+- **Damage stats**: every player damage source calls `game.report_damage(src, amt)`
+  (helper `player.report_dmg`, `projectile._report` with its `src` field). The end
+  screen shows a per-source breakdown panel (`_show_run_stats`, names in
+  `DMG_NAMES`). When adding a new damage source, report it or it won't show up.
+- **Pause menu** lists the current build (`_build_summary`): main weapon + core +
+  form, secondary weapon levels (★ = evolved), owned artifacts.
+
 ## Meta-progression & economy
 
 `META_UPGRADES`: gold buys survival (HP/speed/magnet), souls buy attack

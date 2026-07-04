@@ -49,3 +49,6 @@ func _physics_process(delta: float) -> void:
 func _on_area_entered(area: Area2D) -> void:
 	if area.has_method("take_hit"):
 		area.take_hit(damage, true, dir * 120.0, Color(1.0, 0.72, 0.4))
+		var g := get_parent()
+		if g != null and g.has_method("report_damage"):
+			g.report_damage("boomerang", damage)

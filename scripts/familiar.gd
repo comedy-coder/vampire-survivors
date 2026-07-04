@@ -129,6 +129,7 @@ func _shoot(target: Node2D) -> void:
 	var dmg: float = (3.0 + player.projectile_damage * 0.5) * (2.0 if is_crit else 1.0)
 	var p := Area2D.new()
 	p.set_script(PROJECTILE)
+	p.src = "familiar"
 	p.dir = (target.global_position - global_position).normalized()
 	p.crit = is_crit
 	p.damage = dmg
@@ -151,6 +152,7 @@ func _fire_nova() -> void:
 	var ball_life := 1.0
 	var p := Area2D.new()
 	p.set_script(PROJECTILE)
+	p.src = "familiar"
 	p.dir = dir
 	p.damage = NOVA_DAMAGE
 	p.speed = 380.0
@@ -185,13 +187,17 @@ func _fire_nova() -> void:
 		var boom_pos := p.global_position
 		p.queue_free()
 		sfx.play()
+		var g := get_parent()
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if boom_pos.distance_to(e.global_position) <= NOVA_RADIUS:
 				var is_crit: bool = randf() < player.crit_chance
+				var dmg_amt := NOVA_DAMAGE * (2.0 if is_crit else 1.0)
 				# take_hit(dmg, show_dmg, kb, col, crit) — luôn hiện số, cờ crit đúng vị trí
-				e.take_hit(NOVA_DAMAGE * (2.0 if is_crit else 1.0), true,
+				e.take_hit(dmg_amt, true,
 					(e.global_position - boom_pos).normalized() * 380.0,
 					COL, is_crit)
+				if g != null and g.has_method("report_damage"):
+					g.report_damage("familiar", dmg_amt)
 		_spawn_nova_burst(boom_pos)
 	)
 

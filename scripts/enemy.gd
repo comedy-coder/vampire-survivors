@@ -165,6 +165,9 @@ func _physics_process(delta: float) -> void:
 		dot += burn_dot
 	if dot > 0.0:
 		hp -= dot * delta
+		var gp := get_parent()
+		if gp != null and gp.has_method("report_damage"):
+			gp.report_damage("dot", dot * delta)
 		if hp <= 0.0:
 			if can_revive and not revived:
 				_revive()

@@ -25,6 +25,7 @@ var aoe_splash_mult := 1.0  # hệ số sát thương nổ lan tới quái KHÔN
 var blackhole := 0.0        # Lõi Hố Đen: bán kính hút quái khi đạn pháo chạm (0 = tắt)
 var _bh_t := 0.0            # thời gian hố đen còn lại trước khi phát nổ
 var no_shake := false       # không rung màn hình khi nổ (pháo)
+var src := "main"         # nguồn sát thương (thống kê ở màn tổng kết): main/frost/familiar...
 var lava := 0.0           # Lõi Dung Nham: dmg/s của vũng nham để lại sau vụ nổ (0 = tắt)
 var lava_dur := 3.0       # thời gian vũng nham tồn tại
 var burn := 0.0           # signature: đốt cháy (DoT) khi trúng
@@ -104,6 +105,12 @@ func _spawn_shards() -> void:
 		tw.chain().tween_callback(sh.queue_free)
 
 
+func _report(amount: float) -> void:
+	var p := get_parent()
+	if p != null and p.has_method("report_damage"):
+		p.report_damage(src, amount)
+
+
 func _hit_damage(e: Node) -> float:
 	# Khai Thác Điểm Yếu: +dmg nếu mục tiêu đang dính hiệu ứng (chậm/đốt/đóng băng/độc)
 	if exploit > 0.0 and (("slow_timer" in e and e.slow_timer > 0.0)
@@ -165,7 +172,9 @@ func _blackhole_detonate() -> void:
 	# Sát thương nổ gom giảm còn 55% (đánh đổi cho thời gian hút lâu hơn)
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if is_instance_valid(e) and global_position.distance_to(e.global_position) < aoe:
-			e.take_hit(_hit_damage(e) * 0.55, true, (e.global_position - global_position).normalized() * kb, color, crit)
+			var dd := _hit_damage(e) * 0.55
+			e.take_hit(dd, true, (e.global_position - global_position).normalized() * kb, color, crit)
+			_report(dd)
 			_apply_dot(e)
 	if parent != null and parent.has_method("spawn_explosion"):
 		parent.spawn_explosion(global_position, aoe * 2.0, 0.5)
@@ -184,8 +193,10 @@ func _try_execute(e) -> void:
 		return
 	if e.kind == 2:  # Kind.BOSS: không xử tử, gây thêm sát thương
 		e.take_hit(damage * 1.5, true, Vector2.ZERO, Color(1.0, 0.3, 0.2), true)
+		_report(damage * 1.5)
 		return
 	if e.hp > 0.0 and e.hp_max > 0.0 and e.hp <= e.hp_max * execute_threshold:
+		_report(maxf(e.hp, 0.0))
 		e.take_hit(e.hp + 9999.0, true, dir * kb, Color(1.0, 0.2, 0.2), true)
 
 
@@ -208,6 +219,7 @@ func _on_area_entered(area: Area2D) -> void:
 				if e != area:
 					dmg_e *= aoe_splash_mult  # quái xung quanh (nổ lan) ăn ít hơn quái trúng trực tiếp
 				e.take_hit(dmg_e, true, (e.global_position - global_position).normalized() * kb, color, crit)
+				_report(dmg_e)
 				_apply_dot(e)
 				if slow > 0.0:
 					e.slow_timer = slow
@@ -228,7 +240,9 @@ func _on_area_entered(area: Area2D) -> void:
 			parent.boom_shake(clampf(aoe / 36.0, 1.5, 4.5))
 		queue_free()
 		return
-	area.take_hit(_hit_damage(area), true, dir * kb, color, crit)
+	var dd := _hit_damage(area)
+	area.take_hit(dd, true, dir * kb, color, crit)
+	_report(dd)
 	_apply_dot(area)
 	_try_execute(area)
 	if hit_shake > 0.0:

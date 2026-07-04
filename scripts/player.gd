@@ -219,6 +219,7 @@ func _physics_process(delta: float) -> void:
 		for a in blade.get_overlapping_areas():
 			if a.has_method("take_hit"):
 				a.take_hit(orbital_dps * delta)
+				report_dmg("orbital", orbital_dps * delta)
 
 	if grenade_level > 0:
 		grenade_timer -= delta
@@ -259,6 +260,7 @@ func _physics_process(delta: float) -> void:
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if global_position.distance_to(e.global_position) < pr:
 				e.take_hit(pdmg)
+				report_dmg("poison", pdmg)
 				e.poison_timer = 1.2
 				# Làm chậm nhẹ ở mọi cấp; tiến hóa thì chậm mạnh hơn (kiểm soát đám đông)
 				e.slow_timer = maxf(e.slow_timer, 0.35 if poison_evolved else 0.18)
@@ -358,6 +360,7 @@ func _slash_hit(power: float) -> void:
 					or e.burn_timer > 0.0 or e.freeze_timer > 0.0 or e.poison_timer > 0.0):
 				dmg *= (1.0 + exploit_dmg)
 			e.take_hit(dmg, true, to_e.normalized() * 260.0, Color(0.8, 1.0, 1.0), is_crit)
+			report_dmg("main", dmg)
 			if sig_burn > 0.0:
 				e.burn_dot = sig_burn
 				e.burn_timer = 3.0
@@ -491,6 +494,7 @@ func _fire_frost() -> void:
 	p.size = 0.16
 	p.kb = 80.0
 	p.stretch = 1.0
+	p.src = "frost"
 	p.tex = TEX_ICE_LANCE
 	p.trail_color = Color(0.55, 0.85, 1.0, 0.4)
 	if frost_level >= 2:
@@ -536,6 +540,7 @@ func _explode_grenade(spr: Sprite2D, pos: Vector2) -> void:
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if pos.distance_to(e.global_position) < radius:
 			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 200.0, Color(1.0, 0.55, 0.25))
+			report_dmg("grenade", dmg)
 	boom_sfx.pitch_scale = randf_range(0.9, 1.1)
 	boom_sfx.play()
 	shake_amt = maxf(shake_amt, 7.0)
@@ -554,6 +559,7 @@ func _mini_blast(pos: Vector2, dmg: float) -> void:
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if pos.distance_to(e.global_position) < radius:
 			e.take_hit(dmg, true, (e.global_position - pos).normalized() * 140.0, Color(1.0, 0.55, 0.25))
+			report_dmg("grenade", dmg)
 	boom_sfx.pitch_scale = randf_range(1.1, 1.3)
 	boom_sfx.play()
 	shake_amt = maxf(shake_amt, 4.0)
@@ -572,6 +578,7 @@ func _fire_lightning() -> void:
 		hit.append(cur)
 		pts.append(cur.global_position)
 		cur.take_hit(dmg, true, Vector2.ZERO, Color(0.85, 0.7, 1.0))
+		report_dmg("lightning", dmg)
 		var best: Node2D = null
 		var best_d := 250.0 * 250.0
 		for e in get_tree().get_nodes_in_group("enemies"):
@@ -741,12 +748,20 @@ func heal(amount: float) -> void:
 	hp = minf(hp + amount, max_hp)
 
 
+func report_dmg(src: String, amount: float) -> void:
+	# Chuyển tiếp về game.gd để màn tổng kết thống kê sát thương theo nguồn
+	var g := get_parent()
+	if g != null and g.has_method("report_damage"):
+		g.report_damage(src, amount)
+
+
 func _thorns_burst() -> void:
 	# Bùa gai: nổ gai quanh người — đẩy lùi mạnh + sát thương (ăn theo buff % sát thương)
 	for e in get_tree().get_nodes_in_group("enemies"):
 		var away: Vector2 = e.global_position - global_position
 		if away.length() < 200.0:
 			e.take_hit(20.0 * sig_dmg_mul, true, away.normalized() * 420.0, Color(0.55, 1.0, 0.55))
+			report_dmg("thorns", 20.0 * sig_dmg_mul)
 	var g := get_parent()
 	if g != null and g.has_method("spawn_explosion"):
 		g.spawn_explosion(global_position, 400.0, 0.45)

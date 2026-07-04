@@ -117,6 +117,29 @@ const I18N := {
 	"shop_max": ["%s  (TỐI ĐA)\n%s", "%s  (MAX)\n%s"],
 	"reward_fmt": ["\nVàng: +%d 💰     Linh Hồn: +%d 🔮", "\nGold: +%d 💰     Souls: +%d 🔮"],
 	"death_penalty": ["\n(Chết: chỉ giữ 25% Vàng, 50% Linh Hồn — Rút lui để giữ trọn!)", "\n(Died: kept 25% gold, 50% souls — extract to keep it all!)"],
+	"res_dmg_title": ["SÁT THƯƠNG THEO NGUỒN", "DAMAGE BY SOURCE"],
+	"pact_title": ["— KHẾ ƯỚC (tùy chọn: rủi ro đổi phần thưởng) —", "— PACTS (optional: risk for reward) —"],
+	"pact1": ["Quái +30% máu, +15% dmg  →  Vàng ×1.5", "Enemies +30% HP, +15% dmg  →  Gold ×1.5"],
+	"pact2": ["Bão tố dày gấp đôi  →  Linh Hồn ×1.5", "Storms twice as often  →  Souls ×1.5"],
+	"pact3": ["Không bình máu, hồi cấp -50%  →  +20% sát thương", "No heal drops, half level heal  →  +20% damage"],
+}
+
+# Tên hiển thị cho các nguồn sát thương ở màn tổng kết
+const DMG_NAMES := {
+	"main": ["Vũ khí chính", "Main weapon"],
+	"orbital": ["Kiếm xoay", "Spinning swords"],
+	"grenade": ["Lựu đạn", "Grenade"],
+	"lightning": ["Sét đánh chuỗi", "Chain lightning"],
+	"poison": ["Vùng độc", "Poison aura"],
+	"boomerang": ["Boomerang", "Boomerang"],
+	"frost": ["Tia băng", "Frost bolt"],
+	"familiar": ["Linh thú", "Familiar"],
+	"soulburst": ["Nổ Hồn", "Soul Burst"],
+	"lava": ["Dung nham", "Magma"],
+	"thorns": ["Bùa gai", "Thorn charm"],
+	"bomb": ["Bom nhặt", "Bomb pickup"],
+	"dot": ["Thiêu đốt (DoT)", "Burn/DoT"],
+	"hazard": ["Thiên nhiên", "Environment"],
 }
 
 # Phase 4: tinh gọn còn 4 nhân vật chuyên biệt. "locked" = cần mở khóa (Kiếm khách).
@@ -344,6 +367,11 @@ var _map_sel := 0  # map đang được chọn bằng bàn phím (0..2)
 var _card_count := 3  # số thẻ đang hiện ở màn lên cấp (1..3)
 var chosen_core := ""  # id Lõi đã chọn ở cấp 10 (Phase 4b)
 var lava_pools: Array = []  # Lõi Dung Nham: mỗi phần tử {node, pos, radius, dps, t}
+var run_dmg := {}      # nguồn sát thương -> tổng đã gây trong ván (màn tổng kết)
+var pacts := [false, false, false]  # Khế Ước bật cho ván này (chọn ở màn chọn map)
+var pact_btns: Array = []
+var pact_label: Label
+var pause_build: Label  # dòng liệt kê build hiện tại trong menu tạm dừng
 var chosen_form := ""  # id Hình thái đã chọn ở cấp 15
 # --- Phase 1: chọn map + mở khóa + nhịp boss ---
 var selected_stage := 0     # map đã chọn cho ván hiện tại (cố định cả ván)
@@ -552,6 +580,11 @@ func T(key: String) -> String:
 	return I18N[key][lang]
 
 
+func report_damage(src: String, amount: float) -> void:
+	# Mọi nguồn sát thương của người chơi gọi về đây để màn tổng kết thống kê
+	run_dmg[src] = float(run_dmg.get(src, 0.0)) + amount
+
+
 func _load_lang() -> void:
 	var cf := ConfigFile.new()
 	if cf.load("user://settings.cfg") == OK:
@@ -604,6 +637,13 @@ func _apply_meta_upgrades() -> void:
 	# (giảm nhẹ để người chơi thực sự cảm thấy mạnh lên khi đầu tư Vàng)
 	difficulty = 1.0 + total * 0.015      # +1.5% máu quái mỗi cấp
 	enemy_dmg_mult = 1.0 + total * 0.015  # +1.5% sát thương quái mỗi cấp
+	# Khế Ước 1: quái trâu và đau hơn (đổi lấy Vàng ×1.5)
+	if pacts[0]:
+		difficulty *= 1.3
+		enemy_dmg_mult *= 1.15
+	# Khế Ước 3: khát máu — không bình máu nhưng +20% sát thương cả ván
+	if pacts[2]:
+		player.sig_dmg_mul *= 1.2
 
 
 func _meta_by_id(id: String) -> Dictionary:
@@ -1170,6 +1210,8 @@ func _spawn_boss(is_final: bool) -> void:
 	# Mảnh Linh Hồn chỉ rớt từ boss: Mini-boss 2, Final boss 8-12
 	# (tăng để nhánh Linh Hồn max trong ~12 ván thắng, ngang nhánh Vàng)
 	var soul_drop := randi_range(8, 12) if is_final else 2
+	if pacts[1]:
+		soul_drop = int(ceil(soul_drop * 1.5))  # Khế Ước 2: Linh Hồn ×1.5
 	e.died.connect(func(_pos: Vector2, _g: int) -> void: run_souls += soul_drop)
 	if is_final:
 		e.died.connect(func(_pos: Vector2, _g: int) -> void: _win_run())
@@ -1206,6 +1248,7 @@ func _win_run() -> void:
 	over_label.text = (T("win_fmt") % [STAGES[selected_stage]["name"][lang], kills]) \
 		+ (T("reward_fmt") % [run_gold, run_souls]) + unlock_msg
 	over_label.visible = true
+	_show_run_stats()
 	get_tree().paused = true  # dừng toàn bộ thế giới khi hiện menu thắng
 
 
@@ -1245,6 +1288,7 @@ func _extract() -> void:
 	over_label.text = (T("extract_fmt") % [STAGES[selected_stage]["name"][lang], kills]) \
 		+ (T("reward_fmt") % [run_gold, run_souls])
 	over_label.visible = true
+	_show_run_stats()
 	get_tree().paused = true  # dừng toàn bộ thế giới khi rút lui
 
 
@@ -1371,6 +1415,7 @@ func _soulburst(pos: Vector2) -> void:
 		if pos.distance_to(e.global_position) < RADIUS:
 			# Không hiện số sát thương để tránh spam label khi nổ dây chuyền
 			e.take_hit(dmg, false, (e.global_position - pos).normalized() * 60.0)
+			report_damage("soulburst", dmg)
 	# Vòng tím lan nhanh — rẻ hơn spawn_explosion, đủ nhận diện hiệu ứng
 	var ring := Sprite2D.new()
 	ring.texture = CIRCLE
@@ -1410,7 +1455,8 @@ func _spawn_coin(pos: Vector2, value: int) -> void:
 func _on_coin_collected(value: int) -> void:
 	coin_sfx.pitch_scale = randf_range(0.95, 1.08)
 	coin_sfx.play()
-	run_gold += value
+	# Khế Ước 1: Vàng ×1.5
+	run_gold += int(ceil(value * 1.5)) if pacts[0] else value
 
 
 func _make_elite(e: Area2D) -> void:
@@ -1468,6 +1514,9 @@ func _spawn_pickup(pos: Vector2, kind := "") -> void:
 			kind = "magnet"
 		else:
 			kind = "bomb"
+	# Khế Ước 3: không bao giờ rơi bình máu
+	if pacts[2] and kind == "heal":
+		kind = "magnet" if randf() < 0.5 else "bomb"
 	var p := Area2D.new()
 	p.set_script(PICKUP)
 	p.player = player
@@ -1503,6 +1552,7 @@ func _apply_pickup(kind: String) -> void:
 					e.take_hit(60.0, true,
 						(e.global_position - player.global_position).normalized() * 400.0,
 						Color(1.0, 0.6, 0.3))
+					report_damage("bomb", 60.0)
 			spawn_explosion(player.global_position, bomb_radius * 2.0, 0.6)
 			player.boom_sfx.pitch_scale = 0.8
 			player.boom_sfx.play()
@@ -1705,7 +1755,7 @@ func _show_level_up() -> void:
 	# (1.10+4: Hình thái cấp 20 về tay ở phút ~5 → có ~2 phút tận hưởng build trước final)
 	xp_needed = int(xp_needed * 1.10) + 4
 	level += 1
-	player.heal(20.0)
+	player.heal(10.0 if pacts[2] else 20.0)  # Khế Ước 3: hồi cấp giảm nửa
 
 	# Mốc Đan Chéo 10/15/20/25 chèn Nâng cấp Độc bản; còn lại là 3 thẻ ngẫu nhiên
 	var cards := _milestone_cards(level)
@@ -1805,7 +1855,7 @@ func _ui_nav(dx: int, dy: int) -> void:
 		_shop_sel = wrapi(_shop_sel + dx + dy, 0, shop_nav_btns.size())
 		_update_shop_highlight()
 	elif map_panel != null and map_panel.visible:
-		_map_sel = wrapi(_map_sel + dx + dy, 0, 3)
+		_map_sel = wrapi(_map_sel + dx + dy, 0, 6)  # 3 map + 3 khế ước
 		_update_map_highlight()
 	elif char_panel.visible:
 		_char_nav(dx, dy)
@@ -1819,7 +1869,11 @@ func _ui_accept() -> void:
 	elif shop_panel != null and shop_panel.visible:
 		_shop_accept()
 	elif map_panel != null and map_panel.visible:
-		_pick_map(_map_sel)
+		if _map_sel >= 3:
+			# Space trên nút Khế Ước = bật/tắt (button_pressed sẽ tự phát toggled)
+			pact_btns[_map_sel - 3].button_pressed = not pact_btns[_map_sel - 3].button_pressed
+		else:
+			_pick_map(_map_sel)
 	elif char_panel.visible and not shop_panel.visible:
 		if _char_sel >= 4:
 			_open_shop()
@@ -2256,6 +2310,7 @@ func _lava_tick(delta: float) -> void:
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if p["pos"].distance_to(e.global_position) < p["radius"]:
 				e.take_hit(p["dps"] * delta)
+				report_damage("lava", p["dps"] * delta)
 
 
 func _announce(text: String, color := Color(1.0, 0.9, 0.3), shake := 0.0) -> void:
@@ -2394,6 +2449,22 @@ func _build_map_panel() -> void:
 		_skin_menu_card(b, map_accents[i])
 		map_btns.append(b)
 		vbox.add_child(b)
+	# — Khế Ước: 3 nút bật/tắt rủi ro đổi phần thưởng cho ván sắp chơi —
+	pact_label = Label.new()
+	pact_label.add_theme_font_size_override("font_size", 14)
+	pact_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pact_label.add_theme_color_override("font_color", Color(0.9, 0.62, 0.95))
+	vbox.add_child(pact_label)
+	for i in 3:
+		var pb := Button.new()
+		pb.toggle_mode = true
+		pb.focus_mode = Control.FOCUS_NONE
+		pb.add_theme_font_size_override("font_size", 15)
+		pb.custom_minimum_size = Vector2(0, 40)
+		pb.toggled.connect(_set_pact.bind(i))
+		_skin_menu_button(pb, Color(0.85, 0.5, 0.95))
+		pact_btns.append(pb)
+		vbox.add_child(pb)
 	map_panel.add_child(vbox)
 	$UI.add_child(map_panel)
 	_skin_menu_panel(map_panel)
@@ -2403,10 +2474,17 @@ func _build_map_panel() -> void:
 	map_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 
 
+func _set_pact(on: bool, idx: int) -> void:
+	pacts[idx] = on
+
+
 func _refresh_map_panel() -> void:
 	if map_panel == null:
 		return
 	map_title.text = T("map_title")
+	pact_label.text = T("pact_title")
+	for i in 3:
+		pact_btns[i].text = T("pact%d" % (i + 1))
 	for i in 3:
 		var unlocked := i < unlocked_maps
 		map_btns[i].disabled = not unlocked
@@ -2425,6 +2503,8 @@ func _update_map_highlight() -> void:
 			map_btns[i].modulate = Color(0.55, 0.55, 0.55)
 		else:
 			map_btns[i].modulate = Color(0.85, 0.85, 0.85)
+	for i in pact_btns.size():
+		pact_btns[i].modulate = Color(1.35, 1.35, 1.35) if _map_sel == 3 + i else Color(0.85, 0.85, 0.85)
 
 
 func _pick_map(i: int) -> void:
@@ -2502,16 +2582,19 @@ func _hazard_tick(delta: float) -> void:
 	# Ngoài cơn: vẫn có hiệu ứng lẻ random từ đầu ván, thưa hơn nhiều
 	_calm_strike_t -= delta
 	if _calm_strike_t <= 0.0:
-		_calm_strike_t = randf_range(4.0, 8.0)
+		# Khế Ước 2: hiệu ứng lẻ dày hơn
+		_calm_strike_t = randf_range(4.0, 8.0) * (0.6 if pacts[1] else 1.0)
 		_hazard_single()
 	# Đếm ngược tới cơn bão kế tiếp (không banner — thời tiết tự diễn ra)
 	storm_timer -= delta
 	if storm_timer > 0.0:
 		return
 	# Cơn bão mới kéo dài 12-18s; khoảng nghỉ giữa hai cơn ngắn dần về cuối ván
+	# (Khế Ước 2: khoảng nghỉ giảm nửa — bão tố dày gấp đôi)
 	storm_dur = randf_range(12.0, 18.0)
 	_storm_strike_t = 0.5
-	storm_timer = randf_range(40.0, 55.0) - minf(time * 0.04, 18.0)
+	storm_timer = (randf_range(40.0, 55.0) - minf(time * 0.04, 18.0)) \
+		* (0.5 if pacts[1] else 1.0)
 
 
 func _hazard_single() -> void:
@@ -2696,6 +2779,7 @@ func _lightning_strike(pos: Vector2, warn := 0.9) -> void:
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if pos.distance_to(e.global_position) < STORM_RADIUS:
 				e.take_hit(30.0, true, Vector2.ZERO, Color(1.0, 0.95, 0.5))
+				report_damage("hazard", 30.0)
 		_spawn_strike_fx(pos)
 		ring.queue_free())
 
@@ -2807,6 +2891,43 @@ func _open_chest(chest: Area2D) -> void:
 	get_tree().paused = true
 
 
+func _show_run_stats() -> void:
+	# Bảng "sát thương theo nguồn" hiện ở màn kết thúc (thắng / rút lui / chết)
+	if run_dmg.is_empty():
+		return
+	var panel := PanelContainer.new()
+	panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 3)
+	var title := Label.new()
+	title.text = T("res_dmg_title")
+	title.add_theme_font_size_override("font_size", 17)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_style_menu_title(title)
+	vb.add_child(title)
+	var entries := []
+	var total := 0.0
+	for k in run_dmg:
+		total += run_dmg[k]
+		entries.append([k, run_dmg[k]])
+	entries.sort_custom(func(a: Array, b: Array) -> bool: return a[1] > b[1])
+	for i in mini(entries.size(), 8):
+		var k: String = entries[i][0]
+		var amt: float = entries[i][1]
+		var nm: String = DMG_NAMES[k][lang] if DMG_NAMES.has(k) else k
+		var l := Label.new()
+		l.text = "%s  —  %d  (%d%%)" % [nm, int(amt), int(amt / total * 100.0)]
+		l.add_theme_font_size_override("font_size", 15)
+		vb.add_child(l)
+	panel.add_child(vb)
+	$UI.add_child(panel)
+	_skin_menu_panel(panel, 14.0)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	panel.position.y -= 24
+
+
 func _build_pause_panel() -> void:
 	pause_panel = PanelContainer.new()
 	pause_panel.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -2819,6 +2940,11 @@ func _build_pause_panel() -> void:
 	pause_title.add_theme_color_override("font_color", Color(0.15, 0.17, 0.25))
 	pause_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(pause_title)
+	# Danh sách build hiện tại: vũ khí + lõi/hình thái + vũ khí phụ + cổ vật
+	pause_build = Label.new()
+	pause_build.add_theme_font_size_override("font_size", 15)
+	pause_build.add_theme_color_override("font_color", Color(0.82, 0.86, 0.95))
+	vbox.add_child(pause_build)
 	pause_resume = Button.new()
 	pause_resume.add_theme_font_size_override("font_size", 22)
 	pause_resume.pressed.connect(_toggle_pause)
@@ -2847,7 +2973,42 @@ func _toggle_pause() -> void:
 		return
 	ui_sfx.play()
 	pause_panel.visible = not pause_panel.visible
+	if pause_panel.visible:
+		pause_build.text = _build_summary()
 	get_tree().paused = pause_panel.visible
+
+
+func _build_summary() -> String:
+	# Liệt kê build đang cầm — hiện trong menu tạm dừng
+	const WNAMES := {"pistol": "Súng lục / Pistol", "smg": "SMG", "laser": "Laser",
+		"shotgun": "Shotgun", "cannon": "Pháo / Cannon", "sniper": "Sniper", "katana": "Katana"}
+	var lv_word: String = "Cấp" if lang == 0 else "Lv"
+	var lines: Array[String] = []
+	var main_line: String = "• " + str(WNAMES.get(player.weapon, player.weapon))
+	if chosen_core != "":
+		for c in SIG_CORES.get(player.weapon, []):
+			if c["id"] == chosen_core:
+				main_line += "  +  " + c["name"][lang]
+	lines.append(main_line)
+	if chosen_form != "":
+		for f in SIG_FORMS:
+			if f["id"] == chosen_form:
+				lines.append("• " + f["name"][lang])
+	var secs: Array = [
+		[player.orbital_count, player.orbital_evolved, ["Kiếm xoay", "Swords"]],
+		[player.grenade_level, player.grenade_evolved, ["Lựu đạn", "Grenade"]],
+		[player.lightning_level, player.lightning_evolved, ["Sét chuỗi", "Lightning"]],
+		[player.poison_level, player.poison_evolved, ["Vùng độc", "Poison"]],
+		[player.boomerang_level, player.boomerang_evolved, ["Boomerang", "Boomerang"]],
+		[player.frost_level, player.frost_evolved, ["Tia băng", "Frost"]],
+	]
+	for s in secs:
+		if int(s[0]) > 0:
+			lines.append("• %s %s %d%s" % [s[2][lang], lv_word, int(s[0]), "  ★" if s[1] else ""])
+	for a in ARTIFACTS:
+		if a["fn"] in owned_artifacts:
+			lines.append("◦ " + a["name"][lang])
+	return "\n".join(lines)
 
 
 func _restart_game() -> void:
@@ -2903,6 +3064,7 @@ func _on_player_died() -> void:
 	over_label.text = (T("gameover_fmt") % [int(time) / 60, int(time) % 60, kills]) \
 		+ (T("reward_fmt") % [kept_gold, kept_souls]) + T("death_penalty")
 	over_label.visible = true
+	_show_run_stats()
 	get_tree().paused = true  # dừng toàn bộ thế giới khi hiện menu kết thúc
 
 
