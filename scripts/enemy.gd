@@ -30,7 +30,9 @@ var upright := false  # boss kiểu quái blob: không xoay theo hướng đi, c
 var tint := Color.WHITE
 var gems := 1
 
-var elite_mod := ""  # "" / "regen" / "split" / "explode" — quái tinh nhuệ
+var elite_mod := ""  # "" / regen / split / explode / shield / vampire — quái tinh nhuệ
+var shield_hits := 0  # elite Khiên: số đòn mạnh còn chặn được (đòn tick DoT/aura xuyên khiên)
+var shield_spr: Sprite2D
 var hp_max := 0.0
 var can_revive := false  # Vùng đất chết: quái hồi sinh 1 lần khi chết
 var revived := false
@@ -121,12 +123,22 @@ func _ready() -> void:
 		aura.scale = Vector2.ONE * (95.0 * (sprite_scale / 0.75) / TEX_GLOW.get_size().x)
 		aura.z_index = -1
 		add_child(aura)
-		var tex_badge: Texture2D = ELITE_BADGES[elite_mod]
-		badge = Sprite2D.new()
-		badge.texture = tex_badge
-		badge.scale = Vector2.ONE * (22.0 / tex_badge.get_size().x)
-		badge.z_index = 12
-		add_child(badge)
+		# Các mod mới (shield/vampire) không có icon badge — nhận diện qua màu aura + hiệu ứng
+		if ELITE_BADGES.has(elite_mod):
+			var tex_badge: Texture2D = ELITE_BADGES[elite_mod]
+			badge = Sprite2D.new()
+			badge.texture = tex_badge
+			badge.scale = Vector2.ONE * (22.0 / tex_badge.get_size().x)
+			badge.z_index = 12
+			add_child(badge)
+		if elite_mod == "shield":
+			# Vòng khiên xanh sáng — vỡ dần theo số đòn chặn được
+			shield_spr = Sprite2D.new()
+			shield_spr.texture = TEX_GLOW
+			shield_spr.modulate = Color(0.65, 0.9, 1.0, 0.75)
+			shield_spr.scale = Vector2.ONE * (70.0 * (sprite_scale / 0.75) / TEX_GLOW.get_size().x)
+			shield_spr.z_index = 4
+			add_child(shield_spr)
 
 
 func _aura_color() -> Color:
@@ -135,6 +147,10 @@ func _aura_color() -> Color:
 			return Color(0.3, 1.0, 0.4, 0.5)
 		"split":
 			return Color(0.4, 0.8, 1.0, 0.5)
+		"shield":
+			return Color(0.75, 0.9, 1.0, 0.55)
+		"vampire":
+			return Color(0.9, 0.15, 0.3, 0.55)
 		_:
 			return Color(1.0, 0.45, 0.2, 0.5)
 
@@ -258,6 +274,9 @@ func _chase(delta: float, to_player: Vector2) -> void:
 
 	if dist < 24.0 * (sprite_scale / 0.75):
 		player.take_damage(dps * delta)
+		# Elite Hút Máu: cắn được người chơi thì tự hồi gấp đôi lượng cắn
+		if elite_mod == "vampire":
+			hp = minf(hp + dps * delta * 2.0, hp_max)
 
 	if kind == Kind.BOSS and not skills.is_empty():
 		skill_timer -= delta
@@ -333,6 +352,20 @@ func _spawn_bullet(d: Vector2, spd := 240.0) -> void:
 
 func take_hit(damage: float, show_dmg := false, kb := Vector2.ZERO, col := Color(1.0, 0.9, 0.3), crit := false) -> void:
 	if hp <= 0.0:
+		return
+	# Elite Khiên: chặn trọn các đòn đánh mạnh (đòn có hiện số); tick DoT/aura xuyên khiên
+	if shield_hits > 0 and show_dmg:
+		shield_hits -= 1
+		flash_timer = 0.07
+		if is_instance_valid(shield_spr):
+			shield_spr.modulate.a = 0.25 + 0.25 * shield_hits
+			if shield_hits <= 0:
+				# Khiên vỡ: vòng sáng nổ tung ra
+				var burst := shield_spr.create_tween()
+				burst.set_parallel(true)
+				burst.tween_property(shield_spr, "scale", shield_spr.scale * 2.5, 0.3)
+				burst.tween_property(shield_spr, "modulate:a", 0.0, 0.3)
+				burst.chain().tween_callback(shield_spr.queue_free)
 		return
 	hp -= damage
 	if show_dmg:

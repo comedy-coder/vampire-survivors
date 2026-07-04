@@ -93,8 +93,15 @@ paused (UI panels, music, SFX players for menu sounds, ESC/nav listeners) set
   8–12). Coins drop from every kill (value = gem count) and crates.
 - **Spawning** (`_process`): interval `maxf(0.35, 1.1 - time*0.015)` (floor from
   ~50s). Variety unlocks: runner `t>18`, ranger `t>28`, tank `t>45`; elites 6% of
-  melee after 45s. Speed caps: melee **170**, runner **230** (kiting must stay
-  possible — slowest character is 200). After `t>210` every enemy drops **+1 gem**.
+  melee after 45s with mods regen/split/explode/**shield** (blocks 3 show_dmg hits;
+  DoT bypasses) /**vampire** (heals 2× contact damage dealt). Speed caps: melee
+  **170**, runner **230**. After `t>210` every enemy drops **+1 gem**. Kill streaks
+  show a combo counter (breaks after 1.5s; every 25 drops a bonus coin).
+- **Characters** (5): Commando/shotgun, Grandpa/cannon, Hunter/sniper,
+  Ronin/katana (unlock: clear Desert), **Agent/smg (unlock: clear Dead Zone)** —
+  lock flags via `"unlock"` key + `_char_unlocked`. A virtual touch joystick
+  (`virtual_joystick.gd`) is instantiated in `_ready` and read by `player.gd` when
+  touched; keyboard/mouse unaffected.
 - **Leveling**: `xp_needed = int(xp_needed * 1.10) + 4`. Milestones: **10** = weapon
   Core, **15** = Core enhance, **20** = Form (`soulburst` / `shock`), **25** =
   Ultimate. Expected timing: core ~1:00, enhance ~2:45, form ~5:00, ultimate ~8:00

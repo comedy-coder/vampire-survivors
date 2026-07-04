@@ -54,10 +54,11 @@ Aiming and firing are fully automatic — your weapon targets the nearest enemy.
 | Tough Grandpa | Cannon | Slow, wide explosive blasts; tanky |
 | Hunter | Sniper | Piercing straight-line shots, keep your distance |
 | Ronin *(unlock: clear Desert)* | Katana | Wide melee arc, high risk / high reward |
+| Agent *(unlock: clear Dead Zone)* | SMG | Blazing fire rate, fragile |
 
 Each weapon has its own two level-10 Cores (e.g. Shotgun: Fire Shells / Slug Rounds;
-Cannon: Black Hole / Frenzy; Sniper: Armor Pierce / Execute; Katana: Blade Wave /
-Berserker).
+Cannon: Black Hole / Magma; Sniper: Armor Pierce / Execute; Katana: Blade Wave /
+Berserker; SMG: Incendiary / AP Rounds).
 
 ## Maps & environmental hazards
 

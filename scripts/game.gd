@@ -174,7 +174,15 @@ const CHARACTERS := [
 		"desc": ["Katana — chém góc rộng cận chiến, mạo hiểm cao", "Katana — wide melee arc, high risk"],
 		"weapon_short": ["Katana • cận chiến rủi ro", "Katana • risky melee"],
 		"hp": 115.0, "speed": 255.0, "fire": 1.7, "dmg": 3.6, "count": 1, "pierce": 0,
-		"weapon": "katana", "locked": true,
+		"weapon": "katana", "unlock": "ronin",
+	},
+	{
+		"tex": preload("res://assets/characters/player_blue.png"),
+		"name": ["Đặc vụ", "Agent"],
+		"desc": ["SMG — bắn cực nhanh, mỏng manh", "SMG — blazing fire rate, fragile"],
+		"weapon_short": ["SMG • tốc độ bắn", "SMG • fire rate"],
+		"hp": 85.0, "speed": 240.0, "fire": 3.4, "dmg": 1.4, "count": 1, "pierce": 0,
+		"weapon": "smg", "unlock": "agent",
 	},
 ]
 
@@ -340,6 +348,10 @@ const SIG_CORES := {
 		{"id": "pierce",    "name": ["LÕI: Xuyên Giáp", "CORE: Armor Pierce"],    "desc": ["Xuyên +3 mục tiêu, sát thương lớn", "Pierce +3, big damage"],              "icon": preload("res://assets/icons/core_pierce.svg")},
 		{"id": "execute", "name": ["LÕI: Xử Tử", "CORE: Execute"], "desc": ["Hạ gục ngay quái thường còn ít máu; trúng boss gây thêm sát thương lớn", "Instantly kills low-HP enemies; bonus damage to bosses"], "icon": preload("res://assets/icons/core_explosive.svg")},
 	],
+	"smg": [
+		{"id": "burn",   "name": ["LÕI: Đạn Nhiệt", "CORE: Incendiary"], "desc": ["Mưa đạn giữ quái cháy liên tục (DoT)", "Bullet hail keeps enemies burning (DoT)"], "icon": preload("res://assets/icons/core_fire.svg")},
+		{"id": "pierce", "name": ["LÕI: Đạn Xuyên", "CORE: AP Rounds"],  "desc": ["Đạn xuyên +3 mục tiêu & mạnh hơn", "Pierce +3 and stronger"],                    "icon": preload("res://assets/icons/core_pierce.svg")},
+	],
 	"katana": [
 		{"id": "wave",      "name": ["LÕI: Kiếm Khí", "CORE: Blade Wave"], "desc": ["Mỗi nhát chém phóng làn kiếm khí bay xa", "Each slash fires a flying blade wave"], "icon": preload("res://assets/icons/core_wave.svg")},
 		{"id": "berserk", "name": ["LÕI: Cuồng Đao", "CORE: Berserker"], "desc": ["Chém +15%; máu càng thấp càng đau (tối đa ~×2 khi cạn máu)", "Slash +15%; the lower your HP, the harder you hit (up to ~2× near death)"], "icon": preload("res://assets/icons/core_lifesteal.svg")},
@@ -368,6 +380,9 @@ var _card_count := 3  # số thẻ đang hiện ở màn lên cấp (1..3)
 var chosen_core := ""  # id Lõi đã chọn ở cấp 10 (Phase 4b)
 var lava_pools: Array = []  # Lõi Dung Nham: mỗi phần tử {node, pos, radius, dps, t}
 var run_dmg := {}      # nguồn sát thương -> tổng đã gây trong ván (màn tổng kết)
+var combo := 0         # số quái giết liên tục không ngắt quãng >1.5s
+var combo_t := 0.0
+var combo_label: Label
 var pacts := [false, false, false]  # Khế Ước bật cho ván này (chọn ở màn chọn map)
 var pact_btns: Array = []
 var pact_label: Label
@@ -376,7 +391,8 @@ var chosen_form := ""  # id Hình thái đã chọn ở cấp 15
 # --- Phase 1: chọn map + mở khóa + nhịp boss ---
 var selected_stage := 0     # map đã chọn cho ván hiện tại (cố định cả ván)
 var unlocked_maps := 1      # số map đã mở (1=Đồng cỏ, 2=+Sa mạc, 3=+Đất chết)
-var ronin_unlocked := false # mở khóa Kiếm khách (dùng ở Phase 4) sau khi phá đảo Sa mạc
+var ronin_unlocked := false # mở khóa Kiếm khách sau khi phá đảo Sa mạc
+var agent_unlocked := false # mở khóa Đặc vụ (SMG) sau khi phá đảo Vùng đất chết
 var minibosses_spawned := 0 # số Mini-boss đã sinh trong ván
 var final_spawned := false  # đã sinh Final boss chưa
 var won := false            # đã phá đảo (giết Final boss) chưa
@@ -527,6 +543,19 @@ func _ready() -> void:
 	_storm_overlay.color = Color(0.2, 0.25, 0.45, 0.0)
 	$UI.add_child(_storm_overlay)
 	$UI.move_child(_storm_overlay, 0)
+	# Bộ đếm combo giết — hiện từ ×5, vàng, giữa-trên màn hình
+	combo_label = Label.new()
+	combo_label.add_theme_font_override("font", announce_font)
+	combo_label.add_theme_font_size_override("font_size", 30)
+	combo_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	combo_label.add_theme_color_override("font_outline_color", Color(0.25, 0.12, 0.0))
+	combo_label.add_theme_constant_override("outline_size", 6)
+	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	combo_label.visible = false
+	$UI.add_child(combo_label)
+	combo_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	combo_label.position.y += 64
+	combo_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_build_chest_panel()
 	_build_pause_panel()
 	$UI/PauseBtn.pressed.connect(_toggle_pause)
@@ -535,6 +564,10 @@ func _ready() -> void:
 	listener.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(listener)
 	listener.toggled.connect(_toggle_pause)
+	# Joystick ảo cho màn hình cảm ứng — chỉ vẽ khi có ngón tay chạm, không ảnh hưởng chuột/phím
+	var joy: Control = preload("res://scripts/virtual_joystick.gd").new()
+	$UI.add_child(joy)
+	player.joystick = joy
 	# Node điều hướng chọn nâng cấp bằng bàn phím (WASD/mũi tên + Space)
 	var lvl_nav := Node.new()
 	lvl_nav.set_script(preload("res://scripts/levelup_nav.gd"))
@@ -547,12 +580,11 @@ func _ready() -> void:
 		var lb: Button = level_panel.get_node("VBox/HBox/Btn%d" % (i + 1))
 		lb.focus_mode = Control.FOCUS_NONE  # tránh Space kích hoạt nút đang focus (double-fire)
 		lb.pressed.connect(_choose.bind(i))
-	for i in 4:
+	for i in 5:
 		var cb: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
 		cb.focus_mode = Control.FOCUS_NONE
 		cb.pressed.connect(_pick_char.bind(i))
-	# Phase 4: chỉ còn 4 nhân vật → ẩn 2 ô thừa trong lưới
-	char_panel.get_node("VBox/Grid/CharBtn5").visible = false
+	# 5 nhân vật → chỉ ẩn ô thừa cuối trong lưới
 	char_panel.get_node("VBox/Grid/CharBtn6").visible = false
 	_load_lang()
 	_load_meta()
@@ -607,6 +639,7 @@ func _load_meta() -> void:
 	souls = int(cf.get_value("meta", "souls", 0))
 	unlocked_maps = int(cf.get_value("meta", "unlocked_maps", 1))
 	ronin_unlocked = bool(cf.get_value("meta", "ronin_unlocked", false))
+	agent_unlocked = bool(cf.get_value("meta", "agent_unlocked", false))
 	for u in META_UPGRADES:
 		meta_levels[u["id"]] = int(cf.get_value("upgrades", u["id"], 0))
 
@@ -617,6 +650,7 @@ func _save_meta() -> void:
 	cf.set_value("meta", "souls", souls)
 	cf.set_value("meta", "unlocked_maps", unlocked_maps)
 	cf.set_value("meta", "ronin_unlocked", ronin_unlocked)
+	cf.set_value("meta", "agent_unlocked", agent_unlocked)
 	for u in META_UPGRADES:
 		cf.set_value("upgrades", u["id"], int(meta_levels.get(u["id"], 0)))
 	cf.save("user://save.cfg")
@@ -869,10 +903,10 @@ func _apply_lang() -> void:
 	_refresh_shop()
 	for i in lang_btns.size():
 		lang_btns[i].button_pressed = (i == lang)
-	for i in 4:
+	for i in 5:
 		var btn: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
 		var c: Dictionary = CHARACTERS[i]
-		var locked: bool = c.get("locked", false) and not ronin_unlocked
+		var locked: bool = not _char_unlocked(c)
 		btn.icon = c["tex"]
 		if locked:
 			btn.text = "%s  %s\n%s" % [c["name"][lang], T("map_locked"), c["weapon_short"][lang]]
@@ -908,10 +942,20 @@ func _set_sfx_vol(v: float) -> void:
 	thunder_sfx.volume_db = db - 5.0  # sấm kêu dày trong cơn dông nên để nhỏ bớt
 
 
+func _char_unlocked(c: Dictionary) -> bool:
+	match String(c.get("unlock", "")):
+		"ronin":
+			return ronin_unlocked
+		"agent":
+			return agent_unlocked
+		_:
+			return true
+
+
 func _pick_char(i: int) -> void:
 	var c: Dictionary = CHARACTERS[i]
-	if c.get("locked", false) and not ronin_unlocked:
-		return  # Kiếm khách chưa mở khóa
+	if not _char_unlocked(c):
+		return  # nhân vật chưa mở khóa
 	ui_sfx.play()
 	player.get_node("Sprite2D").texture = c["tex"]
 	player.max_hp = c["hp"]
@@ -945,6 +989,13 @@ func _process(delta: float) -> void:
 		_gem_combo_t -= delta
 		if _gem_combo_t <= 0.0:
 			_gem_combo = 0
+
+	# Combo giết: đứt nếu >1.5s không hạ được con nào
+	if combo_t > 0.0:
+		combo_t -= delta
+		if combo_t <= 0.0:
+			combo = 0
+			combo_label.visible = false
 
 	ground.global_position = player.global_position.snapped(Vector2(64.0, 64.0))
 	_update_decor()
@@ -1243,7 +1294,12 @@ func _win_run() -> void:
 		if unlocked_maps < 3:
 			unlocked_maps = 3
 			unlock_msg = T("win_unlock") % STAGES[2]["name"][lang]
-		ronin_unlocked = true  # phá đảo Sa mạc mở khóa Kiếm khách (Phase 4)
+		if not ronin_unlocked:
+			ronin_unlocked = true  # phá đảo Sa mạc mở khóa Kiếm khách
+			unlock_msg += T("win_unlock") % CHARACTERS[3]["name"][lang]
+	elif selected_stage == 2 and not agent_unlocked:
+		agent_unlocked = true  # phá đảo Vùng đất chết mở khóa Đặc vụ (SMG)
+		unlock_msg = T("win_unlock") % CHARACTERS[4]["name"][lang]
 	_save_meta()
 	over_label.text = (T("win_fmt") % [STAGES[selected_stage]["name"][lang], kills]) \
 		+ (T("reward_fmt") % [run_gold, run_souls]) + unlock_msg
@@ -1395,6 +1451,18 @@ func boom_shake(amt: float) -> void:
 func _on_enemy_died(pos: Vector2, gem_count: int) -> void:
 	kills += 1
 	_deaths_this_frame += 1
+	# Combo giết liên tục: hiện từ ×5, nảy nhẹ mỗi kill, mốc 25 thưởng xu
+	combo += 1
+	combo_t = 1.5
+	if combo >= 5:
+		combo_label.text = "×%d" % combo
+		combo_label.visible = true
+		combo_label.pivot_offset = combo_label.size * 0.5
+		combo_label.scale = Vector2.ONE * 1.18
+		var ctw := combo_label.create_tween()
+		ctw.tween_property(combo_label, "scale", Vector2.ONE, 0.12)
+	if combo % 25 == 0:
+		_spawn_coin(pos, 10)  # thưởng nhẹ mỗi mốc 25 combo
 	_spawn_coin(pos, gem_count)  # Vàng rơi ra nhặt như gem (giá trị theo độ "ngon" của quái)
 	_spawn_death_fx(pos)
 	die_sfx.pitch_scale = randf_range(0.85, 1.15)
@@ -1460,12 +1528,14 @@ func _on_coin_collected(value: int) -> void:
 
 
 func _make_elite(e: Area2D) -> void:
-	var mod: String = ["regen", "split", "explode"].pick_random()
+	var mod: String = ["regen", "split", "explode", "shield", "vampire"].pick_random()
 	e.elite_mod = mod
 	e.sprite_scale *= 1.3
 	e.hp *= 3.5
 	e.speed *= 0.9
 	e.gems += 1
+	if mod == "shield":
+		e.shield_hits = 3  # miễn 3 đòn đánh mạnh đầu tiên (DoT/aura vẫn xuyên khiên)
 	e.died.connect(func(pos: Vector2, _g: int) -> void: _on_elite_died(pos, mod))
 
 
@@ -1735,8 +1805,9 @@ func _skin_char_select() -> void:
 		Color(1.0, 0.7, 0.3),     # Ông già gân — hổ phách
 		Color(0.55, 0.95, 0.55),  # Thợ săn — xanh lá
 		Color(0.95, 0.45, 0.5),   # Kiếm khách — đỏ thẫm
+		Color(0.55, 0.85, 1.0),   # Đặc vụ — xanh da trời
 	]
-	for i in 4:
+	for i in 5:
 		var b: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
 		_skin_menu_card(b, accents[i])
 	if shop_open_btn:
@@ -1875,17 +1946,17 @@ func _ui_accept() -> void:
 		else:
 			_pick_map(_map_sel)
 	elif char_panel.visible and not shop_panel.visible:
-		if _char_sel >= 4:
+		if _char_sel >= 5:
 			_open_shop()
 		else:
 			_pick_char(_char_sel)
 
 
 func _char_nav(dx: int, dy: int) -> void:
-	# Lưới 2 cột × 2 hàng nhân vật (0..3) + nút Shop là chỉ số 4
-	if _char_sel >= 4:  # đang ở nút Shop
+	# Lưới 2 cột: 0..4 nhân vật (hàng 3 chỉ có 1 ô trái) + nút Shop là chỉ số 5
+	if _char_sel >= 5:  # đang ở nút Shop
 		if dy < 0:
-			_char_sel = 2   # lên → hàng nhân vật dưới
+			_char_sel = 4   # lên → ô nhân vật cuối
 		elif dy > 0:
 			_char_sel = 0   # xuống → vòng lên hàng đầu
 		_update_char_highlight()
@@ -1894,22 +1965,22 @@ func _char_nav(dx: int, dy: int) -> void:
 	var row := _char_sel / 2
 	if dx != 0:
 		col = wrapi(col + dx, 0, 2)
-		_char_sel = row * 2 + col
+		_char_sel = mini(row * 2 + col, 4)
 	elif dy != 0:
 		var nr := row + dy
-		if nr > 1 or nr < 0:
-			_char_sel = 4   # ra khỏi lưới nhân vật → tới nút Shop
+		if nr > 2 or nr < 0:
+			_char_sel = 5   # ra khỏi lưới nhân vật → tới nút Shop
 		else:
-			_char_sel = nr * 2 + col
+			_char_sel = mini(nr * 2 + col, 4)
 	_update_char_highlight()
 
 
 func _update_char_highlight() -> void:
-	for i in 4:
+	for i in 5:
 		var b: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
 		b.modulate = Color(1.35, 1.35, 1.35) if i == _char_sel else Color(0.7, 0.7, 0.7)
 	if shop_open_btn:
-		shop_open_btn.modulate = Color(1.35, 1.35, 1.35) if _char_sel == 4 else Color(0.85, 0.85, 0.85)
+		shop_open_btn.modulate = Color(1.35, 1.35, 1.35) if _char_sel == 5 else Color(0.85, 0.85, 0.85)
 
 
 func _choose(i: int) -> void:
@@ -3092,9 +3163,10 @@ func _build_debug_panel() -> void:
 	btn_unlock.add_theme_font_size_override("font_size", 18)
 	btn_unlock.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6))
 	btn_unlock.pressed.connect(func() -> void:
-		# Mở cả 3 map + Kiếm khách để test, lưu ngay vào save
+		# Mở cả 3 map + Kiếm khách + Đặc vụ để test, lưu ngay vào save
 		unlocked_maps = 3
 		ronin_unlocked = true
+		agent_unlocked = true
 		_save_meta()
 		_apply_lang()  # làm mới nhãn map + thẻ nhân vật (bỏ chữ 🔒)
 	)
@@ -3118,6 +3190,7 @@ func _build_debug_panel() -> void:
 		meta_levels.clear()
 		unlocked_maps = 1
 		ronin_unlocked = false
+		agent_unlocked = false
 		_save_meta()
 		_refresh_shop())
 

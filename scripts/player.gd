@@ -34,6 +34,7 @@ const WEAPONS := {
 }
 
 var weapon := "pistol"
+var joystick: Control = null  # joystick ảo (mobile) — game.gd gán lúc _ready
 var speed := 220.0
 var stage_speed_mult := 1.0  # hệ số tốc độ theo vùng (Sa mạc đi trên cát chậm hơn)
 
@@ -184,7 +185,11 @@ func _physics_process(delta: float) -> void:
 	var spd := speed * stage_speed_mult * (0.55 if slow_timer > 0.0 else 1.0)
 	if root_timer > 0.0:
 		spd = 0.0  # bị trói chân: đứng im hoàn toàn, chỉ còn xoay người bắn
-	velocity = Input.get_vector("move_left", "move_right", "move_up", "move_down") * spd
+	var iv := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	# Joystick ảo (cảm ứng) được ưu tiên khi đang chạm
+	if joystick != null and joystick.vec != Vector2.ZERO:
+		iv = joystick.vec
+	velocity = iv * spd
 	move_and_slide()
 
 	if velocity.length_squared() > 0.0:

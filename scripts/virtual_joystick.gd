@@ -26,7 +26,7 @@ func _input(event: InputEvent) -> void:
 			vec = Vector2.ZERO
 			queue_redraw()
 	elif event is InputEventScreenDrag and event.index == touch_id:
-		var d := (event.position - base_pos).limit_length(RADIUS)
+		var d: Vector2 = (event.position - base_pos).limit_length(RADIUS)
 		knob_pos = base_pos + d
 		vec = d / RADIUS
 		queue_redraw()
