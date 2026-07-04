@@ -99,6 +99,8 @@ var shake_amt := 0.0
 var hurt_fx_t := 0.0
 var slow_timer := 0.0
 var root_timer := 0.0  # bị bàn tay xương trói chân (Đất chết) — đứng im nhưng vẫn bắn được
+var infect_t := 0.0    # nhiễm độc dai dẳng sau khi rời vũng độc (6 dmg/s)
+var infect_fx: CPUParticles2D
 var hurt_rect := ColorRect.new()
 var walk_t := 0.0
 var base_sprite_scale := Vector2.ONE
@@ -131,6 +133,19 @@ func _ready() -> void:
 	hurt_sfx.stream = SND_HURT
 	hurt_sfx.volume_db = -6.0
 	add_child(hurt_sfx)
+	# Hạt độc xanh bốc lên khi đang nhiễm độc (vũng độc Đất chết)
+	infect_fx = CPUParticles2D.new()
+	infect_fx.texture = CIRCLE
+	infect_fx.amount = 8
+	infect_fx.lifetime = 0.8
+	infect_fx.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	infect_fx.emission_sphere_radius = 12.0
+	infect_fx.gravity = Vector2(0.0, -40.0)
+	infect_fx.scale_amount_min = 0.04
+	infect_fx.scale_amount_max = 0.09
+	infect_fx.color = Color(0.4, 1.0, 0.4, 0.8)
+	infect_fx.emitting = false
+	add_child(infect_fx)
 	# Aura Cuồng Phong: sáng dần theo số stack đang giữ
 	tempest_aura = Sprite2D.new()
 	tempest_aura.texture = TEX_GLOW
@@ -192,6 +207,11 @@ func _physics_process(delta: float) -> void:
 
 	slow_timer = maxf(0.0, slow_timer - delta)
 	root_timer = maxf(0.0, root_timer - delta)
+	# Nhiễm độc dai dẳng: ngấm tiếp 6 dmg/s sau khi đã rời vũng độc
+	if infect_t > 0.0:
+		infect_t -= delta
+		take_damage(6.0 * delta)
+	infect_fx.emitting = infect_t > 0.0
 	_blackhole_cd = maxf(0.0, _blackhole_cd - delta)
 	# Cuồng Phong: đếm lùi thời hạn stack + cập nhật aura
 	if sig_tempest:

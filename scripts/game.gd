@@ -437,6 +437,7 @@ var storm_dur := 0.0             # thời gian còn lại của cơn bão đang 
 var _storm_strike_t := 0.0       # nhịp sinh hiệu ứng trong cơn bão (0.7-1.1s)
 var _calm_strike_t := 3.0        # hiệu ứng lẻ ngoài cơn bão — có từ đầu ván
 var _storm_overlay := ColorRect.new()  # lớp phủ màu toàn màn hình báo "đang trong cơn bão"
+var _miasma: ColorRect                 # sương tử khí che tầm nhìn trong cơn bão Đất chết
 var _wind_t := 0.0               # nhịp sinh vệt gió cát trong bão cát (Sa mạc)
 var shop_panel: PanelContainer
 var shop_title: Label
@@ -545,6 +546,24 @@ func _ready() -> void:
 	_storm_overlay.color = Color(0.2, 0.25, 0.45, 0.0)
 	$UI.add_child(_storm_overlay)
 	$UI.move_child(_storm_overlay, 0)
+	# Sương tử khí (Đất chết): bóng tối khép lại quanh người chơi trong cơn bão
+	_miasma = ColorRect.new()
+	_miasma.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_miasma.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var msh := Shader.new()
+	msh.code = ("shader_type canvas_item;\n"
+		+ "uniform float u_amount = 0.0;\n"
+		+ "void fragment() {\n"
+		+ "\tvec2 d = SCREEN_UV - vec2(0.5);\n"
+		+ "\td.x *= SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x;\n"
+		+ "\tfloat dark = smoothstep(0.16, 0.42, length(d)) * u_amount;\n"
+		+ "\tCOLOR = vec4(0.01, 0.03, 0.01, dark);\n"
+		+ "}")
+	var mmat := ShaderMaterial.new()
+	mmat.shader = msh
+	_miasma.material = mmat
+	$UI.add_child(_miasma)
+	$UI.move_child(_miasma, 1)  # trên lớp phủ màu bão, dưới HUD
 	# Bộ đếm combo giết — hiện từ ×5, vàng, giữa-trên màn hình
 	combo_label = Label.new()
 	combo_label.add_theme_font_override("font", announce_font)
@@ -2622,6 +2641,7 @@ func _dead_pool_damage_tick(delta: float) -> void:
 			continue
 		if is_instance_valid(player) and player.alive and player.global_position.distance_to(p["pos"]) < p["radius"]:
 			player.take_damage(12.0 * delta)
+			player.infect_t = 2.0  # rời vũng vẫn ngấm độc thêm 2 giây
 
 
 func _spawn_dead_pool(dur := 8.0) -> void:
@@ -2652,6 +2672,11 @@ func _hazard_tick(delta: float) -> void:
 	# Lớp phủ màu hiện dần khi vào cơn bão, tan dần khi trời quang (fade ~1.3s)
 	_storm_overlay.color.a = move_toward(_storm_overlay.color.a,
 		0.13 if storm_dur > 0.0 else 0.0, 0.1 * delta)
+	# Đất chết: sương tử khí khép tầm nhìn lại trong cơn bão
+	var mmat := _miasma.material as ShaderMaterial
+	mmat.set_shader_parameter("u_amount", move_toward(
+		float(mmat.get_shader_parameter("u_amount")),
+		0.85 if (selected_stage == 2 and storm_dur > 0.0) else 0.0, 0.5 * delta))
 	# Nhịp chung cho cả 3 map — chỉ payload khác nhau (_hazard_single/_hazard_burst)
 	if storm_dur > 0.0:
 		# Đang trong cơn bão: sinh hiệu ứng liên tục theo nhịp cho tới khi tan

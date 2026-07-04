@@ -32,6 +32,7 @@ var gems := 1
 
 var elite_mod := ""  # "" / regen / split / explode / shield / vampire — quái tinh nhuệ
 var unstoppable := false  # Tử Thần: miễn làm chậm / đóng băng khi di chuyển
+var enraged := false      # boss cuồng nộ khi tụt dưới 30% máu
 var shield_hits := 0  # elite Khiên: số đòn mạnh còn chặn được (đòn tick DoT/aura xuyên khiên)
 var shield_spr: Sprite2D
 var hp_max := 0.0
@@ -271,7 +272,8 @@ func _chase(delta: float, to_player: Vector2) -> void:
 		shoot_timer -= delta
 		if shoot_timer <= 0.0 and dist <= shoot_range + 40.0:
 			shoot_timer = shoot_interval
-			_spawn_bullet(to_player.normalized())
+			# 35% là đạn nhớt (xanh độc) — trúng làm người chơi chậm lại
+			_spawn_bullet(to_player.normalized(), 240.0, randf() < 0.35)
 	else:
 		global_position += to_player.normalized() * spd * delta
 
@@ -342,12 +344,13 @@ func _fire_spiral() -> void:
 		tw.tween_callback(_spawn_bullet.bind(Vector2.from_angle(base + i * 0.55), 185.0))
 
 
-func _spawn_bullet(d: Vector2, spd := 240.0) -> void:
+func _spawn_bullet(d: Vector2, spd := 240.0, slow_shot := false) -> void:
 	var b := Area2D.new()
 	b.set_script(ENEMY_BULLET)
 	b.player = player
 	b.dir = d
 	b.speed = spd
+	b.slow = slow_shot
 	b.damage = bullet_damage
 	get_parent().add_child(b)
 	b.global_position = global_position + d * 20.0
@@ -371,6 +374,14 @@ func take_hit(damage: float, show_dmg := false, kb := Vector2.ZERO, col := Color
 				burst.chain().tween_callback(shield_spr.queue_free)
 		return
 	hp -= damage
+	# Boss CUỒNG NỘ dưới 30% máu: nhanh hơn 25%, tung chiêu dày hơn 40%, đỏ rực —
+	# 30% máu cuối là giai đoạn nguy hiểm nhất thay vì dễ nhất
+	if kind == Kind.BOSS and not enraged and hp > 0.0 and hp <= hp_max * 0.3:
+		enraged = true
+		speed *= 1.25
+		skill_interval *= 0.6
+		skill_timer = minf(skill_timer, 1.0)
+		tint = tint * Color(1.3, 0.72, 0.72)
 	if show_dmg:
 		flash_timer = 0.07
 	if kb != Vector2.ZERO:
