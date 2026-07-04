@@ -121,9 +121,12 @@ there are no banner announcements — weather just happens.
   strikes can be baited. Distinct thunder SFX + golden bolt/spark/scorch VFX.
 - **Desert — sandstorms**: quicksand pool (calm) / quicksand per burst with 15%
   tornado instead (storm). Plus `stage_speed_mult = 0.88` on sand.
-- **Dead Zone — toxic eruptions**: poison pool 8s (calm) / pool with shortened 4–6s
-  life per burst (storm), 12 dps to the player (`_dead_pool_damage_tick`). Enemies
-  +40% HP and melee enemies **revive once** at 45% HP.
+- **Dead Zone — toxic eruptions + grave hands**: calm ticks are 50/50 poison pool
+  (8s, 12 dps, `_dead_pool_damage_tick`) or a **grave hand** (`_grave_hand`): 0.8s
+  purple crack telegraph 30–200px from the player, then a skeletal hand bursts up —
+  15 dmg and **roots movement for 0.8s** (`player.root_timer`; aiming/firing still
+  work). Storm bursts: 35% hands / 65% fast-decaying pools (4–6s). Enemies +40% HP
+  and melee enemies **revive once** at 45% HP.
 
 ## Artifacts (`ARTIFACTS`, one-time)
 
