@@ -229,8 +229,6 @@ const DECOR_DARK := [
 ]
 const DECOR_CELL := 220.0
 
-var stage_len := 90.0
-
 const STAGES := [
 	{
 		"name": ["Đồng cỏ", "Meadow"],
@@ -510,7 +508,8 @@ func _ready() -> void:
 	_skin_levelup()
 	_skin_char_select()
 
-	_build_debug_panel()
+	if OS.is_debug_build():
+		_build_debug_panel()  # công cụ dev — không xuất hiện trong bản phát hành
 	_build_map_panel()
 	_refresh_map_panel()
 	_char_sel = 0
@@ -2634,35 +2633,12 @@ func _on_restart() -> void:
 		get_tree().reload_current_scene()
 
 
-var _debug_label: Label
-
 func _build_debug_panel() -> void:
+	# Công cụ dev (chỉ build debug): triệu hồi linh thú test + reset save
 	var panel := PanelContainer.new()
 	panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 4)
-
-	var btn_minus := Button.new()
-	btn_minus.text = "-"
-	btn_minus.add_theme_font_size_override("font_size", 18)
-	btn_minus.custom_minimum_size = Vector2(32, 0)
-	btn_minus.pressed.connect(func() -> void:
-		stage_len = maxf(10.0, stage_len - 10.0)
-		_update_debug_label())
-
-	_debug_label = Label.new()
-	_debug_label.add_theme_font_size_override("font_size", 18)
-	_debug_label.custom_minimum_size = Vector2(100, 0)
-	_debug_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_debug_label.text = "Stage: %.0fs" % stage_len
-
-	var btn_plus := Button.new()
-	btn_plus.text = "+"
-	btn_plus.add_theme_font_size_override("font_size", 18)
-	btn_plus.custom_minimum_size = Vector2(32, 0)
-	btn_plus.pressed.connect(func() -> void:
-		stage_len += 10.0
-		_update_debug_label())
 
 	var btn_familiar := Button.new()
 	btn_familiar.text = "Thú"
@@ -2674,6 +2650,15 @@ func _build_debug_panel() -> void:
 	btn_reset.add_theme_font_size_override("font_size", 18)
 	btn_reset.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
 	btn_reset.pressed.connect(func() -> void:
+		# Bấm 2 lần trong 3 giây mới xóa save — chống lỡ tay mất sạch tiến trình
+		if btn_reset.text != "Chắc chưa?":
+			btn_reset.text = "Chắc chưa?"
+			var t := get_tree().create_timer(3.0, true)
+			t.timeout.connect(func() -> void:
+				if is_instance_valid(btn_reset):
+					btn_reset.text = "Reset NV")
+			return
+		btn_reset.text = "Reset NV"
 		gold = 0
 		souls = 0
 		meta_levels.clear()
@@ -2682,9 +2667,6 @@ func _build_debug_panel() -> void:
 		_save_meta()
 		_refresh_shop())
 
-	hbox.add_child(btn_minus)
-	hbox.add_child(_debug_label)
-	hbox.add_child(btn_plus)
 	hbox.add_child(btn_familiar)
 	hbox.add_child(btn_reset)
 	panel.add_child(hbox)
@@ -2692,8 +2674,3 @@ func _build_debug_panel() -> void:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	panel.position.y -= 8
 	panel.position.x += 8
-
-
-func _update_debug_label() -> void:
-	if _debug_label:
-		_debug_label.text = "Stage: %.0fs" % stage_len

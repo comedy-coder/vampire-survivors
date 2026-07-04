@@ -4,24 +4,35 @@ Guidance for working in this repository.
 
 ## What this is
 
-A **Vampire Survivors–style** auto-battler built in **Godot 4.6** (Forward Plus). You
-pick a character, move with WASD/arrows, and weapons fire automatically at the nearest
-enemy. Survive escalating waves, collect XP gems to level up and pick upgrades, kill
-bosses for treasure chests, and earn gold that buys permanent upgrades between runs.
+A **Vampire Survivors–style** auto-battler built in **Godot 4.6** (Forward Plus). Pick
+a map, then a character; move with WASD/arrows while weapons auto-fire at the nearest
+enemy. Runs are a fixed **7 minutes** with boss milestones, extraction gates, and a
+dual-currency meta shop between runs.
 
 The game is **bilingual**: `lang = 0` is Vietnamese (default), `lang = 1` is English.
 All player-facing strings live in the `I18N` dictionary in `game.gd` as `[vi, en]`
 pairs, read via the `T(key)` helper. **Source-code comments are written in Vietnamese.**
 
-## Running
+## Running & verifying
 
-There is no build script or test suite. Open the project in the Godot 4.6 editor and
-run it (`F5`), or run the main scene `scenes/main.tscn` directly. The Godot binary is
-not vendored. `.godot/` (the editor's import cache) is gitignored.
+No build script or test suite. Open the project in the Godot 4.6 editor and run (`F5`),
+or run `scenes/main.tscn`. `.godot/` (import cache) is gitignored.
 
-Persistent state is stored in Godot's `user://` directory:
-- `user://settings.cfg` — selected language
-- `user://save.cfg` — accumulated `gold` and permanent upgrade levels
+Useful headless commands (the Godot binary lives at
+`/Applications/Godot.app/Contents/MacOS/Godot` on this machine):
+
+```sh
+# Syntax-check a script after editing (run from the repo root)
+Godot --headless --path . --check-only --script scripts/game.gd
+# Import newly added assets (required before preload() of a new file resolves)
+Godot --headless --path . --import
+```
+
+⚠️ If the Godot editor is open while files are edited externally, accept its **Reload**
+prompt — saving a stale editor buffer has previously overwritten disk changes.
+
+Persistent state in `user://`: `settings.cfg` (language), `save.cfg` (gold, souls,
+upgrade levels, `unlocked_maps`, `ronin_unlocked`).
 
 ## Architecture — read this first
 
@@ -31,154 +42,158 @@ The scene tree is **deliberately minimal**. `scenes/main.tscn` contains only:
 Main (Node2D, game.gd)
 ├── Player (CharacterBody2D, player.gd) — Sprite2D, Camera2D, CollisionShape2D
 └── UI (CanvasLayer) — HP/XP bars, labels, level-up panel, character-select panel,
-					   settings panel, buttons (built-in nodes only)
+                       settings panel, buttons (built-in nodes only)
 ```
 
 **Almost every other game object is created in code, not as a `.tscn`.** Enemies,
-bosses, projectiles, gems, pickups, crates, decor, and several UI panels (shop, chest,
-pause, language row, debug) are instantiated with `Area2D.new()` / `Node2D.new()` /
-`Button.new()` and given behavior via `node.set_script(SOME_SCRIPT)`. There are **no
-separate scene files for enemies or projectiles** — `scripts/*.gd` are the units of
-composition. When adding a new entity, follow this same pattern: `new()` the node,
-`set_script()`, set its `var` fields, `add_child()`, then position it.
+bosses, projectiles, gems, coins, pickups, crates, hazards, and most UI panels (map
+select, shop, chest, pause, debug) are instantiated with `Area2D.new()` /
+`Node2D.new()` / `Button.new()` and given behavior via `node.set_script(SOME_SCRIPT)`.
+When adding a new entity, follow the same pattern: `new()` the node, `set_script()`,
+set its `var` fields, `add_child()`, then position it.
 
-Objects coordinate through **signals** and **node groups** rather than direct
-references:
-- Groups: `"enemies"`, `"gems"`, `"crates"`, `"announce"`. Queried with
-  `get_tree().get_nodes_in_group(...)` — e.g. weapons find targets this way.
-- Signals: enemies emit `died` / `summon` / `tornado` / `quicksand`; gems emit
-  `collected`; pickups emit `taken`; crates emit `broke`; player emits `died`.
-  `game.gd` wires these up in `_make_enemy()` and the various `_spawn_*` functions.
+Objects coordinate through **signals** and **node groups**:
+- Groups: `"enemies"`, `"gems"`, `"coins"`, `"crates"`, `"announce"`.
+- Signals: enemies emit `died` / `summon` / `tornado` / `quicksand`; gems & coins emit
+  `collected`; pickups emit `taken`; crates emit `broke`; the extraction gate emits
+  `extracted` / `expired`; player emits `died`. `game.gd` wires these in
+  `_make_enemy()` and the `_spawn_*` functions.
 
-**Pausing**: menus call `get_tree().paused = true`. Nodes that must keep working while
-paused (UI panels, music, the ESC listener) set
-`process_mode = Node.PROCESS_MODE_ALWAYS`. Keep this in mind when adding UI.
+**Pausing**: menus set `get_tree().paused = true`. Nodes that must keep working while
+paused (UI panels, music, SFX players for menu sounds, ESC/nav listeners) set
+`process_mode = Node.PROCESS_MODE_ALWAYS`.
 
 ## Files
 
 | File | Role |
 |------|------|
-| `scripts/game.gd` (~1560 lines) | **Central controller** on `Main`. Owns time/wave progression, enemy & boss spawning, stage transitions, wave events, the level-up flow, artifacts, meta-progression + gold shop, I18N, music, and all code-built UI panels. Start here. |
-| `scripts/player.gd` | `CharacterBody2D`. Movement, auto-aim/auto-fire, all weapons, stats, `take_damage`/`heal`/revive, camera shake, hurt FX. |
-| `scripts/enemy.gd` | `Area2D`. Enemy + boss AI. `Kind` = MELEE/RANGER/BOSS; `State` = CHASE/TELEGRAPH/DASH. Elite modifiers, status effects, boss skills, damage numbers. |
-| `scripts/projectile.gd` | Player bullets: pierce, AoE, slow/freeze/frost-DoT, knockback, trails. |
-| `scripts/enemy_projectile.gd` | Enemy bullets. |
-| `scripts/boomerang.gd` | Boomerang weapon (out-and-return, homes back to player). |
-| `scripts/tornado.gd` / `scripts/quicksand.gd` | Desert-boss hazards (chasing tornado; slowing sand pools). |
-| `scripts/gem.gd` | XP gem with glow + bob + particle VFX; magnet-pull behavior (value 1 normal, 5 from elites). |
-| `scripts/pickup.gd` | Floor drops: `heal` / `magnet` / `bomb`. Each kind has rotating glow, inner ring, bob animation, and colour-coded CPUParticles2D. |
-| `scripts/crate.gd` | Breakable crate (breaks on contact; drops pickup or gems). |
-| `scripts/familiar.gd` | Spirit familiar artifact: orbits player, auto-fires, charges a **Nova** skill every 8 s (see below). |
-| `scripts/pause_listener.gd` | Emits `toggled` on ESC (`ui_cancel`); drives the pause menu. |
+| `scripts/game.gd` (~2700 lines) | **Central controller** on `Main`. Run/boss pacing, spawning, map hazards, level-up flow, milestones (cores/forms), artifacts, meta shop, economy, I18N, music/SFX, all code-built UI panels. Start here. |
+| `scripts/player.gd` (~780) | Movement, auto-aim/fire, all weapons (incl. katana melee), signature stats, `take_damage`/`heal`, Thorn Charm burst, camera shake, hurt FX. |
+| `scripts/enemy.gd` (~460) | Enemy + boss AI. `Kind` = MELEE/RANGER/BOSS; `State` = CHASE/TELEGRAPH/DASH. Elite mods, status effects (slow/freeze/poison/burn/frost — burn & frost are separate, stacking DoTs), boss skills, damage numbers, Dead-Zone revive. |
+| `scripts/projectile.gd` (~240) | Player bullets: pierce, AoE + splash falloff, black hole vortex, execute, burn/shock/slow/freeze, trails. |
+| `scripts/familiar.gd` (~240) | Spirit familiar: orbits, auto-fires, 8s-charge **Nova** (38 dmg, 100 px). `_make_anim_sprite` helper for atlas animations. |
+| `scripts/extraction_gate.gd` | Post-mini-boss escape gate: 30s lifetime, 3s channel. |
+| `scripts/gem.gd` / `scripts/coin.gd` | XP gems / gold coins; magnet pull, elite gems worth 5. |
+| `scripts/pickup.gd` / `scripts/crate.gd` | Floor drops (heal/magnet/bomb) and breakable crates. |
+| `scripts/tornado.gd` / `scripts/quicksand.gd` | Desert hazards (also used ambiently, not just by the boss). |
+| `scripts/enemy_projectile.gd` / `scripts/boomerang.gd` | Enemy bullets; boomerang weapon. |
+| `scripts/levelup_nav.gd` / `scripts/pause_listener.gd` | Keyboard nav (WASD+Space, R) and ESC listener for paused menus. |
+| `scripts/virtual_joystick.gd` | Touch joystick scaffold — **not wired into any scene yet** (mobile WIP). |
+| `tools/export_game_data.gd` | Editor tool to dump balance tables. |
 
-## Core systems (all in `game.gd` unless noted)
+## Run structure & pacing (game.gd)
 
-- **Time & spawning** (`_process`): a single `time` accumulator drives everything.
-  Spawn interval `maxf(0.22, 0.9 - time * 0.015)` ramps up quickly early. Enemy
-  variety unlocks over time: runner `t > 18s`, ranger `t > 28s`, tank `t > 45s`.
-- **Stages** (`STAGES`, `_update_stage`): three biomes — Meadow / Desert / Dead Zone.
-  Stage 0 lasts `stage_len` (default **90s**), then alternates between stages 1 and 2.
-  A stage change swaps the ground tile, decor set, and music, and re-buffs enemies via
-  `_apply_stage`. `stage_len` is tunable live via the debug panel.
-- **Bosses** (`_spawn_boss`): every `BOSS_INTERVAL` (**45s**), reset to 12s right after
-  a stage change. Desert/Dead-Zone have **front-view** themed bosses (`TEX_BOSS_DESERT`/
-  `BONE`, composed from Kenney's Monster Builder Pack, `upright = true`) shown ~50% of the
-  time; otherwise (and always in Meadow) a **top-down** boss from `TOPDOWN_BOSSES` is used
-  (`_apply_topdown_boss`) — a scaled-up, tinted top-down character sprite that rotates like
-  the regular enemies. Off-screen bosses get a red direction arrow (`_update_arrows`).
-- **Leveling** (`_on_gem_collected` → `_show_level_up` → `_choose`): gems give XP;
-  `xp_needed` grows `*1.4 + 2` per level. Each level-up pauses and offers 3 choices from
-  `_build_pool()`: stat upgrades (`STAT_UPGRADES`), weapon level-ups / **evolutions**
-  (max level `WEAPON_MAX = 4`, then evolve once), or an `ARTIFACT`.
-- **Weapons** (`player.gd`): base weapon per character (`WEAPONS`: pistol/smg/shotgun/
-  cannon/laser/sniper) plus stackable secondary weapons — orbital swords, grenade,
-  chain lightning, poison aura, boomerang, frost — each with levels and an evolved form.
-- **Artifacts** (`ARTIFACTS`): one-time passives (magnet, phoenix revive, spirit
-  familiar, crit, double-XP). Regen charm grants `player.regen = 0.5` HP/s (no shop
-  upgrade for regen). The familiar artifact is weighted 3× in `_build_pool` so it
-  appears more often. The familiar (`scripts/familiar.gd`) is an autonomous pet spawned
-  via `_spawn_familiar` that orbits the player and auto-fires.
-- **Wave events** (`_trigger_event`): periodic ring / flood / frenzy events.
-- **Chests** (`_spawn_chest`/`_open_chest`): dropped by bosses; grant 1–3 random pool
-  upgrades.
-- **Meta-progression** (`META_UPGRADES`, `_*_meta*`, shop): on death,
-  `gold = int((kills + boss_count*20 + int(time/5)) * 0.5)`. Spent in the
-  character-select shop on permanent upgrades, applied to the player at character pick
-  via `_apply_meta_upgrades`. Regen is **not** available as a shop upgrade.
+- **Flow**: map select → character select (+shop) → 7-minute run.
+- **Bosses**: `MINIBOSS_TIMES := [120, 240, 330]`, `FINAL_TIME := 420`. Boss HP is
+  `220 + time*2.5`; the final boss multiplies HP ×2.0 (Dead Zone ×2.4) and DPS
+  ×1.4/×2.0. Mini-boss kills open an **extraction gate**; the final-boss kill wins the
+  run (`_win_run`) and unlocks the next map (clearing Desert also unlocks Ronin).
+- **Rewards**: win/extract keep 100% of `run_gold`/`run_souls`; death keeps **25%
+  gold, 50% souls** (`_on_player_died`). Souls drop only from bosses (mini 2, final
+  8–12). Coins drop from every kill (value = gem count) and crates.
+- **Spawning** (`_process`): interval `maxf(0.35, 1.1 - time*0.015)` (floor from
+  ~50s). Variety unlocks: runner `t>18`, ranger `t>28`, tank `t>45`; elites 6% of
+  melee after 45s. Speed caps: melee **170**, runner **230** (kiting must stay
+  possible — slowest character is 200). After `t>210` every enemy drops **+1 gem**.
+- **Leveling**: `xp_needed = int(xp_needed * 1.10) + 4`. Milestones: **10** = weapon
+  Core, **15** = Core enhance, **20** = Form (`soulburst` / `shock`), **25** =
+  Ultimate. Expected timing: core ~1:00, enhance ~2:45, form ~5:00, ultimate ~8:00
+  (pre-final only with the XP artifact).
+- **Cores** (`SIG_CORES`): shotgun `burn`/`pierce`, cannon `blackhole`/`frenzy`,
+  sniper `pierce`/`execute`, katana `wave`/`berserk` (+15% base damage). The Frenzy
+  core is **additive**: it adds the current stat values on activation and subtracts
+  the same amounts on expiry (so upgrades bought mid-frenzy survive); 6s (8s enhanced)
+  every 17s, driven by `_frenzy_len`/`_frenzy_add`.
+- **Forms**: `soulburst` — kills explode (18 dmg × `sig_dmg_mul`, 100 px, chains, no
+  damage numbers to avoid label spam); `shock` — hits slow enemies (and thus enable
+  the Exploit card).
 
-## Tuned balance values (as of latest session)
+## Map hazards (replaces the removed rain system)
 
-| Parameter | Value | Location |
-|-----------|-------|----------|
-| Enemy spawn interval | `maxf(0.22, 0.9 - time*0.015)` | `game.gd _process` |
-| Pickup drop rate (enemies) | 0.8% (`randf() < 0.008`) | `game.gd` |
-| Heal / magnet / bomb split | 10% / 45% / 45% | `game.gd` |
-| Gold multiplier | ×0.5 of raw score | `game.gd` |
-| Regen from charm | 0.5 HP/s | `familiar.gd` / `game.gd` |
-| +25 Max HP skill weight | 10% chance in pool | `game.gd _build_pool` |
-| Bomb explosion radius | 280 px | `game.gd` |
-| Familiar nova damage | 38 (×2 on crit) | `familiar.gd` |
-| Familiar nova radius | 310 px | `familiar.gd` |
-| Familiar nova charge time | 8 s | `familiar.gd` |
+- **Meadow — thunderstorms** (`_storm_tick`): first storm at 1:00; each storm lasts
+  12–18s with 2–3 telegraphed strikes every 0.7–1.1s (0.9s warning ring, 90 px
+  radius, 25 dmg to player, **30 dmg to enemies** — strikes can be baited). Storms
+  avoid the extraction gate. Calm period 40–55s shrinks toward the end of the run.
+- **Desert**: `stage_speed_mult = 0.88` on sand + every 35–50s an ambient tornado
+  (chases, escapable) or a pair of quicksand pools (`_desert_hazard_tick`).
+- **Dead Zone**: poison pools every 4.5–7s (12 dps), enemies +40% HP, melee enemies
+  **revive once** at 45% HP.
 
-## Familiar — Nova skill (`scripts/familiar.gd`)
+## Artifacts (`ARTIFACTS`, one-time)
 
-The familiar charges for `CHARGE_TIME = 8.0` s (visible as a glowing ring that grows
-and brightens). On firing:
+Ancient Magnet (240 px pull), Phoenix Heart (revive at 50% + blast), Spirit Familiar
+(weighted 3× in the pool), **Thorn Charm** (`player.thorns`: when hit, 20 dmg ×
+`sig_dmg_mul` knockback burst in 200 px, 6s CD — see `player._thorns_burst`), Ancient
+Scope (20% crit ×2), XP Gem (double XP).
 
-1. A projectile (`projectile.gd`) is launched toward the nearest enemy at speed 200.
-   Its default `Sprite2D` is hidden; an `AnimatedSprite2D` using `assets/vfx/nova_orb.png`
-   (12 frames × 96×96, spritesheet from *Super Pixel Effects Gigapack*) is attached and
-   tweened from scale 1 → 2.8 over the ball's lifetime.
-2. After `ball_life = 1.6` s (or immediately if the projectile is already freed), AOE
-   damage is applied to all enemies within `NOVA_RADIUS = 310` px.
-3. `_spawn_nova_burst(pos)` plays `assets/vfx/nova_burst.png` (10 frames × 128×128,
-   *scifi_warp_001_large_green*) at the explosion position, plus an expanding glow ring.
-4. The helper `_make_anim_sprite(tex, fw, fh, frames, fps)` builds a one-shot
-   `AnimatedSprite2D` from an atlas spritesheet — reuse it for any new sprite animations.
+## Status effects & Exploit
 
-## UI — HP / XP bars
+`enemy.gd` keeps **separate DoT slots**: `frost_dot`/`frost_dot_timer` (frost weapon)
+and `burn_dot`/`burn_timer` (Fire Shells core) — they **stack**, don't overwrite.
+Burning enemies are tinted orange, frozen blue, poisoned green. The Exploit card
+(+40%) counts *any* of slow / frost / burn / freeze / poison, in both
+`projectile._hit_damage` and the katana `_slash_hit`.
 
-HP and XP bars in `scenes/main.tscn` use `TextureProgressBar` with
-`nine_patch_stretch = true` and `stretch_margin_*` set so the parallelogram edges are
-not stretched. Textures live in `assets/ui/`:
+## Meta-progression & economy
 
-| File | Used for |
-|------|----------|
-| `bar_red.png` | HP bar fill (red gradient parallelogram, 123×48) |
-| `bar_bg.png` | HP bar background (dark outline, same shape) |
-| `bar_blue.png` | XP bar fill (green gradient) |
-| `bar_bg_xp.png` | XP bar background (dark green outline) |
+`META_UPGRADES`: gold buys survival (HP/speed/magnet), souls buy attack
+(dmg/fire/crit); cost = `base × (level+1)`. Each purchased level adds +1.5% enemy
+HP/damage (`difficulty`), **except magnet** (pure utility, tax-exempt). Full gold
+tree ≈ 18k gold (~9 winning runs); full soul tree ≈ 180 souls (~11 runs).
 
-Source frames extracted from *Pixel UI Pack 3* (`06.png`) at 3× scale using Python PIL.
+## Audio
 
-## Input actions (`project.godot`)
+Music per map; SFX all run through the settings **SFX slider** (`_set_sfx_vol`).
+Synthesized chiptune WAVs in `assets/audio/` (replace by overwriting the same
+filename, then run `--import`): `gem` (pitch rises with pickup combo, resets after
+0.6s), `coin`, `levelup`, `chest`, `boss`, `extract` (also the win jingle), `hurt`
+(player, 0.35s cooldown via `hurt_fx_t`), `ui_click` (menus/cards/shop/pause).
+Menu-time players use `PROCESS_MODE_ALWAYS`. Thorn burst reuses `explosion.ogg`.
 
-`move_left/right/up/down` (WASD **and** arrow keys), `restart` (R, on the game-over
-screen), `ui_cancel` (ESC, toggles pause).
+## Debug panel
+
+`_build_debug_panel` is only built when `OS.is_debug_build()`. Buttons: "Thú" (spawn
+a familiar), "Reset NV" (wipes the save — requires a **second click within 3s** to
+confirm).
 
 ## Conventions & gotchas
 
-- **Bilingual everything**: any new player-facing string must be added to `I18N` as a
-  `[vietnamese, english]` pair and fetched with `T("key")`. UI text is refreshed in
-  `_apply_lang()`.
-- **Code-built UI**: panels created in `_build_*` functions append to `$UI` and set
-  `process_mode = PROCESS_MODE_ALWAYS` so they survive `get_tree().paused`.
-- **Group/signal coupling**: prefer the existing group lookups and signals over holding
-  direct node references; nodes are freed with `queue_free()` constantly, so guard with
-  `is_instance_valid(...)`.
-- **AnimatedSprite2D from atlas**: use `_make_anim_sprite(tex, fw, fh, frames, fps)` in
-  `familiar.gd` as a reference pattern — `AtlasTexture` regions across a single row,
-  `SpriteFrames` with `loop = false`. Do not set loop on VFX one-shots.
-- **z_index layering gotcha**: child nodes use *relative* z_index. Setting `z_index = -1`
-  on a child of a z_index=4 node renders it behind ground tiles (ground z=0 baseline).
-  For layering siblings (e.g. glow behind sprite), rely on add-order instead of z_index.
-- **Type inference**: `var x := randf() < threshold` may fail Godot type inference.
-  Use `var x: bool = randf() < threshold` explicitly.
-- **.import UIDs**: manually written UIDs are often rejected. Leave the `uid=` line out
-  of hand-crafted `.import` files — Godot auto-assigns a valid UID on first import.
-- **Debug panel** (`_build_debug_panel`, bottom-left): adjusts `stage_len` by ±10s and
-  has a "Thú" button that spawns a familiar for testing. This is dev tooling left in the
-  build — remove or gate it before shipping.
-- **Assets**: third-party art/audio is CC0 / CC-BY / attribution-required; see the
-  `CREDITS.txt` files under `assets/characters`, `assets/icons`, and `assets/vfx`.
+- **Bilingual everything**: any new player-facing string goes into `I18N` as a
+  `[vietnamese, english]` pair, fetched with `T("key")`; refresh in `_apply_lang()`.
+- **Code-built UI**: `_build_*` panels append to `$UI` and set
+  `process_mode = PROCESS_MODE_ALWAYS` to survive `get_tree().paused`. Menu skinning
+  helpers: `_skin_menu_panel/_skin_menu_card/_skin_menu_button/_style_menu_title`.
+- **Keyboard nav**: menus are driven by `levelup_nav.gd` signals through `_ui_nav` /
+  `_ui_accept`; buttons use `focus_mode = FOCUS_NONE` to avoid Space double-firing.
+- **ESC guard**: `_toggle_pause` must ignore ESC while any full-screen menu
+  (level-up, char select, chest, **map select, shop**) is open — unpausing behind a
+  menu starts the game with no character.
+- **Group/signal coupling**: prefer group lookups and signals over stored references;
+  nodes are freed constantly, guard with `is_instance_valid(...)`.
+- **AnimatedSprite2D from atlas**: reuse `_make_anim_sprite` (familiar.gd). Don't
+  loop one-shot VFX.
+- **z_index layering**: child z_index is relative; for glow-behind-sprite rely on
+  add-order, not negative z_index.
+- **Type inference**: `var x := randf() < t` can fail inference — annotate
+  `var x: bool = ...`.
+- **.import UIDs**: don't hand-write `uid=` lines; let Godot assign them on import.
+- **Assets**: third-party art/audio is CC0 / CC-BY; see `CREDITS.txt` files under
+  `assets/characters`, `assets/icons`, `assets/vfx`.
+
+## Key balance values (as of 2026-07)
+
+| Parameter | Value | Location |
+|-----------|-------|----------|
+| Spawn interval | `maxf(0.35, 1.1 - t*0.015)` | `game.gd _process` |
+| Enemy speed caps (melee/runner) | 170 / 230 | `game.gd _spawn_enemy` |
+| Boss HP | `220 + t*2.5`; final ×2.0 (DZ ×2.4) | `game.gd _spawn_boss` |
+| XP curve | `int(n*1.10)+4`; +1 gem/kill after 210s | `game.gd` |
+| Pickup drop rate | 0.8%; heal/magnet/bomb 10/45/45 | `game.gd` |
+| Death penalty | keep 25% gold, 50% souls | `game.gd _on_player_died` |
+| Souls per boss | mini 2, final 8–12 | `game.gd _spawn_boss` |
+| Frenzy core | ×2 stats, 6s (8s enhanced) / 17s CD | `game.gd _frenzy_core_tick` |
+| Soul Burst form | 18 dmg × dmg-mult, 100 px | `game.gd _soulburst` |
+| Thorn Charm | 20 dmg × dmg-mult, 200 px, 6s CD | `player.gd _thorns_burst` |
+| Storm strike | 90 px, 25 dmg player / 30 enemy | `game.gd _lightning_strike` |
+| Familiar nova | 38 dmg, 100 px, 8s charge | `familiar.gd` |
+| Meta difficulty tax | +1.5%/level, magnet exempt | `game.gd _apply_meta_upgrades` |

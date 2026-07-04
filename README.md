@@ -1,13 +1,13 @@
 # Vampire Survivors (Godot)
 
 A **Vampire Survivors–style** auto-battler built in **Godot 4.6** (Forward Plus
-renderer). Pick a character, move to dodge, and let your weapon fire automatically at
-the nearest enemy. Survive escalating waves, collect XP gems to level up and pick
-upgrades, kill bosses for treasure chests, and earn gold that buys permanent upgrades
-between runs.
+renderer). Pick a map and a character, move to dodge, and let your weapon fire
+automatically at the nearest enemy. Survive a tight **7-minute run** with escalating
+boss milestones, collect XP gems to build up your character, then bank Gold and Souls
+into permanent upgrades between runs.
 
 The game is **bilingual**: Vietnamese (default) and English, switchable from the
-settings panel.
+character-select screen and the pause menu.
 
 ## Running
 
@@ -19,68 +19,68 @@ will reimport assets.
 Progress is saved automatically to Godot's `user://` directory:
 
 - `user://settings.cfg` — selected language
-- `user://save.cfg` — accumulated gold and permanent (meta) upgrade levels
+- `user://save.cfg` — Gold, Souls, permanent upgrade levels, unlocked maps & character
 
 ## Controls
 
 | Action | Keys |
 |--------|------|
 | Move | **WASD** or **arrow keys** |
+| Navigate menus / pick cards | **WASD / arrows + Space** (mouse also works) |
 | Pause / menu | **Esc** |
-| Restart (on the game-over screen) | **R** |
+| Restart (on the end screen) | **R** |
 
-Aiming and firing are fully automatic — your weapon targets the nearest enemy. Level-up
-choices, the shop, and menus are mouse-driven.
+Aiming and firing are fully automatic — your weapon targets the nearest enemy.
 
 ## How a run works
 
-1. **Pick a character** from the select screen (and spend gold on permanent upgrades in
-   the shop).
-2. **Move to survive.** Weapons fire on their own; enemy variety and difficulty scale
-   with elapsed time.
-3. **Collect XP gems** dropped by kills. Each level-up pauses the game and offers 3
-   choices: a stat boost, a weapon level-up / evolution, or an artifact.
-4. **Cross biomes.** The world cycles through three stages, each swapping the terrain,
-   décor, music, and enemy buffs.
-5. **Beat bosses** (roughly every 45s) to drop **treasure chests** that grant 1–3 random
-   upgrades.
-6. **Die and bank gold.** Gold earned from a run (`kills + bosses×20 + time/5`) is spent
-   on permanent meta-upgrades that carry into future runs.
+1. **Pick a map**, then **pick a character** (and spend Gold/Souls in the shop).
+2. **Survive 7 minutes.** Spawn pressure ramps fast; enemy variety unlocks over time.
+3. **Boss milestones**: mini-bosses at **2:00, 4:00 and 5:30**, final boss at **7:00**.
+   Killing the final boss clears the map (and unlocks the next one).
+4. **Extraction gates**: each mini-boss kill opens a 30s gate. Stand in it for 3s to
+   **extract safely and keep 100%** of the Gold and Souls earned this run.
+5. **Death penalty**: dying keeps only **25% Gold and 50% Souls** — extract or win to
+   keep it all. Risk it or bank it.
+6. **Level milestones**: level 10 picks a weapon **Core** (changes how you fight),
+   15 enhances it, 20 picks a **Form** (Soul Burst or Shock), 25 is the **Ultimate
+   Awakening** — a chase goal for double-XP builds.
 
 ## Characters
 
-Six characters, each defined by a unique base weapon and stat profile:
-
 | Character | Weapon | Style |
 |-----------|--------|-------|
-| Commoner | Pistol | Balanced all around |
-| Warrior Woman | SMG | Blazing fire rate, fragile |
-| Commando | Shotgun | 5-pellet close-range spread |
-| Tough Grandpa | Cannon | Explosive AoE shells, slow |
-| Survivor | Laser | Piercing beam shots |
-| Hunter | Sniper | Huge damage, ultra-fast bullets |
+| Commando | Shotgun | Mid-range burst, 7-pellet spread |
+| Tough Grandpa | Cannon | Slow, wide explosive blasts; tanky |
+| Hunter | Sniper | Piercing straight-line shots, keep your distance |
+| Ronin *(unlock: clear Desert)* | Katana | Wide melee arc, high risk / high reward |
+
+Each weapon has its own two level-10 Cores (e.g. Shotgun: Fire Shells / Slug Rounds;
+Cannon: Black Hole / Frenzy; Sniper: Armor Pierce / Execute; Katana: Blade Wave /
+Berserker).
+
+## Maps & environmental hazards
+
+Maps are chosen per run and unlocked in order. Each has its own terrain, music, enemy
+buffs **and a movement challenge**:
+
+| Map | Hazard |
+|-----|--------|
+| **Meadow** | Recurring **thunderstorms** — dodge telegraphed lightning circles (they zap enemies too) |
+| **Desert** | Slower movement on sand, roaming **sand tornados**, **quicksand** pools |
+| **Dead Zone** | Poison pools, tougher enemies, melee enemies **revive once** |
 
 ## Progression systems
 
-- **Weapons** — Each character starts with a base weapon. Through level-ups you can add
-  **secondary weapons** (orbital swords, grenade, chain lightning, poison aura,
-  boomerang, frost), level them up, and **evolve** a maxed weapon into a stronger form.
-- **Stat upgrades** — Max HP, Damage, Fire rate, Move speed, HP regen, Magnet range,
-  Crit chance.
-- **Artifacts** — One-time passives: Ancient Magnet (triple pickup range), Phoenix Heart
-  (revive once with a knockback blast), Spirit Familiar (an auto-firing pet that orbits
-  you), Regen Charm, Ancient Scope (crit chance), XP Gem (double XP).
-- **Meta-progression** — Spend banked gold in the character-select shop on permanent
-  upgrades (HP, damage, fire rate, move speed, regen, and more) that apply to every
-  future run.
-
-## Stages & bosses
-
-Three biomes cycle through a run — **Meadow**, **Desert**, and **Dead Zone** — each with
-its own terrain, décor, music, and enemy buffs. Bosses appear on a timer and include
-themed front-view bosses (Zombie Lord, Bone boss) and scaled-up top-down bosses (Robot
-Fortress, Shadow Assassin, Warlord), each with their own skills. Off-screen bosses are
-marked with a direction arrow.
+- **Secondary weapons** — orbital swords, grenade, chain lightning, poison aura,
+  boomerang, frost bolt; level them up and **evolve** a maxed weapon.
+- **Stat cards** — damage, cooldown, multishot (adaptive per weapon), pierce/reach,
+  speed, max HP, Exploit (+40% vs afflicted), Fortitude (damage reduction).
+- **Artifacts** — one-time passives: Ancient Magnet, Phoenix Heart (revive),
+  Spirit Familiar (orbiting pet with a nova), **Thorn Charm** (retaliation blast when
+  hit), Ancient Scope (crit), XP Gem (double XP).
+- **Meta shop** — dual currency: **Gold** (from kills/crates) buys survival stats,
+  **Souls** (from bosses only) buy attack stats. Permanent across runs.
 
 ## Project layout
 
@@ -89,11 +89,11 @@ vampire-survivors/
 ├── project.godot          # Godot project config + input map
 ├── scenes/main.tscn       # The only scene: Main + Player + UI
 ├── scripts/               # All gameplay logic (GDScript)
-│   ├── game.gd            # Central controller — spawning, stages, UI, meta, I18N
+│   ├── game.gd            # Central controller — spawning, bosses, hazards, UI, meta, I18N
 │   ├── player.gd          # Movement, auto-aim/fire, weapons, stats
-│   ├── enemy.gd           # Enemy & boss AI
-│   ├── projectile.gd      # Player bullets
-│   └── ...                # gem, pickup, crate, familiar, tornado, etc.
+│   ├── enemy.gd           # Enemy & boss AI, status effects
+│   ├── projectile.gd      # Player bullets (pierce, AoE, black hole, DoTs)
+│   └── ...                # gem, coin, pickup, crate, familiar, extraction gate, etc.
 ├── assets/                # Art, audio, icons, décor (+ CREDITS.txt files)
 └── CLAUDE.md              # Detailed architecture notes for developers
 ```
@@ -114,3 +114,6 @@ under `assets/characters`, `assets/icons`, and `assets/vfx`):
   Icon Pack* (CC0)
 - **VFX** — *Super Pixel Effects Gigapack* by Will Tice / unTied Games (free with
   attribution)
+- **Reward/UI SFX** (`gem`, `coin`, `levelup`, `hurt`, `chest`, `boss`, `extract`,
+  `ui_click` in `assets/audio/`) — chiptune sounds synthesized in-house; drop-in
+  replaceable with e.g. [ChipTone](https://sfbgames.itch.io/chiptone) exports
