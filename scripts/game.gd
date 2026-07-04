@@ -3139,6 +3139,10 @@ func _on_player_died() -> void:
 	Engine.time_scale = 1.0  # đảm bảo không kẹt khựng khung hình khi chết
 	music.pitch_scale = 1.0
 	_music_lp.cutoff_hz = 20500.0
+	# _process dừng khi game_over nên phải chốt thanh máu về 0 tại đây
+	# (không thì label đóng băng ở giá trị frame trước khi chết, vd "HP: 3/115")
+	hp_bar.value = 0.0
+	hp_label.text = T("hp_fmt") % [0, int(player.max_hp)]
 	if is_instance_valid(gate):
 		gate.queue_free()
 	gate = null
