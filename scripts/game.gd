@@ -1599,7 +1599,7 @@ func _on_coin_collected(value: int) -> void:
 
 
 func _make_elite(e: Area2D) -> void:
-	var mod: String = ["regen", "split", "explode", "shield", "vampire"].pick_random()
+	var mod: String = ["regen", "split", "explode", "shield", "vampire", "frost"].pick_random()
 	e.elite_mod = mod
 	e.sprite_scale *= 1.3
 	e.hp *= 3.5
@@ -1613,6 +1613,23 @@ func _make_elite(e: Area2D) -> void:
 func _on_elite_died(pos: Vector2, mod: String) -> void:
 	_spawn_gem(pos, 5)
 	match mod:
+		"frost":
+			# Giá Băng: xác tỏa khí lạnh — người chơi đứng gần bị chậm 1.5s
+			# (trừng phạt build cận chiến; giết từ xa thì vô hại)
+			if is_instance_valid(player) and player.alive \
+					and player.global_position.distance_to(pos) < 110.0:
+				player.slow_timer = maxf(player.slow_timer, 1.5)
+			var ring := Sprite2D.new()
+			ring.texture = CIRCLE
+			ring.modulate = Color(0.75, 0.95, 1.0, 0.5)
+			ring.scale = Vector2.ONE * (40.0 / CIRCLE.get_size().x)
+			add_child(ring)
+			ring.global_position = pos
+			var rtw := ring.create_tween()
+			rtw.set_parallel(true)
+			rtw.tween_property(ring, "scale", Vector2.ONE * (220.0 / CIRCLE.get_size().x), 0.3)
+			rtw.tween_property(ring, "modulate:a", 0.0, 0.3)
+			rtw.chain().tween_callback(ring.queue_free)
 		"split":
 			for i in 2:
 				var m := _make_enemy()

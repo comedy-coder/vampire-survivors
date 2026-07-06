@@ -153,6 +153,8 @@ func _aura_color() -> Color:
 			return Color(0.75, 0.9, 1.0, 0.55)
 		"vampire":
 			return Color(0.9, 0.15, 0.3, 0.55)
+		"frost":
+			return Color(0.85, 0.98, 1.0, 0.65)  # trắng băng — sáng hơn hẳn khiên
 		_:
 			return Color(1.0, 0.45, 0.2, 0.5)
 
