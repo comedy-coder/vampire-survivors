@@ -3059,12 +3059,11 @@ func _build_pause_panel() -> void:
 	pause_panel = PanelContainer.new()
 	pause_panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	pause_panel.visible = false
-	pause_panel.custom_minimum_size = Vector2(300, 0)
+	pause_panel.custom_minimum_size = Vector2(340, 0)
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 14)
 	pause_title = Label.new()
 	pause_title.add_theme_font_size_override("font_size", 32)
-	pause_title.add_theme_color_override("font_color", Color(0.15, 0.17, 0.25))
 	pause_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(pause_title)
 	# Danh sách build hiện tại: vũ khí + lõi/hình thái + vũ khí phụ + cổ vật
@@ -3074,19 +3073,31 @@ func _build_pause_panel() -> void:
 	vbox.add_child(pause_build)
 	pause_resume = Button.new()
 	pause_resume.add_theme_font_size_override("font_size", 22)
+	pause_resume.custom_minimum_size = Vector2(0, 44)
+	pause_resume.focus_mode = Control.FOCUS_NONE
 	pause_resume.pressed.connect(_toggle_pause)
 	vbox.add_child(pause_resume)
 	pause_reset = Button.new()
 	pause_reset.add_theme_font_size_override("font_size", 22)
+	pause_reset.custom_minimum_size = Vector2(0, 44)
+	pause_reset.focus_mode = Control.FOCUS_NONE
 	pause_reset.pressed.connect(_restart_game)
 	vbox.add_child(pause_reset)
 	var pl := Button.new()
 	pl.text = "Tiếng Việt / English"
 	pl.add_theme_font_size_override("font_size", 22)
+	pl.custom_minimum_size = Vector2(0, 44)
+	pl.focus_mode = Control.FOCUS_NONE
 	pl.pressed.connect(func() -> void: _set_lang(1 - lang))
 	vbox.add_child(pl)
 	pause_panel.add_child(vbox)
 	$UI.add_child(pause_panel)
+	# Áp bộ skin fantasy chung — trước đây pause là panel trần duy nhất của game
+	_skin_menu_panel(pause_panel)
+	_style_menu_title(pause_title)
+	_skin_menu_button(pause_resume, Color(0.55, 0.95, 0.6))   # Tiếp tục — xanh lá
+	_skin_menu_button(pause_reset, Color(1.0, 0.78, 0.3))     # Chọn lại — hổ phách
+	_skin_menu_button(pl, Color(0.72, 0.72, 0.88))            # Ngôn ngữ — xám tím
 	pause_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	pause_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	pause_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
