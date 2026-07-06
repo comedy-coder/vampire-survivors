@@ -601,11 +601,19 @@ func _ready() -> void:
 		var lb: Button = level_panel.get_node("VBox/HBox/Btn%d" % (i + 1))
 		lb.focus_mode = Control.FOCUS_NONE  # tránh Space kích hoạt nút đang focus (double-fire)
 		lb.pressed.connect(_choose.bind(i))
+	# Ô nhân vật thứ 5 tách khỏi lưới 2 cột thành hàng full-width riêng bên dưới
+	# (lưới 2×2 cân đối, slot 5 nhìn như hàng "đặc biệt" thay vì ô lẻ thấp lệch)
+	var char_grid: GridContainer = char_panel.get_node("VBox/Grid")
+	var btn5: Button = char_grid.get_node("CharBtn5")
+	char_grid.remove_child(btn5)
+	var char_vbox: VBoxContainer = char_panel.get_node("VBox")
+	char_vbox.add_child(btn5)
+	char_vbox.move_child(btn5, char_grid.get_index() + 1)
+	btn5.custom_minimum_size = Vector2(0, 128)  # cao bằng các ô trong lưới
 	for i in 5:
-		var cb: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
+		var cb: Button = _char_btn(i)
 		cb.focus_mode = Control.FOCUS_NONE
 		cb.pressed.connect(_pick_char.bind(i))
-	# 5 nhân vật → chỉ ẩn ô thừa cuối trong lưới
 	char_panel.get_node("VBox/Grid/CharBtn6").visible = false
 	_load_lang()
 	_load_meta()
@@ -925,7 +933,7 @@ func _apply_lang() -> void:
 	for i in lang_btns.size():
 		lang_btns[i].button_pressed = (i == lang)
 	for i in 5:
-		var btn: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
+		var btn: Button = _char_btn(i)
 		var c: Dictionary = CHARACTERS[i]
 		var locked: bool = not _char_unlocked(c)
 		btn.icon = c["tex"]
@@ -961,6 +969,13 @@ func _set_sfx_vol(v: float) -> void:
 	extract_sfx.volume_db = db
 	boss_sfx.volume_db = db
 	thunder_sfx.volume_db = db - 5.0  # sấm kêu dày trong cơn dông nên để nhỏ bớt
+
+
+func _char_btn(i: int) -> Button:
+	# Ô 0-3 nằm trong Grid; ô 4 (Đặc vụ) đã tách ra hàng riêng trong VBox
+	if i == 4:
+		return char_panel.get_node("VBox/CharBtn5")
+	return char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
 
 
 func _char_unlocked(c: Dictionary) -> bool:
@@ -1844,8 +1859,7 @@ func _skin_char_select() -> void:
 		Color(0.55, 0.85, 1.0),   # Đặc vụ — xanh da trời
 	]
 	for i in 5:
-		var b: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
-		_skin_menu_card(b, accents[i])
+		_skin_menu_card(_char_btn(i), accents[i])
 	if shop_open_btn:
 		_skin_menu_button(shop_open_btn, Color(1.0, 0.82, 0.35))
 	for lb in lang_btns:
@@ -2013,7 +2027,7 @@ func _char_nav(dx: int, dy: int) -> void:
 
 func _update_char_highlight() -> void:
 	for i in 5:
-		var b: Button = char_panel.get_node("VBox/Grid/CharBtn%d" % (i + 1))
+		var b: Button = _char_btn(i)
 		b.modulate = Color(1.35, 1.35, 1.35) if i == _char_sel else Color(0.7, 0.7, 0.7)
 	if shop_open_btn:
 		shop_open_btn.modulate = Color(1.35, 1.35, 1.35) if _char_sel == 5 else Color(0.85, 0.85, 0.85)
