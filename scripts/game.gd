@@ -438,6 +438,7 @@ var _storm_strike_t := 0.0       # nhịp sinh hiệu ứng trong cơn bão (0.7
 var _calm_strike_t := 3.0        # hiệu ứng lẻ ngoài cơn bão — có từ đầu ván
 var _storm_overlay := ColorRect.new()  # lớp phủ màu toàn màn hình báo "đang trong cơn bão"
 var _miasma: ColorRect                 # sương tử khí che tầm nhìn trong cơn bão Đất chết
+var _miasma_amt := 0.0                 # cường độ sương hiện tại (không đọc ngược từ shader — trả null)
 var _wind_t := 0.0               # nhịp sinh vệt gió cát trong bão cát (Sa mạc)
 var shop_panel: PanelContainer
 var shop_title: Label
@@ -561,6 +562,7 @@ func _ready() -> void:
 		+ "}")
 	var mmat := ShaderMaterial.new()
 	mmat.shader = msh
+	mmat.set_shader_parameter("u_amount", 0.0)
 	_miasma.material = mmat
 	$UI.add_child(_miasma)
 	$UI.move_child(_miasma, 1)  # trên lớp phủ màu bão, dưới HUD
@@ -2673,10 +2675,10 @@ func _hazard_tick(delta: float) -> void:
 	_storm_overlay.color.a = move_toward(_storm_overlay.color.a,
 		0.13 if storm_dur > 0.0 else 0.0, 0.1 * delta)
 	# Đất chết: sương tử khí khép tầm nhìn lại trong cơn bão
-	var mmat := _miasma.material as ShaderMaterial
-	mmat.set_shader_parameter("u_amount", move_toward(
-		float(mmat.get_shader_parameter("u_amount")),
-		0.85 if (selected_stage == 2 and storm_dur > 0.0) else 0.0, 0.5 * delta))
+	# (theo dõi cường độ bằng biến script — get_shader_parameter trả null nếu chưa từng set)
+	_miasma_amt = move_toward(_miasma_amt,
+		0.85 if (selected_stage == 2 and storm_dur > 0.0) else 0.0, 0.5 * delta)
+	(_miasma.material as ShaderMaterial).set_shader_parameter("u_amount", _miasma_amt)
 	# Nhịp chung cho cả 3 map — chỉ payload khác nhau (_hazard_single/_hazard_burst)
 	if storm_dur > 0.0:
 		# Đang trong cơn bão: sinh hiệu ứng liên tục theo nhịp cho tới khi tan
