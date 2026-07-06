@@ -3,7 +3,7 @@ extends Node2D
 const PROJECTILE     := preload("res://scripts/projectile.gd")
 const CIRCLE         := preload("res://assets/circle.svg")
 const TEX_GLOW       := preload("res://assets/vfx/glow.png")
-const SFX_NOVA       := preload("res://assets/audio/nova.ogg")
+const SFX_NOVA       := preload("res://assets/audio/nova.wav")
 const TEX_NOVA_ORB   := preload("res://assets/vfx/nova_orb.png")
 const TEX_NOVA_BURST := preload("res://assets/vfx/nova_burst.png")
 

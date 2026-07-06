@@ -49,10 +49,4 @@ Third-party assets, used with thanks:
 - **Pixel VFX** — *Super Pixel Effects Gigapack* by **Will Tice / unTied Games** (untiedgames.com)
 - **UI frames & bars** — Kenney *Fantasy UI Borders* (CC0), *Pixel UI Pack 3*
 - **Font** — Baloo 2 (SIL Open Font License)
-- **SFX & boss theme** — synthesized in-house
-
-⚠️ GHI CHÚ NỘI BỘ (xóa trước khi đăng): 4 track nhạc nền gốc
-(`music_menu`, `music_game`, `music_desert`, `music_dead`) và 5 SFX cũ
-(`shoot`, `explosion`, `zap`, `enemy_die`, `nova`) **chưa có ghi chú nguồn gốc /
-giấy phép trong repo** — cần xác nhận nguồn và bổ sung vào mục credits này
-(hoặc thay thế) trước khi phát hành công khai.
+- **All music & sound effects** — synthesized in-house for this game
