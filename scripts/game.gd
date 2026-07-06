@@ -122,6 +122,7 @@ const I18N := {
 	"pact1": ["Quái +30% máu, +15% dmg  →  Vàng ×1.5", "Enemies +30% HP, +15% dmg  →  Gold ×1.5"],
 	"pact2": ["Bão tố dày gấp đôi  →  Linh Hồn ×1.5", "Storms twice as often  →  Souls ×1.5"],
 	"pact3": ["Không bình máu, hồi cấp -50%  →  +20% sát thương", "No heal drops, half level heal  →  +20% damage"],
+	"hint_controls": ["Di chuyển: WASD / joystick — vũ khí tự bắn!", "Move: WASD / joystick — weapons fire on their own!"],
 	"pact4": ["TỬ TỐC: quái +25% tốc, spawn dày  →  Vàng & Hồn ×1.3", "DEATHLY SPEED: +25% enemy speed, denser spawns  →  Gold & Souls ×1.3"],
 	"death_announce": ["TỬ THẦN ĐUỔI THEO! KẾT THÚC NGAY!", "DEATH COMES! FINISH THE RUN!"],
 }
@@ -389,6 +390,7 @@ var death_spawned := false  # Tử Thần đã xuất hiện (90s sau final boss
 var pact_btns: Array = []
 var pact_label: Label
 var pause_build: Label  # dòng liệt kê build hiện tại trong menu tạm dừng
+var _end_dim := ColorRect.new()  # lớp tối mờ sau chữ kết thúc ván
 var chosen_form := ""  # id Hình thái đã chọn ở cấp 15
 # --- Phase 1: chọn map + mở khóa + nhịp boss ---
 var selected_stage := 0     # map đã chọn cho ván hiện tại (cố định cả ván)
@@ -623,6 +625,21 @@ func _ready() -> void:
 	_apply_lang()
 	_skin_levelup()
 	_skin_char_select()
+	# Panel Âm Thanh (scene-built) cũng ăn bộ skin chung
+	_skin_menu_panel(settings_panel)
+	_style_menu_title(settings_panel.get_node("VBox/Title"))
+	_skin_menu_button(settings_panel.get_node("VBox/CloseBtn"), Color(0.9, 0.5, 0.45))
+	for row in ["MusicRow", "SfxRow"]:
+		settings_panel.get_node("VBox/%s/Label" % row) \
+			.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
+	# Lớp tối mờ cho màn kết thúc — chèn ngay dưới GameOverLabel
+	_end_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_end_dim.color = Color(0.02, 0.02, 0.05, 0.0)
+	_end_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_end_dim.process_mode = Node.PROCESS_MODE_ALWAYS
+	_end_dim.visible = false
+	$UI.add_child(_end_dim)
+	$UI.move_child(_end_dim, over_label.get_index())
 
 	if OS.is_debug_build():
 		_build_debug_panel()  # công cụ dev — không xuất hiện trong bản phát hành
@@ -1006,6 +1023,7 @@ func _pick_char(i: int) -> void:
 	char_panel.visible = false
 	get_tree().paused = false
 	_setup_stage()  # áp dụng map đã chọn: nền, nhạc, hiệu ứng vùng
+	_announce(T("hint_controls"), Color(0.7, 0.9, 1.0))  # nhắc cách chơi cho người mới
 
 
 func _process(delta: float) -> void:
@@ -1372,6 +1390,7 @@ func _win_run() -> void:
 	over_label.text = (T("win_fmt") % [STAGES[selected_stage]["name"][lang], kills]) \
 		+ (T("reward_fmt") % [run_gold, run_souls]) + unlock_msg
 	over_label.visible = true
+	_show_end_dim()
 	_show_run_stats()
 	get_tree().paused = true  # dừng toàn bộ thế giới khi hiện menu thắng
 
@@ -1412,6 +1431,7 @@ func _extract() -> void:
 	over_label.text = (T("extract_fmt") % [STAGES[selected_stage]["name"][lang], kills]) \
 		+ (T("reward_fmt") % [run_gold, run_souls])
 	over_label.visible = true
+	_show_end_dim()
 	_show_run_stats()
 	get_tree().paused = true  # dừng toàn bộ thế giới khi rút lui
 
@@ -3018,6 +3038,13 @@ func _open_chest(chest: Area2D) -> void:
 	get_tree().paused = true
 
 
+func _show_end_dim() -> void:
+	# Lớp tối phủ dần lên chiến trường để chữ kết thúc + bảng tổng kết dễ đọc
+	_end_dim.visible = true
+	var tw := _end_dim.create_tween()
+	tw.tween_property(_end_dim, "color:a", 0.55, 0.4)
+
+
 func _show_run_stats() -> void:
 	# Bảng "sát thương theo nguồn" hiện ở màn kết thúc (thắng / rút lui / chết)
 	if run_dmg.is_empty():
@@ -3206,6 +3233,7 @@ func _on_player_died() -> void:
 	over_label.text = (T("gameover_fmt") % [int(time) / 60, int(time) % 60, kills]) \
 		+ (T("reward_fmt") % [kept_gold, kept_souls]) + T("death_penalty")
 	over_label.visible = true
+	_show_end_dim()
 	_show_run_stats()
 	get_tree().paused = true  # dừng toàn bộ thế giới khi hiện menu kết thúc
 
