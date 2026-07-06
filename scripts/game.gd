@@ -390,6 +390,8 @@ var death_spawned := false  # Tử Thần đã xuất hiện (90s sau final boss
 var pact_btns: Array = []
 var pact_label: Label
 var pause_build: Label  # dòng liệt kê build hiện tại trong menu tạm dừng
+var pause_nav_btns: Array = []  # 3 nút menu tạm dừng cho điều hướng bàn phím
+var _pause_sel := 0
 var _end_dim := ColorRect.new()  # lớp tối mờ sau chữ kết thúc ván
 var chosen_form := ""  # id Hình thái đã chọn ở cấp 15
 # --- Phase 1: chọn map + mở khóa + nhịp boss ---
@@ -2015,6 +2017,9 @@ func _ui_nav(dx: int, dy: int) -> void:
 	elif map_panel != null and map_panel.visible:
 		_map_sel = wrapi(_map_sel + dx + dy, 0, 7)  # 3 map + 4 khế ước
 		_update_map_highlight()
+	elif pause_panel != null and pause_panel.visible:
+		_pause_sel = wrapi(_pause_sel + dx + dy, 0, pause_nav_btns.size())
+		_update_pause_highlight()
 	elif char_panel.visible:
 		_char_nav(dx, dy)
 
@@ -2032,6 +2037,8 @@ func _ui_accept() -> void:
 			pact_btns[_map_sel - 3].button_pressed = not pact_btns[_map_sel - 3].button_pressed
 		else:
 			_pick_map(_map_sel)
+	elif pause_panel != null and pause_panel.visible:
+		pause_nav_btns[_pause_sel].pressed.emit()
 	elif char_panel.visible and not shop_panel.visible:
 		if _char_sel >= 5:
 			_open_shop()
@@ -3142,6 +3149,7 @@ func _build_pause_panel() -> void:
 	_skin_menu_button(pause_resume, Color(0.55, 0.95, 0.6))   # Tiếp tục — xanh lá
 	_skin_menu_button(pause_reset, Color(1.0, 0.78, 0.3))     # Chọn lại — hổ phách
 	_skin_menu_button(pl, Color(0.72, 0.72, 0.88))            # Ngôn ngữ — xám tím
+	pause_nav_btns = [pause_resume, pause_reset, pl]
 	pause_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	pause_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	pause_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
@@ -3157,7 +3165,14 @@ func _toggle_pause() -> void:
 	pause_panel.visible = not pause_panel.visible
 	if pause_panel.visible:
 		pause_build.text = _build_summary()
+		_pause_sel = 0
+		_update_pause_highlight()
 	get_tree().paused = pause_panel.visible
+
+
+func _update_pause_highlight() -> void:
+	for i in pause_nav_btns.size():
+		pause_nav_btns[i].modulate = Color(1.35, 1.35, 1.35) if i == _pause_sel else Color(0.8, 0.8, 0.8)
 
 
 func _build_summary() -> String:
