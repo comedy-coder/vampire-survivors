@@ -1,4 +1,4 @@
-# Vampire Survivors (Godot)
+# Bão Quái
 
 A **Vampire Survivors–style** auto-battler built in **Godot 4.6** (Forward Plus
 renderer). Pick a map and a character, move to dodge, and let your weapon fire

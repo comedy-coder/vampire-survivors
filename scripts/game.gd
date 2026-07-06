@@ -27,11 +27,11 @@ const TEX_ZOMBIE := preload("res://assets/characters/zombie.png")
 const TEX_HITMAN := preload("res://assets/characters/hitman.png")
 const TEX_ROBOT := preload("res://assets/characters/robot.png")
 const TEX_GRASS := preload("res://assets/tiles/grass_01.png")
-const MUSIC_MENU   := preload("res://assets/audio/music_menu.wav")
-const MUSIC_GAME   := preload("res://assets/audio/music_game.wav")
+const MUSIC_MENU   := preload("res://assets/audio/music_menu.mp3")
+const MUSIC_GAME   := preload("res://assets/audio/music_game.mp3")
 const MUSIC_DESERT := preload("res://assets/audio/music_desert.mp3")
 const MUSIC_DEAD   := preload("res://assets/audio/music_dead.mp3")
-const MUSIC_BOSS   := preload("res://assets/audio/music_boss.wav")
+const MUSIC_BOSS   := preload("res://assets/audio/music_boss.mp3")
 const SND_DIE := preload("res://assets/audio/enemy_die.ogg")
 const SND_GEM     := preload("res://assets/audio/gem.wav")
 const SND_COIN    := preload("res://assets/audio/coin.wav")
@@ -495,9 +495,7 @@ func _ready() -> void:
 	announce_font = FontVariation.new()
 	announce_font.base_font = FONT_ANNOUNCE
 	announce_font.variation_opentype = {"wght": 800}
-	for st: AudioStreamWAV in [MUSIC_MENU, MUSIC_GAME, MUSIC_BOSS]:
-		st.loop_mode = AudioStreamWAV.LOOP_FORWARD
-		st.loop_end = st.data.size() / 4
+	# (nhạc giờ toàn MP3, loop bật trong file .import — không set loop bằng code nữa)
 	# Bus "Music" riêng + low-pass filter: nhạc "bí" lúc mở màn rồi bung dần theo pha trận.
 	# Bus tồn tại xuyên các lần reload scene nên chỉ tạo một lần.
 	var bidx := AudioServer.get_bus_index("Music")
