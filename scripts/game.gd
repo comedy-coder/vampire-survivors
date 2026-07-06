@@ -67,7 +67,7 @@ const I18N := {
 	"sig_form_title": ["CẤP 20 — CHỌN HÌNH THÁI", "LV 20 — CHOOSE FORM"],
 	"sig_ultimate_title": ["CẤP 25 — THỨC TỈNH TỐI THƯỢNG", "LV 25 — ULTIMATE AWAKENING"],
 	"sig_enhance_label": ["⚡ CƯỜNG HÓA LÕI\nLõi của bạn mạnh hơn nữa — Nhận!", "⚡ CORE ENHANCED\nYour core grows stronger — Take!"],
-	"sig_ultimate_label": ["☆ THỨC TỈNH!\nLõi + Hình thái tối đa & dọn màn — Nhận!", "☆ AWAKENING!\nCore + Form maxed & screen clear — Take!"],
+	"sig_ultimate_label": ["⭐ THỨC TỈNH!\nLõi + Hình thái tối đa & dọn màn — Nhận!", "⭐ AWAKENING!\nCore + Form maxed & screen clear — Take!"],
 	"char_title": ["CHỌN NHÂN VẬT  (WASD + Space)", "CHOOSE YOUR CHARACTER  (WASD + Space)"],
 	"sound_title": ["ÂM THANH", "SOUND"],
 	"music": ["Nhạc nền", "Music"],
@@ -101,16 +101,17 @@ const I18N := {
 	"level_fmt": ["Level %d  (XP %d/%d)", "Level %d  (XP %d/%d)"],
 	"kills_fmt": ["Kills: %d", "Kills: %d"],
 	"char_stats": ["HP %d • Tốc %d • DMG %.1f", "HP %d • SPD %d • DMG %.1f"],
-	"gameover_fmt": ["GAME OVER\nSống sót: %02d:%02d — %d kills\nNhấn R để chơi lại",
-		"GAME OVER\nSurvived: %02d:%02d — %d kills\nPress R to restart"],
-	"weapon_lv": ["%s (Cấp %d → %d)", "%s (Lv %d → %d)"],
+	"gameover_fmt": ["GAME OVER\nSống sót: %02d:%02d — %d kills\nNhấn R hoặc chạm CHƠI LẠI",
+		"GAME OVER\nSurvived: %02d:%02d — %d kills\nPress R or tap PLAY AGAIN"],
+	"replay": ["▶  CHƠI LẠI", "▶  PLAY AGAIN"],
+	"weapon_lv": ["%s (Cấp %d ➡ %d)", "%s (Lv %d ➡ %d)"],
 	"artifact_fmt": ["CỔ VẬT: %s\n%s", "ARTIFACT: %s\n%s"],
 	"stage_fmt": ["VÙNG MỚI: %s", "NEW AREA: %s"],
 	"shop_btn": ["🛒 Nâng cấp (💰%d  🔮%d)", "🛒 Upgrades (💰%d  🔮%d)"],
 	"shop_title": ["NÂNG CẤP VĨNH VIỄN", "PERMANENT UPGRADES"],
 	"shop_gold": ["💰 Vàng: %d", "💰 Gold: %d"],
 	"shop_balance": ["💰 Vàng: %d      🔮 Linh Hồn: %d", "💰 Gold: %d      🔮 Souls: %d"],
-	"shop_close": ["← Quay lại", "← Back"],
+	"shop_close": ["◀ Quay lại", "◀ Back"],
 	"shop_sec_gold": ["— SINH TỒN (Vàng) —", "— SURVIVAL (Gold) —"],
 	"shop_sec_soul": ["— TẤN CÔNG (Linh Hồn) —", "— ATTACK (Souls) —"],
 	"shop_buy": ["%s  (Cấp %d/%d)\n%s — Giá %d %s", "%s  (Lv %d/%d)\n%s — Cost %d %s"],
@@ -119,11 +120,11 @@ const I18N := {
 	"death_penalty": ["\n(Chết: chỉ giữ 25% Vàng, 50% Linh Hồn — Rút lui để giữ trọn!)", "\n(Died: kept 25% gold, 50% souls — extract to keep it all!)"],
 	"res_dmg_title": ["SÁT THƯƠNG THEO NGUỒN", "DAMAGE BY SOURCE"],
 	"pact_title": ["— KHẾ ƯỚC (tùy chọn: rủi ro đổi phần thưởng) —", "— PACTS (optional: risk for reward) —"],
-	"pact1": ["Quái +30% máu, +15% dmg  →  Vàng ×1.5", "Enemies +30% HP, +15% dmg  →  Gold ×1.5"],
-	"pact2": ["Bão tố dày gấp đôi  →  Linh Hồn ×1.5", "Storms twice as often  →  Souls ×1.5"],
-	"pact3": ["Không bình máu, hồi cấp -50%  →  +20% sát thương", "No heal drops, half level heal  →  +20% damage"],
+	"pact1": ["Quái +30% máu, +15% dmg  ➡  Vàng ×1.5", "Enemies +30% HP, +15% dmg  ➡  Gold ×1.5"],
+	"pact2": ["Bão tố dày gấp đôi  ➡  Linh Hồn ×1.5", "Storms twice as often  ➡  Souls ×1.5"],
+	"pact3": ["Không bình máu, hồi cấp -50%  ➡  +20% sát thương", "No heal drops, half level heal  ➡  +20% damage"],
 	"hint_controls": ["Di chuyển: WASD / joystick — vũ khí tự bắn!", "Move: WASD / joystick — weapons fire on their own!"],
-	"pact4": ["TỬ TỐC: quái +25% tốc, spawn dày  →  Vàng & Hồn ×1.3", "DEATHLY SPEED: +25% enemy speed, denser spawns  →  Gold & Souls ×1.3"],
+	"pact4": ["TỬ TỐC: quái +25% tốc, spawn dày  ➡  Vàng & Hồn ×1.3", "DEATHLY SPEED: +25% enemy speed, denser spawns  ➡  Gold & Souls ×1.3"],
 	"death_announce": ["TỬ THẦN ĐUỔI THEO! KẾT THÚC NGAY!", "DEATH COMES! FINISH THE RUN!"],
 }
 
@@ -422,7 +423,7 @@ var chest_text: Label
 var pause_panel: PanelContainer
 var owned_artifacts: Array = []
 var xp_gain := 1
-var lang := 0  # 0 = Tiếng Việt, 1 = English
+var lang := 1  # 0 = Tiếng Việt, 1 = English — mặc định EN cho người chơi mới (itch.io quốc tế)
 var gold := 0          # Vàng tích lũy (mua chỉ số Sinh tồn)
 var souls := 0         # Mảnh Linh Hồn tích lũy (mua chỉ số Tấn công); chết giữ 50%
 var run_gold := 0      # Vàng kiếm trong ván hiện tại (chưa gửi vào kho)
@@ -473,6 +474,7 @@ var chest_sfx := AudioStreamPlayer.new()
 var extract_sfx := AudioStreamPlayer.new()
 var boss_sfx := AudioStreamPlayer.new()
 var thunder_sfx := AudioStreamPlayer.new()  # sấm cho sét thời tiết — khác tiếng zap của skill
+var replay_btn := Button.new()  # nút CHƠI LẠI màn kết thúc — mobile không có phím R
 var _gem_combo := 0      # số gem nhặt liên tiếp — pitch tăng dần "tính tính tính"
 var _gem_combo_t := 0.0
 var announce_font: FontVariation
@@ -499,6 +501,9 @@ func _ready() -> void:
 	announce_font = FontVariation.new()
 	announce_font.base_font = FONT_ANNOUNCE
 	announce_font.variation_opentype = {"wght": 800}
+	# Baloo không có glyph emoji (⚔☠⚡💣 trong announce tiến hóa) — web không có font
+	# hệ thống dự phòng nên phải tự gắn Noto Emoji vào
+	announce_font.fallbacks = [preload("res://assets/fonts/NotoEmoji-Regular.ttf")]
 	# (nhạc giờ toàn MP3, loop bật trong file .import — không set loop bằng code nữa)
 	# Bus "Music" riêng + low-pass filter: nhạc "bí" lúc mở màn rồi bung dần theo pha trận.
 	# Bus tồn tại xuyên các lần reload scene nên chỉ tạo một lần.
@@ -514,9 +519,13 @@ func _ready() -> void:
 	music.bus = "Music"
 	music.stream = MUSIC_MENU
 	music.process_mode = Node.PROCESS_MODE_ALWAYS
+	# Web: kiểu "Sample" mặc định không hỗ trợ bus tùy biến -> câm tiếng; ép Stream trên
+	# từng player vì feature-override trong project.godot bị exporter loại bỏ khi đóng gói
+	music.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 	add_child(music)
 	music.play()
 	die_sfx.stream = SND_DIE
+	die_sfx.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 	add_child(die_sfx)
 	# SFX phần thưởng + UI: PROCESS_MODE_ALWAYS để kêu được cả khi game pause (menu, lên cấp)
 	for cfg: Array in [[gem_sfx, SND_GEM, 4], [coin_sfx, SND_COIN, 3], [ui_sfx, SND_UI, 2],
@@ -527,6 +536,7 @@ func _ready() -> void:
 		sp.stream = cfg[1]
 		sp.max_polyphony = cfg[2]
 		sp.process_mode = Node.PROCESS_MODE_ALWAYS
+		sp.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 		add_child(sp)
 	sound_btn.pressed.connect(_toggle_settings)
 	settings_panel.get_node("VBox/CloseBtn").pressed.connect(_toggle_settings)
@@ -634,6 +644,33 @@ func _ready() -> void:
 	for row in ["MusicRow", "SfxRow"]:
 		settings_panel.get_node("VBox/%s/Label" % row) \
 			.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
+		# Slider to hơn cho dễ kéo trên màn hình cảm ứng: dải chạm cao 42px,
+		# rãnh dày, phần đã kéo tô vàng, núm tròn to
+		var sl: HSlider = settings_panel.get_node("VBox/%s/Slider" % row)
+		sl.custom_minimum_size = Vector2(0, 42)
+		var groove := StyleBoxFlat.new()
+		groove.bg_color = Color(0.3, 0.32, 0.45)
+		groove.set_corner_radius_all(7)
+		groove.content_margin_top = 7.0
+		groove.content_margin_bottom = 7.0
+		sl.add_theme_stylebox_override("slider", groove)
+		var filled: StyleBoxFlat = groove.duplicate()
+		filled.bg_color = Color(1.0, 0.84, 0.4)
+		sl.add_theme_stylebox_override("grabber_area", filled)
+		sl.add_theme_stylebox_override("grabber_area_highlight", filled)
+		var grab := GradientTexture2D.new()
+		grab.width = 32
+		grab.height = 32
+		grab.fill = GradientTexture2D.FILL_RADIAL
+		grab.fill_from = Vector2(0.5, 0.5)
+		grab.fill_to = Vector2(0.5, 0.0)
+		var gr := Gradient.new()
+		gr.colors = PackedColorArray([Color(1.0, 0.93, 0.72), Color(1.0, 0.93, 0.72),
+				Color(1.0, 0.93, 0.72, 0.0)])
+		gr.offsets = PackedFloat32Array([0.0, 0.8, 0.92])
+		grab.gradient = gr
+		sl.add_theme_icon_override("grabber", grab)
+		sl.add_theme_icon_override("grabber_highlight", grab)
 	# Lớp tối mờ cho màn kết thúc — chèn ngay dưới GameOverLabel
 	_end_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_end_dim.color = Color(0.02, 0.02, 0.05, 0.0)
@@ -642,6 +679,18 @@ func _ready() -> void:
 	_end_dim.visible = false
 	$UI.add_child(_end_dim)
 	$UI.move_child(_end_dim, over_label.get_index())
+	# Nút CHƠI LẠI cho màn kết thúc: tree đang pause nên cần PROCESS_MODE_ALWAYS
+	replay_btn.process_mode = Node.PROCESS_MODE_ALWAYS
+	replay_btn.visible = false
+	replay_btn.add_theme_font_size_override("font_size", 25)
+	_skin_menu_button(replay_btn, Color(1.0, 0.84, 0.4))
+	replay_btn.pressed.connect(_restart_game)
+	$UI.add_child(replay_btn)
+	replay_btn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	replay_btn.offset_left = -125.0
+	replay_btn.offset_right = 125.0
+	replay_btn.offset_top = -84.0
+	replay_btn.offset_bottom = -28.0
 
 	if OS.is_debug_build():
 		_build_debug_panel()  # công cụ dev — không xuất hiện trong bản phát hành
@@ -668,7 +717,7 @@ func report_damage(src: String, amount: float) -> void:
 func _load_lang() -> void:
 	var cf := ConfigFile.new()
 	if cf.load("user://settings.cfg") == OK:
-		lang = int(cf.get_value("ui", "lang", 0))
+		lang = int(cf.get_value("ui", "lang", 1))
 
 
 func _save_lang() -> void:
@@ -1394,6 +1443,7 @@ func _win_run() -> void:
 	over_label.visible = true
 	_show_end_dim()
 	_show_run_stats()
+	_show_replay_btn()
 	get_tree().paused = true  # dừng toàn bộ thế giới khi hiện menu thắng
 
 
@@ -1435,6 +1485,7 @@ func _extract() -> void:
 	over_label.visible = true
 	_show_end_dim()
 	_show_run_stats()
+	_show_replay_btn()
 	get_tree().paused = true  # dừng toàn bộ thế giới khi rút lui
 
 
@@ -3100,10 +3151,17 @@ func _show_run_stats() -> void:
 	panel.add_child(vb)
 	$UI.add_child(panel)
 	_skin_menu_panel(panel, 14.0)
-	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	# Đáy-trái để chừa đáy-giữa cho nút CHƠI LẠI (mobile)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	panel.grow_horizontal = Control.GROW_DIRECTION_END
 	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	panel.position.y -= 24
+	panel.position += Vector2(14, -14)
+
+
+func _show_replay_btn() -> void:
+	# Màn kết thúc (thắng / rút lui / chết): nút chạm thay cho phím R trên mobile
+	replay_btn.text = T("replay")
+	replay_btn.visible = true
 
 
 func _build_pause_panel() -> void:
@@ -3201,10 +3259,10 @@ func _build_summary() -> String:
 	]
 	for s in secs:
 		if int(s[0]) > 0:
-			lines.append("• %s %s %d%s" % [s[2][lang], lv_word, int(s[0]), "  ★" if s[1] else ""])
+			lines.append("• %s %s %d%s" % [s[2][lang], lv_word, int(s[0]), "  ⭐" if s[1] else ""])
 	for a in ARTIFACTS:
 		if a["fn"] in owned_artifacts:
-			lines.append("◦ " + a["name"][lang])
+			lines.append("• " + a["name"][lang])
 	return "\n".join(lines)
 
 
@@ -3267,6 +3325,7 @@ func _on_player_died() -> void:
 	over_label.visible = true
 	_show_end_dim()
 	_show_run_stats()
+	_show_replay_btn()
 	get_tree().paused = true  # dừng toàn bộ thế giới khi hiện menu kết thúc
 
 

@@ -48,5 +48,5 @@ Third-party assets, used with thanks:
 - **Elite badges** — Akami Assets *Buff & Debuff Icon Pack* (CC0)
 - **Pixel VFX** — *Super Pixel Effects Gigapack* by **Will Tice / unTied Games** (untiedgames.com)
 - **UI frames & bars** — Kenney *Fantasy UI Borders* (CC0), *Pixel UI Pack 3*
-- **Font** — Baloo 2 (SIL Open Font License)
+- **Fonts** — Baloo 2, Open Sans, Noto Emoji (SIL Open Font License)
 - **All music & sound effects** — synthesized in-house for this game

@@ -133,6 +133,9 @@ func _ready() -> void:
 	hurt_sfx.stream = SND_HURT
 	hurt_sfx.volume_db = -6.0
 	add_child(hurt_sfx)
+	# Web: ép kiểu Stream — kiểu Sample mặc định trên web làm câm tiếng (xem game.gd _ready)
+	for s: AudioStreamPlayer in [shoot_sfx, boom_sfx, zap_sfx, hurt_sfx]:
+		s.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 	# Hạt độc xanh bốc lên khi đang nhiễm độc (vũng độc Đất chết)
 	infect_fx = CPUParticles2D.new()
 	infect_fx.texture = CIRCLE

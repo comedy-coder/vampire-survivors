@@ -65,6 +65,7 @@ func _ready() -> void:
 	sfx.stream = SFX_NOVA
 	sfx.pitch_scale = 0.38
 	sfx.volume_db = 2.0
+	sfx.playback_type = AudioServer.PLAYBACK_TYPE_STREAM  # web: kiểu Sample gây câm tiếng
 	add_child(sfx)
 
 

@@ -18,16 +18,24 @@ boot_splash/bg_color=Color(0.09, 0.08, 0.12, 1)
 boot_splash/show_image=false
 config/icon="res://icon.svg"
 
+[audio]
+
+; Web mặc định phát kiểu "Sample" — không hỗ trợ bus tùy biến (bus "Music" của game)
+; nên bản web bị câm hoàn toàn. Ép kiểu "Stream" để bus + effect hoạt động như desktop.
+general/default_playback_type=1
+general/default_playback_type.web=1
+
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
 
-[input_devices]
+[gui]
 
-pointing/emulate_touch_from_mouse=true
+; Font mặc định = đúng file Open Sans SemiBold mà Godot nhúng sẵn (giao diện không đổi)
+; + Noto Emoji dự phòng: bản web không có font hệ thống nên 💰🔮🔒♪... bị ô vuông
+theme/custom_font="res://assets/fonts/ui_font.tres"
 
 [input]
 
@@ -60,6 +68,10 @@ restart={
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":82,"key_label":0,"unicode":114,"location":0,"echo":false,"script":null)
 ]
 }
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
 
 [rendering]
 

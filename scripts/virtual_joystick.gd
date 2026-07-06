@@ -12,11 +12,18 @@ var knob_pos := Vector2.ZERO
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# PHẢI xử lý input cả khi game pause: panel lên cấp mở ra đúng lúc ngón tay đang
+	# đè joystick thì sự kiện nhả tay sẽ rơi vào lúc pause — nếu bỏ lỡ, touch_id kẹt
+	# và nhân vật tự chạy một hướng vĩnh viễn sau khi hồi game
+	process_mode = Node.PROCESS_MODE_ALWAYS
 
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
-		if event.pressed and touch_id == -1 and event.position.x < get_viewport_rect().size.x * 0.55:
+		# Chạm bất kỳ đâu trên màn hình đều kéo được joystick (như VS mobile),
+		# trừ dải HUD trên cùng để không vướng nút tạm dừng / âm thanh
+		if event.pressed and touch_id == -1 and not get_tree().paused \
+				and event.position.y > get_viewport_rect().size.y * 0.14:
 			touch_id = event.index
 			base_pos = event.position
 			knob_pos = base_pos
