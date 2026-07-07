@@ -380,8 +380,8 @@ func take_hit(damage: float, show_dmg := false, kb := Vector2.ZERO, col := Color
 	# 30% máu cuối là giai đoạn nguy hiểm nhất thay vì dễ nhất
 	if kind == Kind.BOSS and not enraged and hp > 0.0 and hp <= hp_max * 0.3:
 		enraged = true
-		speed *= 1.25
-		skill_interval *= 0.6
+		speed *= 1.18
+		skill_interval *= 0.7
 		skill_timer = minf(skill_timer, 1.0)
 		tint = tint * Color(1.3, 0.72, 0.72)
 	if show_dmg:
