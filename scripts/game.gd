@@ -1110,9 +1110,6 @@ func _process(delta: float) -> void:
 	if spawn_timer <= 0.0:
 		# Khế Ước 4 (Tử Tốc): spawn dày hơn 20%
 		spawn_timer = maxf(0.35, 1.1 - time * 0.015) * (0.8 if pacts[3] else 1.0)
-		# Đang đấu boss: quái thường thưa bớt 35% để màn đấu boss thoáng và đọc được
-		if not bosses.is_empty():
-			spawn_timer *= 1.35
 		_spawn_enemy()
 
 	# Nhịp boss theo mốc: Mini-boss phút 5 & 10, Final boss phút 15
@@ -1364,8 +1361,8 @@ func _spawn_boss(is_final: bool) -> void:
 		_change_music(MUSIC_BOSS)  # nhạc riêng cho 90 giây cao trào cuối
 		e.sprite_scale *= 1.35
 		e.vis_scale *= 1.35 if e.vis_scale > 0.0 else 1.0
-		# ×1.8/2.1: đủ "trâu" để trận cuối ~15-20s nhưng không lê thê
-		e.hp *= (2.1 if stage == 2 else 1.8)
+		# ×2.0/2.4: bù việc người chơi lên cấp nhanh hơn (đường cong 1.10) và build đã hoàn thiện
+		e.hp *= (2.4 if stage == 2 else 2.0)
 		e.dps *= (2.0 if stage == 2 else 1.4)
 		e.gems = 20
 	_apply_stage(e)
